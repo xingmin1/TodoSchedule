@@ -1,0 +1,197 @@
+package com.example.todoschedule.ui.course.add
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.todoschedule.domain.model.Course
+import com.example.todoschedule.domain.model.CourseNode
+import com.example.todoschedule.domain.repository.CourseRepository
+import com.example.todoschedule.ui.theme.courseColors
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+/**
+ * 添加课程ViewModel
+ */
+@HiltViewModel
+class AddCourseViewModel @Inject constructor(
+    private val courseRepository: CourseRepository
+) : ViewModel() {
+    
+    // 课程名称
+    private val _courseName = MutableStateFlow("")
+    val courseName: StateFlow<String> = _courseName.asStateFlow()
+    
+    // 课程颜色
+    private val _color = MutableStateFlow(courseColors.first())
+    val color: StateFlow<String> = _color.asStateFlow()
+    
+    // 教室
+    private val _room = MutableStateFlow("")
+    val room: StateFlow<String> = _room.asStateFlow()
+    
+    // 教师
+    private val _teacher = MutableStateFlow("")
+    val teacher: StateFlow<String> = _teacher.asStateFlow()
+    
+    // 学分
+    private val _credit = MutableStateFlow("")
+    val credit: StateFlow<String> = _credit.asStateFlow()
+    
+    // 课程代码
+    private val _courseCode = MutableStateFlow("")
+    val courseCode: StateFlow<String> = _courseCode.asStateFlow()
+    
+    // 上课时间节点
+    private val _courseNodes = MutableStateFlow<List<CourseNodeUiState>>(emptyList())
+    val courseNodes: StateFlow<List<CourseNodeUiState>> = _courseNodes.asStateFlow()
+    
+    // 保存状态
+    private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
+    val saveState: StateFlow<SaveState> = _saveState.asStateFlow()
+    
+    /**
+     * 更新课程名称
+     */
+    fun updateCourseName(name: String) {
+        _courseName.value = name
+    }
+    
+    /**
+     * 更新课程颜色
+     */
+    fun updateColor(color: String) {
+        _color.value = color
+    }
+    
+    /**
+     * 更新教室
+     */
+    fun updateRoom(room: String) {
+        _room.value = room
+    }
+    
+    /**
+     * 更新教师
+     */
+    fun updateTeacher(teacher: String) {
+        _teacher.value = teacher
+    }
+    
+    /**
+     * 更新学分
+     */
+    fun updateCredit(credit: String) {
+        _credit.value = credit
+    }
+    
+    /**
+     * 更新课程代码
+     */
+    fun updateCourseCode(code: String) {
+        _courseCode.value = code
+    }
+    
+    /**
+     * 添加课程节点
+     */
+    fun addCourseNode(node: CourseNodeUiState) {
+        _courseNodes.value = _courseNodes.value + node
+    }
+    
+    /**
+     * 更新课程节点
+     */
+    fun updateCourseNode(index: Int, node: CourseNodeUiState) {
+        val nodes = _courseNodes.value.toMutableList()
+        if (index in nodes.indices) {
+            nodes[index] = node
+            _courseNodes.value = nodes
+        }
+    }
+    
+    /**
+     * 删除课程节点
+     */
+    fun deleteCourseNode(index: Int) {
+        val nodes = _courseNodes.value.toMutableList()
+        if (index in nodes.indices) {
+            nodes.removeAt(index)
+            _courseNodes.value = nodes
+        }
+    }
+    
+    /**
+     * 保存课程
+     */
+    fun saveCourse(tableId: Int) {
+        if (!validateForm()) {
+            _saveState.value = SaveState.Error("请填写必要的课程信息")
+            return
+        }
+        
+        viewModelScope.launch {
+            _saveState.value = SaveState.Loading
+            
+            try {
+                val course = Course(
+                    courseName = _courseName.value,
+                    color = _color.value,
+                    room = _room.value.takeIf { it.isNotEmpty() },
+                    teacher = _teacher.value.takeIf { it.isNotEmpty() },
+                    credit = _credit.value.takeIf { it.isNotEmpty() }?.toFloatOrNull(),
+                    courseCode = _courseCode.value.takeIf { it.isNotEmpty() },
+                    nodes = _courseNodes.value.map { it.toDomain() }
+                )
+                
+                val courseId = courseRepository.addCourse(course, tableId)
+                _saveState.value = SaveState.Success(courseId.toInt())
+            } catch (e: Exception) {
+                _saveState.value = SaveState.Error(e.message ?: "保存失败")
+            }
+        }
+    }
+    
+    /**
+     * 验证表单
+     */
+    private fun validateForm(): Boolean {
+        return _courseName.value.isNotEmpty() && _courseNodes.value.isNotEmpty()
+    }
+    
+    /**
+     * 重置保存状态
+     */
+    fun resetSaveState() {
+        _saveState.value = SaveState.Idle
+    }
+}
+
+/**
+ * CourseNodeUiState 的扩展函数，用于转换为领域模型
+ */
+fun CourseNodeUiState.toDomain(): CourseNode {
+    return CourseNode(
+        day = day,
+        startNode = startNode,
+        step = step,
+        startWeek = startWeek,
+        endWeek = endWeek,
+        weekType = weekType,
+        room = room.takeIf { it.isNotEmpty() },
+        teacher = teacher.takeIf { it.isNotEmpty() }
+    )
+}
+
+/**
+ * 保存状态
+ */
+sealed class SaveState {
+    object Idle : SaveState()
+    object Loading : SaveState()
+    data class Success(val courseId: Int) : SaveState()
+    data class Error(val message: String) : SaveState()
+} 
