@@ -39,48 +39,48 @@ enum class EditCourseUiState {
 class EditCourseViewModel @Inject constructor(
     private val courseRepository: CourseRepository
 ) : ViewModel() {
-    
+
     // UI状态
     private val _uiState = MutableStateFlow(EditCourseUiState.Loading)
     val uiState: StateFlow<EditCourseUiState> = _uiState
-    
+
     // 课程ID
     private var courseId = 0
-    
+
     // 课程基本信息
     private val _courseName = MutableStateFlow("")
     val courseName = _courseName.asStateFlow()
-    
+
     private val _color = MutableStateFlow("#F44336")
     val color = _color.asStateFlow()
-    
+
     private val _room = MutableStateFlow("")
     val room = _room.asStateFlow()
-    
+
     private val _teacher = MutableStateFlow("")
     val teacher = _teacher.asStateFlow()
-    
+
     private val _credit = MutableStateFlow("")
     val credit = _credit.asStateFlow()
-    
+
     private val _courseCode = MutableStateFlow("")
     val courseCode = _courseCode.asStateFlow()
-    
+
     // 课程节点
     private val _courseNodes = MutableStateFlow<List<CourseNodeUiState>>(emptyList())
     val courseNodes = _courseNodes.asStateFlow()
-    
+
     // 事件通道
     private val _events = Channel<EditCourseEvent>()
     val events = _events.receiveAsFlow()
-    
+
     /**
      * 加载课程数据
      */
     fun loadCourse(id: Int) {
         courseId = id
         _uiState.value = EditCourseUiState.Loading
-        
+
         viewModelScope.launch {
             try {
                 val course = courseRepository.getCourseById(id)
@@ -92,7 +92,7 @@ class EditCourseViewModel @Inject constructor(
                     _teacher.value = course.teacher ?: ""
                     _credit.value = course.credit?.toString() ?: ""
                     _courseCode.value = course.courseCode ?: ""
-                    
+
                     // 更新课程节点
                     _courseNodes.value = course.nodes.map { node ->
                         CourseNodeUiState(
@@ -106,7 +106,7 @@ class EditCourseViewModel @Inject constructor(
                             teacher = node.teacher ?: ""
                         )
                     }
-                    
+
                     _uiState.value = EditCourseUiState.Success
                 } else {
                     _uiState.value = EditCourseUiState.Error
@@ -118,7 +118,7 @@ class EditCourseViewModel @Inject constructor(
             }
         }
     }
-    
+
     /**
      * 更新课程
      */
@@ -129,7 +129,7 @@ class EditCourseViewModel @Inject constructor(
             }
             return
         }
-        
+
         viewModelScope.launch {
             try {
                 val course = Course(
@@ -151,56 +151,56 @@ class EditCourseViewModel @Inject constructor(
             }
         }
     }
-    
+
     /**
      * 更新课程名称
      */
     fun updateCourseName(name: String) {
         _courseName.value = name
     }
-    
+
     /**
      * 更新课程颜色
      */
     fun updateColor(newColor: String) {
         _color.value = newColor
     }
-    
+
     /**
      * 更新教室
      */
     fun updateRoom(newRoom: String) {
         _room.value = newRoom
     }
-    
+
     /**
      * 更新教师
      */
     fun updateTeacher(newTeacher: String) {
         _teacher.value = newTeacher
     }
-    
+
     /**
      * 更新学分
      */
     fun updateCredit(newCredit: String) {
         _credit.value = newCredit
     }
-    
+
     /**
      * 更新课程代码
      */
     fun updateCourseCode(newCode: String) {
         _courseCode.value = newCode
     }
-    
+
     /**
      * 添加课程节点
      */
     fun addCourseNode(node: CourseNodeUiState) {
         _courseNodes.value = _courseNodes.value + node
     }
-    
+
     /**
      * 更新课程节点
      */
@@ -211,7 +211,7 @@ class EditCourseViewModel @Inject constructor(
             _courseNodes.value = nodes
         }
     }
-    
+
     /**
      * 删除课程节点
      */
@@ -222,14 +222,14 @@ class EditCourseViewModel @Inject constructor(
             _courseNodes.value = nodes
         }
     }
-    
+
     /**
      * 验证表单
      */
     private fun validateForm(): Boolean {
         return _courseName.value.isNotEmpty() && _courseNodes.value.isNotEmpty()
     }
-    
+
     /**
      * 将CourseNodeUiState转换为CourseNode领域模型
      */

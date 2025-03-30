@@ -2,7 +2,7 @@ package com.example.todoschedule.ui.course.add
 
 /**
  * 课程节点UI状态
- * 
+ *
  * @property day 星期几 (1-7)
  * @property startNode 开始节次
  * @property step 课程节数

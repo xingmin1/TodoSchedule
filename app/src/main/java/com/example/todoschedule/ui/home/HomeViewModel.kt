@@ -5,7 +5,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.todoschedule.domain.repository.CourseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +18,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val courseRepository: CourseRepository
+    // private val courseRepository: CourseRepository
     // 这里需要注入TodoRepository，但目前尚未创建
     // private val todoRepository: TodoRepository
 ) : ViewModel() {
@@ -35,7 +34,7 @@ class HomeViewModel @Inject constructor(
     init {
         // 加载今日待办（后续需要实现TodoRepository后再完善）
         loadTodoItems()
-        
+
         // 加载今日课程
         viewModelScope.launch {
             // 此处应从CourseRepository获取今日课程
@@ -43,7 +42,7 @@ class HomeViewModel @Inject constructor(
             loadTodayCourses()
         }
     }
-    
+
     /**
      * 加载今日待办事项
      */
@@ -73,7 +72,7 @@ class HomeViewModel @Inject constructor(
             )
         )
     }
-    
+
     /**
      * 加载今日课程
      */

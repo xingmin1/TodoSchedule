@@ -62,7 +62,7 @@ fun TodoScreen(
     val uiState by viewModel.uiState.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
     val formatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日")
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -92,7 +92,7 @@ fun TodoScreen(
                 selectedDate = selectedDate,
                 onDateSelected = viewModel::selectDate
             )
-            
+
             when (val state = uiState) {
                 is TodoUiState.Loading -> {
                     Box(
@@ -102,7 +102,7 @@ fun TodoScreen(
                         CircularProgressIndicator()
                     }
                 }
-                
+
                 is TodoUiState.Empty -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -117,9 +117,9 @@ fun TodoScreen(
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            
+
                             Spacer(modifier = Modifier.height(8.dp))
-                            
+
                             Text(
                                 text = "点击右下角的 + 按钮添加待办事项",
                                 textAlign = TextAlign.Center,
@@ -129,7 +129,7 @@ fun TodoScreen(
                         }
                     }
                 }
-                
+
                 is TodoUiState.Success -> {
                     LazyColumn(
                         modifier = Modifier
@@ -145,7 +145,7 @@ fun TodoScreen(
                         }
                     }
                 }
-                
+
                 is TodoUiState.Error -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -174,7 +174,7 @@ fun DateSelector(
 ) {
     val today = LocalDate.now()
     val dates = generateDateList(today)
-    
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -185,7 +185,7 @@ fun DateSelector(
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -193,7 +193,7 @@ fun DateSelector(
             dates.forEach { date ->
                 val isSelected = date.isEqual(selectedDate)
                 val isToday = date.isEqual(today)
-                
+
                 DateItem(
                     date = date,
                     isSelected = isSelected,
@@ -226,12 +226,12 @@ fun DateItem(
         isSelected -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
-    
+
     val textColor = when {
         isSelected -> MaterialTheme.colorScheme.onPrimary
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-    
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -246,18 +246,18 @@ fun DateItem(
             style = MaterialTheme.typography.titleMedium,
             color = textColor
         )
-        
+
         Spacer(modifier = Modifier.height(4.dp))
-        
+
         Text(
             text = date.dayOfWeek.toString().substring(0, 1),
             style = MaterialTheme.typography.bodySmall,
             color = textColor
         )
-        
+
         if (isToday) {
             Spacer(modifier = Modifier.height(4.dp))
-            
+
             Box(
                 modifier = Modifier
                     .size(6.dp)
@@ -309,9 +309,9 @@ fun TodoItem(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             // 标题和描述
             Column(
                 modifier = Modifier.weight(1f)
@@ -320,12 +320,14 @@ fun TodoItem(
                     text = todo.title,
                     style = MaterialTheme.typography.titleMedium,
                     textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-                    color = if (todo.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface
+                    color = if (todo.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                        alpha = 0.6f
+                    ) else MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 if (todo.description.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    
+
                     Text(
                         text = todo.description,
                         style = MaterialTheme.typography.bodyMedium,
@@ -335,10 +337,10 @@ fun TodoItem(
                         textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                     )
                 }
-                
+
                 if (todo.dueDate != null) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -348,9 +350,9 @@ fun TodoItem(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(16.dp)
                         )
-                        
+
                         Spacer(modifier = Modifier.width(4.dp))
-                        
+
                         Text(
                             text = todo.dueDate.format(DateTimeFormatter.ofPattern("MM月dd日")),
                             style = MaterialTheme.typography.bodySmall,
@@ -359,7 +361,7 @@ fun TodoItem(
                     }
                 }
             }
-            
+
             // 删除按钮
             IconButton(
                 onClick = { onDelete(todo.id) }
@@ -379,9 +381,10 @@ fun TodoItem(
  */
 @Composable
 fun Modifier.onClick(onClick: () -> Unit): Modifier {
-    return this.background(
-        color = Color.Transparent,
-        shape = RoundedCornerShape(4.dp)
-    )
-    .clickable(onClick = onClick)
+    return this
+        .background(
+            color = Color.Transparent,
+            shape = RoundedCornerShape(4.dp)
+        )
+        .clickable(onClick = onClick)
 } 

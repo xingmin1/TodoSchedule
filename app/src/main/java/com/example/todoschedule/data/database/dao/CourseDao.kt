@@ -27,25 +27,29 @@ interface CourseDao {
      * 获取特定周次的课程
      */
     @Transaction
-    @Query("""
+    @Query(
+        """
         SELECT DISTINCT c.* FROM course c
         JOIN course_node cn ON c.id = cn.courseId
         WHERE c.tableId = :tableId 
         AND cn.startWeek <= :week AND cn.endWeek >= :week
         AND (cn.weekType = 0 OR (cn.weekType = 1 AND :week % 2 = 1) OR (cn.weekType = 2 AND :week % 2 = 0))
-    """)
+    """
+    )
     fun getCoursesByWeek(tableId: Int, week: Int): Flow<List<CourseWithNodes>>
 
     /**
      * 获取特定日期的课程节点
      */
-    @Query("""
+    @Query(
+        """
         SELECT * FROM course_node 
         WHERE courseId IN (SELECT id FROM course WHERE tableId = :tableId)
         AND day = :day 
         AND startWeek <= :week AND endWeek >= :week
         AND (weekType = 0 OR (weekType = 1 AND :week % 2 = 1) OR (weekType = 2 AND :week % 2 = 0))
-    """)
+    """
+    )
     fun getCourseNodesByDayAndWeek(tableId: Int, day: Int, week: Int): Flow<List<CourseNodeEntity>>
 
     /**

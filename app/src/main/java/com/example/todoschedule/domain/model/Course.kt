@@ -2,7 +2,7 @@ package com.example.todoschedule.domain.model
 
 /**
  * 课程领域模型
- * 
+ *
  * @property courseName 课程名称
  * @property color 颜色
  * @property room 教室

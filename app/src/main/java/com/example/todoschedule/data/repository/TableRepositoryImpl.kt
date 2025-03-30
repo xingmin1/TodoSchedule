@@ -9,66 +9,50 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * 课表仓库实现
- */
+/** 课表仓库实现 */
 @Singleton
-class TableRepositoryImpl @Inject constructor(
-    private val tableDao: TableDao
-) : TableRepository {
+class TableRepositoryImpl @Inject constructor(private val tableDao: TableDao) : TableRepository {
 
-    /**
-     * 获取所有课表
-     */
+    /** 获取所有课表 */
     override fun getAllTables(): Flow<List<Table>> {
-        return tableDao.getAllTables().map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return tableDao.getAllTables().map { entities -> entities.map { it.toDomain() } }
     }
 
-    /**
-     * 获取默认课表
-     */
+    /** 获取默认课表 */
     override fun getDefaultTable(): Flow<Table?> {
-        return tableDao.getDefaultTable().map { entity ->
-            entity?.toDomain()
-        }
+        return tableDao.getDefaultTable().map { entity -> entity?.toDomain() }
     }
 
-    /**
-     * 根据ID获取课表
-     */
+    /** 根据ID获取课表 */
     override suspend fun getTableById(tableId: Int): Table? {
         return tableDao.getTableById(tableId)?.toDomain()
     }
 
-    /**
-     * 添加课表
-     */
+    /** 根据用户ID获取课表 */
+    override suspend fun getTableByUserId(userId: Int): List<Table> {
+        return tableDao.getTableByUserId(userId).map { it.toDomain() }
+    }
+
+    /** 添加课表 */
     override suspend fun addTable(table: Table): Long {
         return tableDao.insertTable(table.toEntity())
     }
 
-    /**
-     * 更新课表
-     */
+    /** 更新课表 */
     override suspend fun updateTable(table: Table) {
         tableDao.updateTable(table.toEntity())
     }
 
-    /**
-     * 删除课表
-     */
+    /** 删除课表 */
     override suspend fun deleteTable(tableId: Int) {
         tableDao.deleteTable(tableId)
     }
 
-    /**
-     * 将实体类转换为领域模型
-     */
+    /** 将实体类转换为领域模型 */
     private fun TableEntity.toDomain(): Table {
         return Table(
             id = id,
+            userId = userId,
             tableName = tableName,
             background = background,
             startDate = startDate,
@@ -76,16 +60,15 @@ class TableRepositoryImpl @Inject constructor(
         )
     }
 
-    /**
-     * 将领域模型转换为实体类
-     */
+    /** 将领域模型转换为实体类 */
     private fun Table.toEntity(): TableEntity {
         return TableEntity(
             id = id,
+            userId = userId,
             tableName = tableName,
             background = background,
             startDate = startDate,
             totalWeeks = totalWeeks
         )
     }
-} 
+}

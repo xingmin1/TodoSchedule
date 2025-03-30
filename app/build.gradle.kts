@@ -53,6 +53,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.8"
@@ -69,6 +70,9 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+
+    // SplashScreen API
+    implementation(libs.androidx.core.splashscreen)
 
     // Compose UI
     implementation(platform(libs.androidx.compose.bom))
@@ -103,7 +107,7 @@ dependencies {
 
     // 日期时间处理
     implementation(libs.kotlinx.datetime)
-    
+
     // Kotlin 序列化
     implementation(libs.kotlinx.serialization.json)
 

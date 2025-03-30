@@ -69,7 +69,7 @@ fun HomeScreen(
         7 -> "周日"
         else -> ""
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -89,14 +89,14 @@ fun HomeScreen(
                     icon = { Icon(Icons.Default.DateRange, contentDescription = "首页") },
                     label = { Text("首页") }
                 )
-                
+
                 NavigationBarItem(
                     selected = false,
                     onClick = { navigationState.navigateToSchedule() },
                     icon = { Icon(Icons.Default.Schedule, contentDescription = "课表") },
                     label = { Text("课表") }
                 )
-                
+
                 NavigationBarItem(
                     selected = false,
                     onClick = { navigationState.navigateToTodo() },
@@ -131,14 +131,14 @@ fun HomeScreen(
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                    
+
                     Text(
                         text = dayOfWeek,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                    
+
                     // 今日课程概览按钮
                     Button(
                         onClick = { navigationState.navigateToSchedule() },
@@ -150,14 +150,14 @@ fun HomeScreen(
                     }
                 }
             }
-            
+
             // 功能区域标题
             Text(
                 text = "功能",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
-            
+
             // 功能卡片
             Row(
                 modifier = Modifier
@@ -172,9 +172,9 @@ fun HomeScreen(
                     onClick = { navigationState.navigateToSchedule() },
                     modifier = Modifier.weight(1f)
                 )
-                
+
                 Spacer(modifier = Modifier.width(16.dp))
-                
+
                 FeatureCard(
                     icon = Icons.Default.Today,
                     title = "待办",
@@ -183,7 +183,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
-            
+
             // 待办事项标题
             Row(
                 modifier = Modifier
@@ -196,7 +196,7 @@ fun HomeScreen(
                     text = "今日待办",
                     style = MaterialTheme.typography.titleMedium
                 )
-                
+
                 Button(
                     onClick = { navigationState.navigateToTodo() },
                     modifier = Modifier.padding(end = 8.dp)
@@ -204,7 +204,7 @@ fun HomeScreen(
                     Text("查看全部")
                 }
             }
-            
+
             // 待办事项列表
             if (viewModel.todoItems.isEmpty()) {
                 Box(
@@ -276,9 +276,9 @@ fun FeatureCard(
                     modifier = Modifier.size(24.dp)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
@@ -325,9 +325,9 @@ fun TodoListItem(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -335,7 +335,7 @@ fun TodoListItem(
                     text = todo.title,
                     style = MaterialTheme.typography.titleMedium
                 )
-                
+
                 if (todo.description.isNotEmpty()) {
                     Text(
                         text = todo.description,

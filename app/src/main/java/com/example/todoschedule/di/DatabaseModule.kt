@@ -2,10 +2,13 @@ package com.example.todoschedule.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.AppDatabase
 import com.example.todoschedule.data.database.dao.CourseDao
+import com.example.todoschedule.data.database.dao.GlobalSettingDao
 import com.example.todoschedule.data.database.dao.TableDao
 import com.example.todoschedule.data.database.dao.TimeConfigDao
+import com.example.todoschedule.data.database.dao.UserDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -29,8 +32,28 @@ object DatabaseModule {
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
-            "todo_schedule.db"
-        ).build()
+            AppConstants.Database.DB_NAME,
+        )
+            .fallbackToDestructiveMigration() // 使用破坏性迁移，数据库版本变更时会删除旧数据
+            .build()
+    }
+
+    /**
+     * 提供用户DAO
+     */
+    @Provides
+    @Singleton
+    fun provideUserDao(database: AppDatabase): UserDao {
+        return database.userDao()
+    }
+
+    /**
+     * 提供全局设置DAO
+     */
+    @Provides
+    @Singleton
+    fun provideGlobalSettingDao(database: AppDatabase): GlobalSettingDao {
+        return database.globalSettingDao()
     }
 
     /**

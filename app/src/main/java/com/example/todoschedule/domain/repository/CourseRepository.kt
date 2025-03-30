@@ -12,22 +12,22 @@ interface CourseRepository {
      * 获取所有课程
      */
     fun getAllCourses(): Flow<List<Course>>
-    
+
     /**
      * 根据ID获取课程
      */
     suspend fun getCourseById(id: Int): Course?
-    
+
     /**
      * 添加课程，返回课程ID
      */
     suspend fun addCourse(course: Course, tableId: Int): Long
-    
+
     /**
      * 更新课程
      */
     suspend fun updateCourse(course: Course, tableId: Int)
-    
+
     /**
      * 删除课程
      */

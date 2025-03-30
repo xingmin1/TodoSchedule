@@ -15,15 +15,15 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class TodoViewModel @Inject constructor() : ViewModel() {
-    
+
     // UI状态
     private val _uiState = MutableStateFlow<TodoUiState>(TodoUiState.Loading)
     val uiState: StateFlow<TodoUiState> = _uiState.asStateFlow()
-    
+
     // 选中日期
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
-    
+
     // 假数据
     private val mockTodos = listOf(
         TodoUiModel(
@@ -48,11 +48,11 @@ class TodoViewModel @Inject constructor() : ViewModel() {
             dueDate = LocalDate.now().plusDays(2)
         )
     )
-    
+
     init {
         loadTodos()
     }
-    
+
     /**
      * 加载待办事项
      */
@@ -60,12 +60,12 @@ class TodoViewModel @Inject constructor() : ViewModel() {
         viewModelScope.launch {
             // 模拟加载延迟
             kotlinx.coroutines.delay(500)
-            
+
             // 过滤选中日期的待办事项
             val todosForSelectedDate = mockTodos.filter { todo ->
                 todo.dueDate?.isEqual(_selectedDate.value) ?: false
             }
-            
+
             _uiState.value = if (todosForSelectedDate.isEmpty()) {
                 TodoUiState.Empty
             } else {
@@ -73,7 +73,7 @@ class TodoViewModel @Inject constructor() : ViewModel() {
             }
         }
     }
-    
+
     /**
      * 选择日期
      */
@@ -81,7 +81,7 @@ class TodoViewModel @Inject constructor() : ViewModel() {
         _selectedDate.value = date
         loadTodos()
     }
-    
+
     /**
      * 切换待办事项完成状态
      */
@@ -94,7 +94,7 @@ class TodoViewModel @Inject constructor() : ViewModel() {
                     todo
                 }
             } ?: return@launch
-            
+
             if (updatedTodos.isEmpty()) {
                 _uiState.value = TodoUiState.Empty
             } else {
@@ -102,16 +102,16 @@ class TodoViewModel @Inject constructor() : ViewModel() {
             }
         }
     }
-    
+
     /**
      * 删除待办事项
      */
     fun deleteTodo(todoId: Int) {
         viewModelScope.launch {
-            val updatedTodos = (uiState.value as? TodoUiState.Success)?.todos?.filter { 
-                it.id != todoId 
+            val updatedTodos = (uiState.value as? TodoUiState.Success)?.todos?.filter {
+                it.id != todoId
             } ?: return@launch
-            
+
             if (updatedTodos.isEmpty()) {
                 _uiState.value = TodoUiState.Empty
             } else {

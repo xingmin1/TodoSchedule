@@ -1,71 +1,92 @@
 package com.example.todoschedule.domain.utils
 
-import java.time.DayOfWeek
-import java.time.LocalDate
-import java.time.temporal.TemporalAdjusters
-import java.time.temporal.WeekFields
-import java.util.Locale
+import kotlinx.datetime.Clock
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * 日历工具类
  */
 object CalendarUtils {
-    
-    // 学期开始日期 (可以从设置中读取)
-    private val TERM_START_DATE: LocalDate = LocalDate.of(2023, 9, 1)
-    
+    // 默认的学期开始日期（仅在无法获取课表开始日期时使用）
+    private val DEFAULT_TERM_START_DATE: LocalDate = LocalDate(2025, 2, 17)
+
     // 最大周数
     const val MAX_WEEKS = 25
-    
+
     /**
      * 获取当前周次
+     *
+     * @param termStartDate 学期开始日期，若为null则使用默认日期
+     * @return 当前周次
      */
-    fun getCurrentWeek(): Int {
-        val today = LocalDate.now()
-        
+    fun getCurrentWeek(termStartDate: LocalDate? = null): Int {
+        val startDate = termStartDate ?: DEFAULT_TERM_START_DATE
+        val today = Clock.System.now()
+            .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date
+
         // 计算今天是学期开始后的第几天
-        val daysFromStart = today.toEpochDay() - TERM_START_DATE.toEpochDay()
+        val daysFromStart = today.toEpochDays() - startDate.toEpochDays()
         if (daysFromStart < 0) return 1
-        
+
         // 计算周数 (从1开始)
-        return (daysFromStart / 7).toInt() + 1
+        return (daysFromStart / 7) + 1
     }
-    
+
     /**
      * 获取指定周的日期列表
+     *
+     * @param week 周次
+     * @param termStartDate 学期开始日期，若为null则使用默认日期
+     * @return 该周的日期列表（周一到周日）
      */
-    fun getWeekDates(week: Int): List<LocalDate> {
+    fun getWeekDates(week: Int, termStartDate: LocalDate? = null): List<LocalDate> {
+        val startDate = termStartDate ?: DEFAULT_TERM_START_DATE
+
         // 计算该周的开始日期
-        val weekStartDate = TERM_START_DATE.plusDays((week - 1) * 7L)
-        
+        val weekStartDate = startDate.plus((week - 1) * 7, DateTimeUnit.DAY)
+
         // 确保以周一为一周的开始
-        val mondayOfWeek = weekStartDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        
+        val mondayOfWeek = getWeekStartDate(weekStartDate)
+
         // 生成一周的日期
-        return (0..6).map { mondayOfWeek.plusDays(it.toLong()) }
+        return List(7) { i -> mondayOfWeek.plus(i, DateTimeUnit.DAY) }
     }
-    
+
+    /**
+     * 获取一周的开始日期（周一）
+     */
+    private fun getWeekStartDate(date: LocalDate): LocalDate {
+        val dayOfWeek = date.dayOfWeek.isoDayNumber
+        // 如果不是周一，回退到本周的周一
+        return if (dayOfWeek == 1) date else date.minus(DatePeriod(days = dayOfWeek - 1))
+    }
+
     /**
      * 获取当前周的开始日期 (周一)
      */
     fun getCurrentWeekStart(): LocalDate {
-        val today = LocalDate.now()
-        val weekFields = WeekFields.of(Locale.getDefault())
-        return today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val today = Clock.System.now()
+            .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date
+        return getWeekStartDate(today)
     }
-    
+
     /**
      * 获取日期对应的星期几 (1-7, 周一为1)
      */
     fun getDayOfWeek(date: LocalDate): Int {
-        val day = date.dayOfWeek.value
-        return day
+        return date.dayOfWeek.isoDayNumber
     }
-    
+
     /**
      * 格式化日期为月/日格式
      */
     fun formatDate(date: LocalDate): String {
-        return "${date.monthValue}/${date.dayOfMonth}"
+        return "${date.monthNumber}/${date.dayOfMonth}"
     }
 } 

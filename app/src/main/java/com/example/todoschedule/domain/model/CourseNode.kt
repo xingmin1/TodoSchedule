@@ -1,5 +1,7 @@
 package com.example.todoschedule.domain.model
 
+import com.example.todoschedule.core.constants.AppConstants
+
 /**
  * 课程节点领域模型
  *
@@ -22,15 +24,14 @@ data class CourseNode(
     val room: String? = null,
     val teacher: String? = null
 ) {
-    /**
-     * 是否在当前周显示
-     */
+    /** 是否在当前周显示 */
     fun isInWeek(week: Int): Boolean {
-        return week in startWeek..endWeek && when (weekType) {
-            0 -> true
-            1 -> week % 2 == 1
-            2 -> week % 2 == 0
-            else -> false
-        }
+        return week in startWeek..endWeek &&
+                when (weekType) {
+                    AppConstants.WeekTypes.ALL -> true
+                    AppConstants.WeekTypes.ODD -> week % 2 == 1
+                    AppConstants.WeekTypes.EVEN -> week % 2 == 0
+                    else -> false
+                }
     }
-} 
+}

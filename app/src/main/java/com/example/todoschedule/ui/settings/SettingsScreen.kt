@@ -1,7 +1,10 @@
 package com.example.todoschedule.ui.settings
 
+import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,13 +20,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,16 +38,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.todoschedule.BuildConfig
 
 /**
  * 设置页面
@@ -54,7 +69,7 @@ fun SettingsScreen(
     val darkTheme by viewModel.darkTheme.collectAsState()
     val materialYou by viewModel.materialYou.collectAsState()
     val firstDayOfWeek by viewModel.firstDayOfWeek.collectAsState()
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -85,7 +100,7 @@ fun SettingsScreen(
                     checked = darkTheme,
                     onCheckedChange = viewModel::updateDarkTheme
                 )
-                
+
                 SettingsSwitchItem(
                     icon = Icons.Default.Palette,
                     title = "Material You",
@@ -94,7 +109,7 @@ fun SettingsScreen(
                     onCheckedChange = viewModel::updateMaterialYou
                 )
             }
-            
+
             SettingsCategory(title = "日历") {
                 SettingsClickableItem(
                     icon = Icons.Default.DateRange,
@@ -102,14 +117,14 @@ fun SettingsScreen(
                     subtitle = if (firstDayOfWeek == 1) "周一" else "周日",
                     onClick = { viewModel.toggleFirstDayOfWeek() }
                 )
-                
+
                 SettingsClickableItem(
                     icon = Icons.Default.DateRange,
                     title = "开学日期",
                     subtitle = "设置学期开始时间",
                     onClick = { /* 显示日期选择器 */ }
                 )
-                
+
                 SettingsClickableItem(
                     icon = Icons.Default.Schedule,
                     title = "节次设置",
@@ -117,7 +132,7 @@ fun SettingsScreen(
                     onClick = { /* 导航至时间设置页面 */ }
                 )
             }
-            
+
             SettingsCategory(title = "通知") {
                 SettingsSwitchItem(
                     icon = Icons.Default.Notifications,
@@ -127,7 +142,7 @@ fun SettingsScreen(
                     onCheckedChange = { /* 更新通知设置 */ }
                 )
             }
-            
+
             SettingsCategory(title = "关于") {
                 SettingsClickableItem(
                     icon = Icons.Default.Info,
@@ -135,6 +150,11 @@ fun SettingsScreen(
                     subtitle = "版本 1.0.0",
                     onClick = { /* 显示关于对话框 */ }
                 )
+            }
+
+            // 开发者选项（仅在开发环境中显示）
+            if (BuildConfig.DEBUG) {
+                DeveloperOptions(viewModel)
             }
         }
     }
@@ -157,7 +177,7 @@ fun SettingsCategory(
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-        
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -194,9 +214,9 @@ fun SettingsClickableItem(
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary
         )
-        
+
         Spacer(modifier = Modifier.width(16.dp))
-        
+
         Column(
             modifier = Modifier.weight(1f)
         ) {
@@ -204,10 +224,10 @@ fun SettingsClickableItem(
                 text = title,
                 style = MaterialTheme.typography.titleMedium
             )
-            
+
             if (subtitle != null) {
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
@@ -215,7 +235,7 @@ fun SettingsClickableItem(
                 )
             }
         }
-        
+
         Icon(
             imageVector = Icons.Default.Settings,
             contentDescription = null,
@@ -256,18 +276,18 @@ fun SettingsSwitchItem(
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary
             )
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium
                 )
-                
+
                 if (subtitle != null) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    
+
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodyMedium,
@@ -276,7 +296,7 @@ fun SettingsSwitchItem(
                 }
             }
         }
-        
+
         Switch(
             checked = checked,
             onCheckedChange = { onCheckedChange(it) }
@@ -286,4 +306,106 @@ fun SettingsSwitchItem(
     HorizontalDivider(
         modifier = Modifier.padding(start = 56.dp),
     )
+}
+
+/**
+ * 清空数据库确认对话框
+ */
+@Composable
+fun ClearDatabaseConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("警告") },
+        text = { Text("确定要清空所有数据吗？此操作不可撤销。") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("确定", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+/**
+ * 加载对话框
+ */
+@Composable
+fun LoadingDialog() {
+    Dialog(onDismissRequest = {}) {
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .background(
+                    MaterialTheme.colorScheme.surface,
+                    RoundedCornerShape(8.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    }
+}
+
+/**
+ * 开发者选项部分
+ */
+@Composable
+fun DeveloperOptions(viewModel: SettingsViewModel) {
+    val databaseOperation by viewModel.databaseOperation.collectAsState()
+    var showConfirmDialog by remember { mutableStateOf(false) }
+
+    // 处理数据库操作状态
+    when (val currentState = databaseOperation) {
+        is DatabaseOperation.Loading -> {
+            LoadingDialog()
+        }
+
+        is DatabaseOperation.Success -> {
+            val message = currentState.message
+            val context = LocalContext.current
+            LaunchedEffect(message) {
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                viewModel.resetDatabaseOperation()
+            }
+        }
+
+        is DatabaseOperation.Error -> {
+            val message = currentState.message
+            val context = LocalContext.current
+            LaunchedEffect(message) {
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                viewModel.resetDatabaseOperation()
+            }
+        }
+
+        else -> { /* Idle state, do nothing */
+        }
+    }
+
+    // 显示确认对话框
+    if (showConfirmDialog) {
+        ClearDatabaseConfirmDialog(
+            onConfirm = {
+                showConfirmDialog = false
+                viewModel.clearDatabase()
+            },
+            onDismiss = { showConfirmDialog = false }
+        )
+    }
+
+    SettingsCategory(title = "开发者选项") {
+        SettingsClickableItem(
+            icon = Icons.Default.DeleteForever,
+            title = "清空数据库",
+            subtitle = "删除所有数据（仅开发环境可用）",
+            onClick = { showConfirmDialog = true }
+        )
+    }
 } 

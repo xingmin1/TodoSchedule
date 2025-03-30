@@ -46,8 +46,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.core.graphics.toColorInt
+import androidx.hilt.navigation.compose.hiltViewModel
 
 /**
  * 课程详情页面
@@ -64,10 +64,10 @@ fun CourseDetailScreen(
     LaunchedEffect(courseId) {
         viewModel.loadCourse(courseId)
     }
-    
+
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -86,11 +86,11 @@ fun CourseDetailScreen(
                     IconButton(onClick = { onNavigateToEdit(courseId) }) {
                         Icon(Icons.Default.Edit, contentDescription = "编辑课程")
                     }
-                    
+
                     // 删除按钮
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
-                            Icons.Default.Delete, 
+                            Icons.Default.Delete,
                             contentDescription = "删除课程",
                             tint = MaterialTheme.colorScheme.error
                         )
@@ -114,13 +114,13 @@ fun CourseDetailScreen(
                         CircularProgressIndicator()
                     }
                 }
-                
+
                 is CourseDetailUiState.Success -> {
                     // 显示课程详情
                     val course = (uiState as CourseDetailUiState.Success).course
                     CourseDetail(course = course)
                 }
-                
+
                 is CourseDetailUiState.Error -> {
                     // 显示错误信息
                     Box(
@@ -133,7 +133,7 @@ fun CourseDetailScreen(
                         )
                     }
                 }
-                
+
                 is CourseDetailUiState.Deleted -> {
                     // 课程已删除，返回上一页
                     LaunchedEffect(Unit) {
@@ -143,7 +143,7 @@ fun CourseDetailScreen(
             }
         }
     }
-    
+
     // 删除确认对话框
     if (showDeleteDialog) {
         AlertDialog(
@@ -189,7 +189,7 @@ private fun CourseDetail(course: CourseDetailModel) {
         } catch (_: Exception) {
             MaterialTheme.colorScheme.primary
         }
-        
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -208,38 +208,42 @@ private fun CourseDetail(course: CourseDetailModel) {
                     color = if (isColorDark(backgroundColor)) Color.White else Color.Black,
                     fontWeight = FontWeight.Bold
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 if (course.teacher != null) {
                     Text(
                         text = "教师：${course.teacher}",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.8f) else Color.Black.copy(alpha = 0.8f)
+                        color = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.8f) else Color.Black.copy(
+                            alpha = 0.8f
+                        )
                     )
                 }
-                
+
                 if (course.credit != null) {
                     Text(
                         text = "学分：${course.credit}",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.8f) else Color.Black.copy(alpha = 0.8f)
+                        color = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.8f) else Color.Black.copy(
+                            alpha = 0.8f
+                        )
                     )
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // 上课节点列表
         Text(
             text = "上课时间",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         course.nodes.forEach { node ->
             NodeCard(node = node)
             Spacer(modifier = Modifier.height(8.dp))
@@ -274,14 +278,14 @@ private fun NodeCard(node: CourseNodeDetailModel) {
                 7 -> "周日"
                 else -> "未知"
             }
-            
+
             val weekTypeText = when (node.weekType) {
                 0 -> "全部周"
                 1 -> "单周"
                 2 -> "双周"
                 else -> "未知"
             }
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -300,16 +304,16 @@ private fun NodeCard(node: CourseNodeDetailModel) {
                         fontWeight = FontWeight.Bold
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                
+
                 Column {
                     Text(
                         text = "$dayText 第${node.startNode}-${node.startNode + node.step - 1}节",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    
+
                     Text(
                         text = "第${node.startWeek}-${node.endWeek}周 ($weekTypeText)",
                         style = MaterialTheme.typography.bodyMedium,
@@ -317,12 +321,12 @@ private fun NodeCard(node: CourseNodeDetailModel) {
                     )
                 }
             }
-            
+
             if (node.room != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -331,7 +335,7 @@ private fun NodeCard(node: CourseNodeDetailModel) {
                         text = "教室：${node.room}",
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    
+
                     if (node.teacher != null) {
                         Text(
                             text = "教师：${node.teacher}",

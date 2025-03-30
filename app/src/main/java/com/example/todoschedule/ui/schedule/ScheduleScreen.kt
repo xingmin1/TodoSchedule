@@ -52,16 +52,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
 import com.example.todoschedule.ui.navigation.NavigationState
 import com.example.todoschedule.ui.schedule.model.ScheduleUiState
-import java.time.LocalDate
-import java.time.format.TextStyle
-import java.util.Locale
-import androidx.core.graphics.toColorInt
+import kotlinx.datetime.Clock
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * 课程表屏幕
@@ -78,7 +82,7 @@ fun ScheduleScreen(
     val currentWeek by viewModel.currentWeek.collectAsState()
     val weekDates by viewModel.weekDates.collectAsState()
     val weekCourses by viewModel.weekCourses.collectAsState()
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -92,17 +96,17 @@ fun ScheduleScreen(
                     IconButton(onClick = { viewModel.previousWeek() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "上一周")
                     }
-                    
+
                     // 回到当前周
                     IconButton(onClick = { viewModel.goToCurrentWeek() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "回到本周")
                     }
-                    
+
                     // 下一周
                     IconButton(onClick = { viewModel.nextWeek() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "下一周")
                     }
-                    
+
                     // 设置
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "设置")
@@ -112,7 +116,7 @@ fun ScheduleScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { navigationState.navigateToAddCourse() },
+                onClick = { navigationState.navigateToAddCourse(viewModel.defaultTableId.value) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
@@ -138,6 +142,7 @@ fun ScheduleScreen(
                         )
                     }
                 }
+
                 is ScheduleUiState.Error -> ErrorScreen((uiState as ScheduleUiState.Error).message)
                 ScheduleUiState.Empty -> TODO()
             }
@@ -244,7 +249,7 @@ fun ScheduleContent(
     ) {
         // 周日期头部
         WeekHeader(weekDates = weekDates)
-        
+
         // 课程表格
         Row(
             modifier = Modifier
@@ -253,7 +258,7 @@ fun ScheduleContent(
         ) {
             // 时间列
             TimeColumn()
-            
+
             // 课程网格
             CourseGrid(
                 courses = weekCourses,
@@ -268,8 +273,8 @@ fun ScheduleContent(
  */
 @Composable
 fun WeekHeader(weekDates: List<LocalDate>) {
-    val today = LocalDate.now()
-    
+    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
@@ -283,12 +288,21 @@ fun WeekHeader(weekDates: List<LocalDate>) {
                     .padding(horizontal = 2.dp)
             )
         }
-        
+
         // 日期项
         items(weekDates) { date ->
             val isToday = date == today
-            val dayOfWeek = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.CHINA)
-            
+            // 使用 DayOfWeek 枚举值获取星期几
+            val dayOfWeekName = when (date.dayOfWeek) {
+                DayOfWeek.MONDAY -> "周一"
+                DayOfWeek.TUESDAY -> "周二"
+                DayOfWeek.WEDNESDAY -> "周三"
+                DayOfWeek.THURSDAY -> "周四"
+                DayOfWeek.FRIDAY -> "周五"
+                DayOfWeek.SATURDAY -> "周六"
+                DayOfWeek.SUNDAY -> "周日"
+            }
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
@@ -296,12 +310,12 @@ fun WeekHeader(weekDates: List<LocalDate>) {
             ) {
                 // 星期
                 Text(
-                    text = dayOfWeek,
+                    text = dayOfWeekName.substring(0, 2),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
                     color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 // 日期
                 Box(
                     contentAlignment = Alignment.Center,
@@ -331,7 +345,7 @@ fun TimeColumn() {
         "13:00", "14:00", "15:00", "16:00", "17:00",
         "18:00", "19:00", "20:00"
     )
-    
+
     Column(
         modifier = Modifier
             .width(30.dp)
@@ -378,18 +392,18 @@ fun CourseGrid(
                         .filter { it.day == day }
                         .map { node -> Pair(course, node) }
                 }
-                
+
                 // 用于跟踪已渲染的时间槽
                 val renderedSlots = mutableSetOf<Int>()
-                
+
                 // 遍历每个时间槽 (1-12)
                 for (slot in 1..12) {
                     // 检查是否已经渲染过这个时间槽
                     if (slot in renderedSlots) continue
-                    
+
                     // 查找在这个时间槽开始的课程
                     val courseAtSlot = nodesToday.find { (_, node) -> node.startNode == slot }
-                    
+
                     if (courseAtSlot != null) {
                         // 有课程，渲染课程卡片
                         val (course, node) = courseAtSlot
@@ -398,7 +412,7 @@ fun CourseGrid(
                             node = node,
                             onClick = { onCourseClick(course.id) }
                         )
-                        
+
                         // 标记课程占用的所有时间槽为已渲染
                         for (i in node.startNode until node.startNode + node.step) {
                             renderedSlots.add(i)
@@ -445,13 +459,13 @@ fun CourseCard(
     } catch (_: Exception) {
         MaterialTheme.colorScheme.primary
     }
-    
+
     val textColor = if (isColorDark(cardColor)) {
         Color.White
     } else {
         Color.Black
     }
-    
+
     Card(
         modifier = Modifier
             .height(60.dp * node.step)
@@ -477,7 +491,7 @@ fun CourseCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            
+
             // 如果有足够的空间，显示教室
             if (node.step >= 2 && !node.room.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(2.dp))
@@ -516,98 +530,220 @@ fun PreviewScheduleScreen() {
 @Composable
 fun PreviewScheduleContent() {
     // 示例数据
-    val monday = LocalDate.of(2025, 3, 31)
-    val weekDates = listOf(
-        monday,
-        monday.plusDays(1),
-        monday.plusDays(2),
-        monday.plusDays(3),
-        monday.plusDays(4),
-        monday.plusDays(5),
-        monday.plusDays(6)
-    )
+    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    val weekDates = List(7) { index -> today.plus(DatePeriod(days = index)) }
+
     val weekCourses = listOf<Course>(
         Course(
             id = 1,
             courseName = "数学",
-            nodes = listOf(CourseNode(
-                day = 1, startNode = 1, step = 2, room = "教室A", startWeek = 1, endWeek = 16,
-                weekType = 1, teacher = "张老师"
-            ),
-            CourseNode(
-                day = 4, startNode = 1, step = 2, room = "教室A", startWeek = 1, endWeek = 16,
-                weekType = 1, teacher = "张老师"
-            )
+            nodes = listOf(
+                CourseNode(
+                    day = 1, startNode = 1, step = 2, room = "教室A", startWeek = 1, endWeek = 16,
+                    weekType = 1, teacher = "张老师"
+                ),
+                CourseNode(
+                    day = 4, startNode = 1, step = 2, room = "教室A", startWeek = 1, endWeek = 16,
+                    weekType = 1, teacher = "张老师"
+                )
             ),
             color = "#FF5733"
         ),
         Course(
             id = 2,
             courseName = "英语",
-            nodes = listOf(CourseNode(day = 1, startNode = 3, step = 2, room = "教室B", startWeek = 1, endWeek = 16, weekType = 1, teacher = "李老师")),
+            nodes = listOf(
+                CourseNode(
+                    day = 1,
+                    startNode = 3,
+                    step = 2,
+                    room = "教室B",
+                    startWeek = 1,
+                    endWeek = 16,
+                    weekType = 1,
+                    teacher = "李老师"
+                )
+            ),
             color = "#33FF57"
         ),
         Course(
             id = 3,
             courseName = "物理",
-            nodes = listOf(CourseNode(day = 1, startNode = 5, step = 2, room = "教室C", startWeek = 1, endWeek = 16, weekType = 1, teacher = "王老师")),
+            nodes = listOf(
+                CourseNode(
+                    day = 1,
+                    startNode = 5,
+                    step = 2,
+                    room = "教室C",
+                    startWeek = 1,
+                    endWeek = 16,
+                    weekType = 1,
+                    teacher = "王老师"
+                )
+            ),
             color = "#3357FF"
         ),
         Course(
             id = 4,
             courseName = "化学",
-            nodes = listOf(CourseNode(day = 1, startNode = 7, step = 2, room = "教室D", startWeek = 1, endWeek = 16, weekType = 1, teacher = "赵老师")),
+            nodes = listOf(
+                CourseNode(
+                    day = 1,
+                    startNode = 7,
+                    step = 2,
+                    room = "教室D",
+                    startWeek = 1,
+                    endWeek = 16,
+                    weekType = 1,
+                    teacher = "赵老师"
+                )
+            ),
             color = "#FF33A1"
         ),
         Course(
             id = 5,
             courseName = "生物",
-            nodes = listOf(CourseNode(day = 1, startNode = 9, step = 2, room = "教室E", startWeek = 1, endWeek = 16, weekType = 1, teacher = "孙老师")),
+            nodes = listOf(
+                CourseNode(
+                    day = 1,
+                    startNode = 9,
+                    step = 2,
+                    room = "教室E",
+                    startWeek = 1,
+                    endWeek = 16,
+                    weekType = 1,
+                    teacher = "孙老师"
+                )
+            ),
             color = "#A133FF"
         ),
         Course(
             id = 6,
             courseName = "地理",
             nodes = listOf(
-                CourseNode(day = 1, startNode = 11, step = 2, room = "教室F", startWeek = 1, endWeek = 16, weekType = 1, teacher = "周老师"),
-                CourseNode(day = 5, startNode = 11, step = 2, room = "教室F", startWeek = 1, endWeek = 16, weekType = 1, teacher = "周老师")
+                CourseNode(
+                    day = 1,
+                    startNode = 11,
+                    step = 2,
+                    room = "教室F",
+                    startWeek = 1,
+                    endWeek = 16,
+                    weekType = 1,
+                    teacher = "周老师"
+                ),
+                CourseNode(
+                    day = 5,
+                    startNode = 11,
+                    step = 2,
+                    room = "教室F",
+                    startWeek = 1,
+                    endWeek = 16,
+                    weekType = 1,
+                    teacher = "周老师"
+                )
             ),
             color = "#FFA133"
         ),
         Course(
             id = 7,
             courseName = "历史",
-            nodes = listOf(CourseNode(day = 2, startNode = 1, step = 2, room = "教室G", startWeek = 1, endWeek = 16, weekType = 1, teacher = "吴老师")),
+            nodes = listOf(
+                CourseNode(
+                    day = 2,
+                    startNode = 1,
+                    step = 2,
+                    room = "教室G",
+                    startWeek = 1,
+                    endWeek = 16,
+                    weekType = 1,
+                    teacher = "吴老师"
+                )
+            ),
             color = "#33A1FF"
         ),
         Course(
             id = 8,
             courseName = "政治",
-            nodes = listOf(CourseNode(day = 2, startNode = 3, step = 2, room = "教室H", startWeek = 1, endWeek = 16, weekType = 1, teacher = "钱老师")),
+            nodes = listOf(
+                CourseNode(
+                    day = 2,
+                    startNode = 3,
+                    step = 2,
+                    room = "教室H",
+                    startWeek = 1,
+                    endWeek = 16,
+                    weekType = 1,
+                    teacher = "钱老师"
+                )
+            ),
             color = "#A1FF33"
         ),
         Course(
             id = 9,
             courseName = "音乐",
-            nodes = listOf(CourseNode(day = 2, startNode = 5, step = 2, room = "教室I", startWeek = 1, endWeek = 16, weekType = 1, teacher = "孙老师")),
+            nodes = listOf(
+                CourseNode(
+                    day = 2,
+                    startNode = 5,
+                    step = 2,
+                    room = "教室I",
+                    startWeek = 1,
+                    endWeek = 16,
+                    weekType = 1,
+                    teacher = "孙老师"
+                )
+            ),
             color = "#FF33A1"
         ),
         Course(
             id = 10,
             courseName = "美术",
-            nodes = listOf(CourseNode(day = 2, startNode = 7, step = 2, room = "教室J", startWeek = 1, endWeek = 16, weekType = 1, teacher = "周老师")),
+            nodes = listOf(
+                CourseNode(
+                    day = 2,
+                    startNode = 7,
+                    step = 2,
+                    room = "教室J",
+                    startWeek = 1,
+                    endWeek = 16,
+                    weekType = 1,
+                    teacher = "周老师"
+                )
+            ),
             color = "#33A1FF"
         ),
         Course(
             id = 11,
             courseName = "信息技术",
-            nodes = listOf(CourseNode(day = 2, startNode = 9, step = 2, room = "教室K", startWeek = 1, endWeek = 16, weekType = 1, teacher = "钱老师")),
+            nodes = listOf(
+                CourseNode(
+                    day = 2,
+                    startNode = 9,
+                    step = 2,
+                    room = "教室K",
+                    startWeek = 1,
+                    endWeek = 16,
+                    weekType = 1,
+                    teacher = "钱老师"
+                )
+            ),
             color = "#A1FF33"
         ),
         Course(
             id = 12,
             courseName = "体育",
-            nodes = listOf(CourseNode(day = 3, startNode = 1, step = 2, room = "教室L", startWeek = 1, endWeek = 16, weekType = 1, teacher = "孙老师")),
+            nodes = listOf(
+                CourseNode(
+                    day = 3,
+                    startNode = 1,
+                    step = 2,
+                    room = "教室L",
+                    startWeek = 1,
+                    endWeek = 16,
+                    weekType = 1,
+                    teacher = "孙老师"
+                )
+            ),
             color = "#33FF57"
         ),
     )

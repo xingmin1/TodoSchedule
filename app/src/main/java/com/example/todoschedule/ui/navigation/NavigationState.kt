@@ -1,6 +1,7 @@
 package com.example.todoschedule.ui.navigation
 
 import androidx.navigation.NavController
+import com.example.todoschedule.core.constants.AppConstants
 
 /**
  * 应用导航状态
@@ -31,46 +32,28 @@ class NavigationState(
      * 导航到课表页面
      */
     fun navigateToSchedule() {
-        navController.navigate(AppRoutes.Schedule.route) {
-            popUpTo(navController.graph.startDestinationId) {
-                saveState = true
-            }
-            launchSingleTop = true
-            restoreState = true
-        }
+        navController.navigate(AppRoutes.Schedule.route)
     }
 
     /**
      * 导航到待办页面
      */
     fun navigateToTodo() {
-        navController.navigate(AppRoutes.Todo.route) {
-            popUpTo(navController.graph.startDestinationId) {
-                saveState = true
-            }
-            launchSingleTop = true
-            restoreState = true
-        }
+        navController.navigate(AppRoutes.Todo.route)
     }
 
     /**
      * 导航到设置页面
      */
     fun navigateToSettings() {
-        navController.navigate(AppRoutes.Settings.route) {
-            popUpTo(navController.graph.startDestinationId) {
-                saveState = true
-            }
-            launchSingleTop = true
-            restoreState = true
-        }
+        navController.navigate(AppRoutes.Settings.route)
     }
 
     /**
      * 导航到添加课程页面
      */
-    fun navigateToAddCourse() {
-        navController.navigate(AppRoutes.AddCourse.createRoute(1)) // 默认使用第一个课表ID
+    fun navigateToAddCourse(tableId: Int = AppConstants.Ids.INVALID_TABLE_ID) {
+        navController.navigate(AppRoutes.AddCourse.createRoute(tableId))
     }
 
     /**

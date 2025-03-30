@@ -4,11 +4,10 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import kotlinx.datetime.LocalDate
 
-/** 课表实体类 */
+/** 全局课表设置实体类 */
 @Entity(
-    tableName = "table",
+    tableName = "global_table_setting",
     foreignKeys =
         [
             ForeignKey(
@@ -19,13 +18,13 @@ import kotlinx.datetime.LocalDate
             )],
     indices = [Index("userId")]
 )
-data class TableEntity(
+data class GlobalTableSettingEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val userId: Int, // 用户ID
-    val tableName: String, // 课表名称
-    val background: String = "", // 背景颜色
-    val listPosition: Int = 0, // 列表中的位置
-    val terms: String = "", // 学期信息
-    val startDate: LocalDate, // 学期开始日期
-    val totalWeeks: Int = 20 // 总周数
+    val defaultTableIds: String, // 默认显示课表ID，使用TypeConverter转换
+    val showWeekend: Boolean = true, // 显示周末
+    val courseNotificationStyle: Int = 0, // 课程通知风格
+    val notifyBeforeMinutes: Int = 15, // 提前提醒分钟数
+    val autoSwitchWeek: Boolean = true, // 自动切换周次
+    val showCourseTime: Boolean = true // 显示课程时间
 )
