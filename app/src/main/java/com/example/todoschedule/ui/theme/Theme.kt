@@ -1,6 +1,7 @@
 package com.example.todoschedule.ui.theme
 
 import android.app.Activity
+import android.graphics.Color
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -10,9 +11,9 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.WindowCompat
 
 // 亮色主题配色方案
@@ -104,8 +105,20 @@ fun TodoScheduleTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+
+            // 1. 设置窗口背景为透明
+            window.setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
+
+            // 2. 使内容延伸到系统栏区域
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+
+            // 3. 设置系统栏图标颜色
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.apply {
+                // 根据主题设置状态栏和导航栏图标颜色
+                isAppearanceLightStatusBars = !darkTheme
+                isAppearanceLightNavigationBars = !darkTheme
+            }
         }
     }
 

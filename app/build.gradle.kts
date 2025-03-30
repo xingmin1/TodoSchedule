@@ -29,15 +29,29 @@ android {
                 arguments += mapOf("room.schemaLocation" to "$projectDir/schemas")
             }
         }
+
+        // 针对中文环境优化
+        androidResources.localeFilters += listOf("zh-rCN", "en")
+    }
+
+    // 禁用图片压缩以加速构建
+    androidResources {
+        // 不对以下格式执行压缩处理
+        noCompress += listOf("png", "jpg", "jpeg", "webp", "gif")
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true // 启用代码压缩
+            isShrinkResources = true // 启用资源压缩
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+
+        debug {
+            isMinifyEnabled = false
         }
     }
     compileOptions {
@@ -48,7 +62,7 @@ android {
         jvmTarget = "1.8"
         freeCompilerArgs = freeCompilerArgs + listOf(
             // "-Xopt-in=kotlin.RequiresOptIn",
-            "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi"
+            "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
         )
     }
     buildFeatures {
