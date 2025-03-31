@@ -12,10 +12,13 @@ import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.ui.course.add.AddCourseScreen
 import com.example.todoschedule.ui.course.detail.CourseDetailScreen
 import com.example.todoschedule.ui.course.edit.EditCourseScreen
+import com.example.todoschedule.ui.course.load.SchoolSelectorScreen
+import com.example.todoschedule.ui.course.load.WebViewScreen
 import com.example.todoschedule.ui.home.HomeScreen
 import com.example.todoschedule.ui.schedule.ScheduleScreen
 import com.example.todoschedule.ui.settings.SettingsScreen
 import com.example.todoschedule.ui.todo.TodoScreen
+import java.net.URLDecoder
 
 /**
  * 应用导航主组件
@@ -103,6 +106,25 @@ fun AppNavigation(
             )
         }
 
-        // 添加更多路由...
+        // 学校选择页面
+        composable(AppRoutes.SchoolSelector.route) {
+            SchoolSelectorScreen(navigationState = navigationState)
+        }
+
+        //WebView页面
+        composable(
+            route = AppRoutes.SchoolWebView.route,
+            arguments = listOf(
+                navArgument("encodedUrl") {
+                    type = NavType.StringType
+                    nullable = false
+                }
+            )
+        ) { backStackEntry ->
+            val encodedUrl = backStackEntry.arguments?.getString("encodedUrl") ?: ""
+            val originalUrl = URLDecoder.decode(encodedUrl, "UTF-8")
+            WebViewScreen(navigationState, originalUrl)
+        }
+
     }
 } 

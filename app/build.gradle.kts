@@ -119,6 +119,12 @@ dependencies {
     implementation(libs.converter.gson)
     implementation(libs.logging.interceptor)
 
+    //拼音库
+    implementation("com.belerweb:pinyin4j:2.5.1")
+
+    //jsoup库
+    implementation("org.jsoup:jsoup:1.14.3")
+
     // 日期时间处理
     implementation(libs.kotlinx.datetime)
 

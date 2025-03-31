@@ -1,6 +1,7 @@
 package com.example.todoschedule.ui.schedule
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
@@ -115,12 +117,30 @@ fun ScheduleScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navigationState.navigateToAddCourse(viewModel.defaultTableId.value) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+            Column(  // 改为垂直排列的列
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "添加课程")
+                // 新增的下载按钮
+                FloatingActionButton(
+                    onClick = { navigationState.navigateSchoolSelectorScreen() },
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                ) {
+                    Icon(
+                        Icons.Default.Download,
+                        contentDescription = "选择学校"
+                    )
+                }
+
+                // 原有的添加课程按钮
+                FloatingActionButton(
+                    onClick = { navigationState.navigateToAddCourse(viewModel.defaultTableId.value) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "添加课程")
+                }
             }
         }
     ) { paddingValues ->
@@ -457,6 +477,7 @@ fun CourseCard(
     val cardColor = try {
         Color(course.color.toColorInt())
     } catch (_: Exception) {
+        Log.e("CourseCard", course.color)
         MaterialTheme.colorScheme.primary
     }
 

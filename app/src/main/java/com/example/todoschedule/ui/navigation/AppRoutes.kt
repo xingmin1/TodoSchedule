@@ -45,4 +45,16 @@ sealed class AppRoutes(val route: String) {
     object EditCourse : AppRoutes("edit_course/{courseId}") {
         fun createRoute(courseId: Int) = "edit_course/$courseId"
     }
+
+    /**
+     * 学校教务系统选择页面
+     */
+    object SchoolSelector : AppRoutes("schoolSelector")
+
+    /**
+     * WebView页面
+     */
+    object SchoolWebView : AppRoutes("webView/{encodedUrl}") {
+        fun gotoWebView(encodedUrl: String) = "webView/$encodedUrl"
+    }
 } 

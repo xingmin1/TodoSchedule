@@ -76,4 +76,19 @@ class NavigationState(
     fun navigateBack() {
         navController.popBackStack()
     }
+
+    /**
+     * 导航到学校选择页面
+     */
+    fun navigateSchoolSelectorScreen() {
+        navController.navigate(AppRoutes.SchoolSelector.route)
+    }
+
+    /**
+     *导航到对应学校的WebView页面
+     */
+    fun navigateWebViewScreen(encodeUrl: String) {
+        navController.navigate(AppRoutes.SchoolWebView.gotoWebView(encodeUrl))
+    }
+
 } 
