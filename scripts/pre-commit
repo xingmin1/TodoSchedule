@@ -1,0 +1,55 @@
+#!/bin/sh
+
+# 检查是否在合适的 Shell 环境 (如 Git Bash)
+if ! command -v cygpath > /dev/null; then
+  echo "Error: pre-commit hook must be run from Git Bash or a similar Unix-like environment on Windows." >&2
+  echo "       Please commit using Git Bash or configure Android Studio to use Git Bash for terminal operations." >&2
+  exit 1
+fi
+
+# 获取暂存区的所有文件
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=d | grep -E '\.(kt|java|xml)$')
+
+if [ -z "$STAGED_FILES" ]; then
+    echo "No relevant files staged for commit. Skipping format check."
+    exit 0
+fi
+
+echo "Running pre-commit checks on staged files..."
+
+# 运行 ktlint 检查
+echo "Checking code format with ktlintCheck..."
+./gradlew ktlintCheck --daemon --quiet
+KTLINT_CHECK_EXIT_CODE=$?
+
+if [ $KTLINT_CHECK_EXIT_CODE -ne 0 ]; then
+    echo "-----------------------------------------------------" >&2
+    echo "ERROR: Code format check failed (ktlintCheck)." >&2
+    echo "       Run './gradlew ktlintFormat' to fix issues." >&2
+    echo "-----------------------------------------------------" >&2
+    exit 1
+else
+    echo "ktlintCheck passed."
+fi
+
+# 运行 ktlint 格式化 (确保一致性，即使检查通过)
+echo "Formatting code with ktlintFormat..."
+./gradlew ktlintFormat --daemon --quiet
+KTLINT_FORMAT_EXIT_CODE=$?
+
+if [ $KTLINT_FORMAT_EXIT_CODE -ne 0 ]; then
+    echo "-----------------------------------------------------" >&2
+    echo "ERROR: Code formatting failed (ktlintFormat)." >&2
+    echo "       Please check Gradle output for details." >&2
+    echo "-----------------------------------------------------" >&2
+    exit 1
+else
+    echo "ktlintFormat completed."
+fi
+
+# 将可能被格式化修改的文件重新添加到暂存区
+echo "Re-staging formatted files..."
+git add $STAGED_FILES
+
+echo "Pre-commit checks passed."
+exit 0 
