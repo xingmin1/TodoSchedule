@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.DatabaseInitializer
+import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
 import com.example.todoschedule.domain.repository.CourseRepository
 import com.example.todoschedule.domain.repository.GlobalSettingRepository
@@ -20,6 +21,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -65,33 +68,40 @@ constructor(
     val tableStartDate: StateFlow<LocalDate?> = _tableStartDate
 
     // 当前周的课程列表
-    val weekCourses = combine(
-        _currentWeek,
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val weekCourses: StateFlow<List<Course>> = combine(
         _defaultTableId,
         _dataLoaded
-    ) { week, tableId, dataLoaded ->
-        if (!dataLoaded) {
-            Log.d("ScheduleViewModel", "数据尚未加载，等待...")
-            return@combine emptyList()
-        }
-
-        Log.d("ScheduleViewModel", "week: $week, tableId: $tableId")
-        if (tableId > 0) {
-            courseRepository
-                .getCoursesByTableId(tableId)
-                .first()
-                .apply {
-                    Log.d("ScheduleViewModel", "课程列表: $this")
-                }
-                .map { course ->
-                    course.copy(
-                        nodes = course.nodes.filter { node -> node.isInWeek(week) }
-                    )
-                }
-                .filter { it.nodes.isNotEmpty() }
+    ) { tableId, isDataLoaded ->
+        // 创建一个 Pair，包含 tableId 和加载状态，方便后续处理
+        tableId to isDataLoaded
+    }.flatMapLatest { (tableId, isDataLoaded) ->
+        // 检查 tableId 是否有效以及数据是否已加载
+        if (tableId <= 0 || !isDataLoaded) {
+            Log.d("ScheduleViewModel", "flatMapLatest - 无效 tableId 或数据未加载")
+            // 返回一个持续发出空列表的 Flow
+            flowOf(emptyList<Course>())
         } else {
-            Log.w("ScheduleViewModel", "使用无效的课表ID: $tableId")
-            emptyList()
+            Log.d("ScheduleViewModel", "flatMapLatest - 有效 tableId: $tableId，数据已加载")
+            // tableId 有效且数据已加载，现在结合 currentWeek 和课程数据流
+            combine(
+                _currentWeek,
+                courseRepository.getCoursesByTableId(tableId) // 直接观察课程数据流
+            ) { week, courses ->
+                Log.d(
+                    "ScheduleViewModel",
+                    "Inner combine - week: $week, 原始课程数: ${courses.size}"
+                )
+                // 在这里进行按周过滤
+                courses
+                    .map {
+                        it.copy(
+                            nodes = it.nodes.filter { node -> node.isInWeek(week) }
+                        )
+                    }
+                    .filter { it.nodes.isNotEmpty() }
+                    .also { Log.d("ScheduleViewModel", "Inner combine - 过滤后课程数: ${it.size}") }
+            }
         }
     }.stateIn(
         scope = viewModelScope,
@@ -131,7 +141,7 @@ constructor(
                     if (tableId > 0) {
                         _defaultTableId.value = tableId
                         Log.d("ScheduleViewModel", "已获取默认课表ID: $tableId")
-                        
+
                         // 获取课表信息
                         val table = tableRepository.getTableById(tableId)
                         if (table != null) {
