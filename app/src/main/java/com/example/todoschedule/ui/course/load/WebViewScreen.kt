@@ -37,43 +37,52 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.mykotlinapplication.utils.injectjs.injectHeadRepairScript
-import main.java.parser.supwisdom.SupwisdomParser
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.draw.scale
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.todoschedule.domain.repository.GlobalSettingRepository
-import com.example.todoschedule.domain.repository.UserRepository
+import com.example.mykotlinapplication.utils.injectjs.injectHeadRepairScript
 import com.example.todoschedule.ui.course.add.AddCourseViewModel
 import com.example.todoschedule.ui.course.add.CourseNodeUiState
 import com.example.todoschedule.ui.navigation.NavigationState
 import com.example.todoschedule.ui.schedule.ScheduleViewModel
 import com.example.todoschedule.utils.courseadapter.bean.ParserResult
-import com.google.gson.Gson
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.first
-import main.java.parser.ZZUParser
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.launch
+import main.java.parser.ZZUParser
 
 @Composable
-fun WebViewScreen(navigationState: NavigationState,
-                  url: String,
-                  viewModel: AddCourseViewModel = hiltViewModel(),
-                  hViewModel: ScheduleViewModel = hiltViewModel()
+fun WebViewScreen(
+    navigationState: NavigationState,
+    url: String,
+    viewModel: AddCourseViewModel = hiltViewModel(),
+    hViewModel: ScheduleViewModel = hiltViewModel()
 ) {
     var currentUrl by remember { mutableStateOf(url) }
     var isLoading by remember { mutableStateOf(true) }
@@ -99,8 +108,10 @@ fun WebViewScreen(navigationState: NavigationState,
                 Text(text = "使用提示", style = MaterialTheme.typography.headlineSmall)
             },
             text = {
-                Text("1. 进入页面后用户需自行导航至课表页面再点击导入否则将导入失败\n2. 登录教务系统后如发生错误请点击刷新\n3. 如果刷新无效或出现错误请退出重进",
-                    style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "1. 进入页面后用户需自行导航至课表页面再点击导入否则将导入失败\n2. 登录教务系统后如发生错误请点击刷新\n3. 如果刷新无效或出现错误请退出重进",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             },
             confirmButton = {
                 TextButton(
@@ -262,7 +273,11 @@ fun WebViewScreen(navigationState: NavigationState,
                         if (unescapedHtml != null) {
                             try {
                                 val parserResult = ZZUParser(unescapedHtml).saveCourse()
-                                saveParserResult(parserResult = parserResult, viewModel = viewModel, hViewModel = hViewModel)
+                                saveParserResult(
+                                    parserResult = parserResult,
+                                    viewModel = viewModel,
+                                    hViewModel = hViewModel
+                                )
                                 // 2. 使用解析后的HTML
                                 Toast.makeText(context, "导入成功", Toast.LENGTH_SHORT).show()
                             } catch (e: Exception) {
@@ -274,8 +289,7 @@ fun WebViewScreen(navigationState: NavigationState,
                             Toast.makeText(context, "导入失败", Toast.LENGTH_SHORT).show()
                         }
                         // 4. 返回导航操作
-                        navigationState.navigateBack()
-                        navigationState.navigateBack()
+                        navigationState.navigateToSchedule()
                     }
                 },
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer
@@ -350,7 +364,11 @@ fun rememberWebView(
 
             webViewClient = object : WebViewClient() {
 
-                override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
+                override fun doUpdateVisitedHistory(
+                    view: WebView?,
+                    url: String?,
+                    isReload: Boolean
+                ) {
                     super.doUpdateVisitedHistory(view, url, isReload)
                     onHistoryChanged(view?.canGoBack() ?: false)
                 }
@@ -365,7 +383,8 @@ fun rememberWebView(
 
                     if (!view.url.isNullOrEmpty() &&
                         view.progress == 100 &&
-                        view.url!!.contains("zzu")) {
+                        view.url!!.contains("zzu")
+                    ) {
                         injectHeadRepairScript()
                     }
                     onLoadingStateChanged(false)
@@ -374,7 +393,11 @@ fun rememberWebView(
 
 
                 // 证书处理（网页7）
-                override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
+                override fun onReceivedSslError(
+                    view: WebView?,
+                    handler: SslErrorHandler?,
+                    error: SslError?
+                ) {
                     handler?.proceed()
                 }
 
@@ -461,7 +484,11 @@ fun rememberWebView(
 }
 
 @SuppressLint("StateFlowValueCalledInComposition")
-private fun saveParserResult(parserResult: ParserResult, viewModel: AddCourseViewModel, hViewModel: ScheduleViewModel) {
+private fun saveParserResult(
+    parserResult: ParserResult,
+    viewModel: AddCourseViewModel,
+    hViewModel: ScheduleViewModel
+) {
     val tableId = hViewModel.defaultTableId.value
     val gson = GsonBuilder().create()
 
@@ -497,7 +524,7 @@ private fun saveParserResult(parserResult: ParserResult, viewModel: AddCourseVie
 
             // 保存课程
             viewModel.asyncSaveCourse(tableId = tableId)
-    }
+        }
 
     }
 }
