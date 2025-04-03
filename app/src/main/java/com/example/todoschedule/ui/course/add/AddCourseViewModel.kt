@@ -15,8 +15,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 /**
@@ -167,11 +165,11 @@ class AddCourseViewModel @Inject constructor(
             try {
                 var actualTableId = tableId
                 // 首先检查课表ID是否有效
-                if (tableId == AppConstants.Ids.INVALID_TABLE_ID || tableRepository.getTableById(
+                if (tableId == AppConstants.Ids.INVALID_TABLE_ID || tableRepository.fetchTableById(
                         tableId
                     ) == null
                 ) {
-                    Log.d("AddCourseViewModel", "课表ID无效或未找到课表，创建默认课表")
+                    Log.e("AddCourseViewModel", "课表ID无效或未找到课表，创建默认课表")
                     // 创建默认课表并获取新ID
                     val newTable = Table(
                         tableName = AppConstants.Database.DEFAULT_TABLE_NAME,
@@ -201,53 +199,6 @@ class AddCourseViewModel @Inject constructor(
         }
     }
 
-    /**
-     * 保存课程
-     */
-    suspend fun asyncSaveCourse(tableId: Int) {
-        if (!validateForm()) {
-            _saveState.value = SaveState.Error("请填写必要的课程信息")
-            return
-        }
-
-        _saveState.value = SaveState.Loading
-
-        try {
-            var actualTableId = tableId
-            // 首先检查课表ID是否有效
-            if (tableId == AppConstants.Ids.INVALID_TABLE_ID || tableRepository.getTableById(
-                    tableId
-                ) == null
-            ) {
-                Log.d("AddCourseViewModel", "课表ID无效或未找到课表，创建默认课表")
-                // 创建默认课表并获取新ID
-                val newTable = Table(
-                    tableName = AppConstants.Database.DEFAULT_TABLE_NAME,
-                    startDate = AppConstants.Database.DEFAULT_TABLE_START_DATE,
-                )
-                Log.d("AddCourseViewModel", "Creating new table: $newTable")
-                actualTableId = tableRepository.addTable(newTable).toInt()
-            }
-
-            val course = Course(
-                courseName = _courseName.value,
-                color = _color.value,
-                room = _room.value.takeIf { it.isNotEmpty() },
-                teacher = _teacher.value.takeIf { it.isNotEmpty() },
-                credit = _credit.value.takeIf { it.isNotEmpty() }?.toFloatOrNull(),
-                courseCode = _courseCode.value.takeIf { it.isNotEmpty() },
-                nodes = _courseNodes.value.map { it.toDomain() }
-            )
-            Log.d("asyncSaveCourse:", course.toString())
-            val courseId = courseRepository.addCourse(course, actualTableId)
-            Log.d("TableId", actualTableId.toString())
-            _saveState.value = SaveState.Success(courseId.toInt())
-        } catch (e: Exception) {
-            _saveState.value =
-                SaveState.Error(e.message ?: "保存失败：${e.javaClass.simpleName}")
-        }
-
-    }
 
     /**
      * 验证表单
@@ -288,4 +239,4 @@ sealed class SaveState {
     object Loading : SaveState()
     data class Success(val courseId: Int) : SaveState()
     data class Error(val message: String) : SaveState()
-} 
+}

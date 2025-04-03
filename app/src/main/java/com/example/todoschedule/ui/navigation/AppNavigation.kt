@@ -1,5 +1,6 @@
 package com.example.todoschedule.ui.navigation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
@@ -107,8 +108,20 @@ fun AppNavigation(
         }
 
         // 学校选择页面
-        composable(AppRoutes.SchoolSelector.route) {
-            SchoolSelectorScreen(navigationState = navigationState)
+        composable(
+            AppRoutes.SchoolSelector.route,
+            arguments = listOf(
+                navArgument("tableId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val tableId =
+                backStackEntry.arguments?.getInt("tableId") ?: AppConstants.Ids.INVALID_TABLE_ID
+            Log.d(
+                "AppNavigation",
+                "Navigating to SchoolSelector with tableId: $tableId. " +
+                    "Current back stack entry args: ${backStackEntry.arguments}"
+            )
+            SchoolSelectorScreen(tableId = tableId, navigationState = navigationState)
         }
 
         //WebView页面
@@ -118,13 +131,19 @@ fun AppNavigation(
                 navArgument("encodedUrl") {
                     type = NavType.StringType
                     nullable = false
+                },
+                navArgument("tableId") {
+                    type = NavType.IntType
+                    nullable = false
                 }
             )
         ) { backStackEntry ->
             val encodedUrl = backStackEntry.arguments?.getString("encodedUrl") ?: ""
             val originalUrl = URLDecoder.decode(encodedUrl, "UTF-8")
-            WebViewScreen(navigationState, originalUrl)
+            val tableId =
+                backStackEntry.arguments?.getInt("tableId") ?: AppConstants.Ids.INVALID_TABLE_ID
+            WebViewScreen(navigationState, originalUrl, tableId)
         }
 
     }
-} 
+}

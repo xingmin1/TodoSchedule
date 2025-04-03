@@ -12,10 +12,16 @@ interface TableRepository {
     fun getDefaultTable(): Flow<Table?>
 
     /** 根据ID获取课表 */
-    suspend fun getTableById(tableId: Int): Table?
+    fun getTableById(tableId: Int): Flow<Table?>
 
     /** 根据用户ID获取课表 */
-    suspend fun getTableByUserId(userId: Int): List<Table>
+    fun getTableByUserId(userId: Int): Flow<List<Table>>
+
+    /** 根据ID获取课表 */
+    suspend fun fetchTableById(tableId: Int): Table?
+
+    /** 根据用户ID获取课表 */
+    suspend fun fetchTablesByUserId(userId: Int): List<Table>
 
     /** 添加课表 */
     suspend fun addTable(table: Table): Long

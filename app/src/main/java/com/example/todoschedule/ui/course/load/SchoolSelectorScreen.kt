@@ -37,16 +37,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import com.example.todoschedule.ui.course.load.School
-import com.example.todoschedule.ui.course.load.SchoolViewModel
 import com.example.todoschedule.ui.navigation.NavigationState
 import net.sourceforge.pinyin4j.PinyinHelper
 import java.net.URLEncoder
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SchoolSelectorScreen(navigationState: NavigationState) {
+fun SchoolSelectorScreen(
+    tableId: Int,
+    navigationState: NavigationState
+) {
     val viewModel: SchoolViewModel = viewModel()
     var searchQuery by remember { mutableStateOf("") }
     val context = LocalContext.current
@@ -87,9 +87,13 @@ fun SchoolSelectorScreen(navigationState: NavigationState) {
                             try {
                                 if (school.name == "郑州大学") {
                                     val encodedUrl = URLEncoder.encode(school.url, "UTF-8")
-                                    navigationState.navigateWebViewScreen(encodedUrl)
+                                    navigationState.navigateWebViewScreen(encodedUrl, tableId)
                                 } else {
-                                    Toast.makeText(context, "该学校暂未适配，敬请期待！", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        "该学校暂未适配，敬请期待！",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             } catch (e: Exception) {
                                 Log.e("Navigation", "URL编码失败", e)
@@ -101,6 +105,7 @@ fun SchoolSelectorScreen(navigationState: NavigationState) {
         }
     }
 }
+
 @Composable
 private fun SearchBar(
     query: String,
@@ -196,6 +201,7 @@ private fun SchoolListItemV2(school: School, onClick: () -> Unit) {
         }
     }
 }
+
 // 拼音处理工具函数
 private fun getPinyinInitial(name: String): String {
     return try {

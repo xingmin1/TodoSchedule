@@ -24,13 +24,23 @@ class TableRepositoryImpl @Inject constructor(private val tableDao: TableDao) : 
     }
 
     /** 根据ID获取课表 */
-    override suspend fun getTableById(tableId: Int): Table? {
-        return tableDao.getTableById(tableId)?.toDomain()
+    override fun getTableById(tableId: Int): Flow<Table?> {
+        return tableDao.getTableById(tableId).map { it?.toDomain() }
     }
 
     /** 根据用户ID获取课表 */
-    override suspend fun getTableByUserId(userId: Int): List<Table> {
-        return tableDao.getTableByUserId(userId).map { it.toDomain() }
+    override fun getTableByUserId(userId: Int): Flow<List<Table>> {
+        return tableDao.getTableByUserId(userId).map { flowList -> flowList.map { it.toDomain() } }
+    }
+
+    /** 根据ID获取课表 */
+    override suspend fun fetchTableById(tableId: Int): Table? {
+        return tableDao.fetchTableById(tableId)?.toDomain()
+    }
+
+    /** 根据用户ID获取课表 */
+    override suspend fun fetchTablesByUserId(userId: Int): List<Table> {
+        return tableDao.fetchTablesByUserId(userId).map { it.toDomain() }
     }
 
     /** 添加课表 */

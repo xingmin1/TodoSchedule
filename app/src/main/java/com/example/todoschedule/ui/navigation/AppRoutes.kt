@@ -49,12 +49,14 @@ sealed class AppRoutes(val route: String) {
     /**
      * 学校教务系统选择页面
      */
-    object SchoolSelector : AppRoutes("schoolSelector")
+    object SchoolSelector : AppRoutes("schoolSelector/{tableId}") {
+        fun createRoute(tableId: Int) = "schoolSelector/$tableId"
+    }
 
     /**
      * WebView页面
      */
-    object SchoolWebView : AppRoutes("webView/{encodedUrl}") {
-        fun gotoWebView(encodedUrl: String) = "webView/$encodedUrl"
+    object SchoolWebView : AppRoutes("webView/{encodedUrl}/{tableId}") {
+        fun createRoute(encodedUrl: String, tableId: Int) = "webView/$encodedUrl/$tableId"
     }
-} 
+}

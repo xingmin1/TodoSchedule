@@ -64,6 +64,18 @@ constructor(
         return courseId
     }
 
+    override suspend fun addCourses(course: List<Course>, tableId: Int): List<Long> {
+        val courseIds = courseDao.insertCourses(
+            course.map { it.toCourseEntity(tableId) }
+        )
+        course.forEachIndexed { index, course ->
+            courseDao.insertCourseNodes(
+                course.nodes.map { node -> node.toCourseNodeEntity(courseIds[index].toInt()) }
+            )
+        }
+        return courseIds
+    }
+
     override suspend fun updateCourse(course: Course, tableId: Int) {
         courseDao.updateCourse(course.toCourseEntity(tableId))
         // 先删除原有节点再添加新节点
@@ -91,12 +103,12 @@ constructor(
                     val courseNodes =
                         courseWithNodes.nodes.filter { node ->
                             node.startWeek <= week &&
-                                    node.endWeek >= week &&
-                                    (node.weekType == AppConstants.WeekTypes.ALL ||
-                                            (node.weekType == AppConstants.WeekTypes.ODD &&
-                                                    week % 2 == 1) ||
-                                            (node.weekType == AppConstants.WeekTypes.EVEN &&
-                                                    week % 2 == 0))
+                                node.endWeek >= week &&
+                                (node.weekType == AppConstants.WeekTypes.ALL ||
+                                    (node.weekType == AppConstants.WeekTypes.ODD &&
+                                        week % 2 == 1) ||
+                                    (node.weekType == AppConstants.WeekTypes.EVEN &&
+                                        week % 2 == 0))
                         }
                     courseWithNodes.copy(nodes = courseNodes).toCourse()
                 }
@@ -113,12 +125,12 @@ constructor(
             nodeEntities
                 .filter { node ->
                     node.startWeek <= week &&
-                            node.endWeek >= week &&
-                            (node.weekType == AppConstants.WeekTypes.ALL ||
-                                    (node.weekType == AppConstants.WeekTypes.ODD &&
-                                            week % 2 == 1) ||
-                                    (node.weekType == AppConstants.WeekTypes.EVEN &&
-                                            week % 2 == 0))
+                        node.endWeek >= week &&
+                        (node.weekType == AppConstants.WeekTypes.ALL ||
+                            (node.weekType == AppConstants.WeekTypes.ODD &&
+                                week % 2 == 1) ||
+                            (node.weekType == AppConstants.WeekTypes.EVEN &&
+                                week % 2 == 0))
                 }
                 .map { it.toCourseNode() }
         }

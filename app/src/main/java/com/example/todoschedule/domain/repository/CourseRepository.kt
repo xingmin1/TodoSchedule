@@ -24,6 +24,11 @@ interface CourseRepository {
     suspend fun addCourse(course: Course, tableId: Int): Long
 
     /**
+     * 批量添加课程，返回课程ID列表
+     */
+    suspend fun addCourses(course: List<Course>, tableId: Int): List<Long>
+
+    /**
      * 更新课程
      */
     suspend fun updateCourse(course: Course, tableId: Int)
@@ -52,4 +57,4 @@ interface CourseRepository {
      * 删除课程节点
      */
     suspend fun deleteCourseNode(nodeId: Int)
-} 
+}

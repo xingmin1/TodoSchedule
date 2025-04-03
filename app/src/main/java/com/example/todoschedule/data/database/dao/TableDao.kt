@@ -19,13 +19,21 @@ interface TableDao {
     @Query("SELECT * FROM `table` ORDER BY id LIMIT 1")
     fun getDefaultTable(): Flow<TableEntity?>
 
-    /** 根据ID获取课表 */
+    /** [Flow] 根据ID观察课表 */
     @Query("SELECT * FROM `table` WHERE id = :tableId")
-    suspend fun getTableById(tableId: Int): TableEntity?
+    fun getTableById(tableId: Int): Flow<TableEntity?>
 
-    /** 根据用户ID获取课表 */
+    /** [Flow] 根据用户ID观察课表 */
     @Query("SELECT * FROM `table` WHERE userId = :userId")
-    suspend fun getTableByUserId(userId: Int): List<TableEntity>
+    fun getTableByUserId(userId: Int): Flow<List<TableEntity>>
+
+    /** [Suspend] 根据ID获取课表（一次性） */
+    @Query("SELECT * FROM `table` WHERE id = :tableId")
+    suspend fun fetchTableById(tableId: Int): TableEntity?
+
+    /** [Suspend] 根据用户ID获取课表（一次性） */
+    @Query("SELECT * FROM `table` WHERE userId = :userId")
+    suspend fun fetchTablesByUserId(userId: Int): List<TableEntity>
 
     /** 插入课表 */
     @Insert(onConflict = OnConflictStrategy.REPLACE)

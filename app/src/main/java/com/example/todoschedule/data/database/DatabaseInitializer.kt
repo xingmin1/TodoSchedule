@@ -49,7 +49,7 @@ constructor(
 
                 // TODO: 默认课表应该由用户创建或导入课表时创建，而不是在这里创建
                 // 检查是否需要创建默认课表
-                val tables = tableRepository.getTableByUserId(userId)
+                val tables = tableRepository.fetchTablesByUserId(userId)
                 val defaultTableExists = tables.isNotEmpty()
                 Log.d("DatabaseInitializer", "用户现有课表数量: ${tables.size}")
 

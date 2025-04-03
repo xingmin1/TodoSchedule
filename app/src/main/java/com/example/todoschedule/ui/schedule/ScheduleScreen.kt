@@ -84,6 +84,7 @@ fun ScheduleScreen(
     val currentWeek by viewModel.currentWeek.collectAsState()
     val weekDates by viewModel.weekDates.collectAsState()
     val weekCourses by viewModel.weekCourses.collectAsState()
+    val defaultTableId by viewModel.defaultTableIdState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -123,7 +124,7 @@ fun ScheduleScreen(
             ) {
                 // 新增的下载按钮
                 FloatingActionButton(
-                    onClick = { navigationState.navigateSchoolSelectorScreen() },
+                    onClick = { navigationState.navigateSchoolSelectorScreen(defaultTableId) },
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary,
                 ) {
@@ -135,7 +136,7 @@ fun ScheduleScreen(
 
                 // 原有的添加课程按钮
                 FloatingActionButton(
-                    onClick = { navigationState.navigateToAddCourse(viewModel.defaultTableId.value) },
+                    onClick = { navigationState.navigateToAddCourse(defaultTableId) },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {

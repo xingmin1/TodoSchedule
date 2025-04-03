@@ -31,8 +31,12 @@ class NavigationState(
     /**
      * 导航到课表页面
      */
-    fun navigateToSchedule() {
-        navController.navigate(AppRoutes.Schedule.route)
+    fun navigateToSchedule(isPop: Boolean = false) {
+        if (isPop) {
+            navController.popBackStack(AppRoutes.Schedule.route, false)
+        } else {
+            navController.navigate(AppRoutes.Schedule.route)
+        }
     }
 
     /**
@@ -80,15 +84,15 @@ class NavigationState(
     /**
      * 导航到学校选择页面
      */
-    fun navigateSchoolSelectorScreen() {
-        navController.navigate(AppRoutes.SchoolSelector.route)
+    fun navigateSchoolSelectorScreen(tableId: Int) {
+        navController.navigate(AppRoutes.SchoolSelector.createRoute(tableId))
     }
 
     /**
      *导航到对应学校的WebView页面
      */
-    fun navigateWebViewScreen(encodeUrl: String) {
-        navController.navigate(AppRoutes.SchoolWebView.gotoWebView(encodeUrl))
+    fun navigateWebViewScreen(encodeUrl: String, tableId: Int) {
+        navController.navigate(AppRoutes.SchoolWebView.createRoute(encodeUrl, tableId))
     }
 
-} 
+}

@@ -4,9 +4,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todoschedule.core.constants.AppConstants
-import com.example.todoschedule.data.database.DatabaseInitializer
 import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
+import com.example.todoschedule.domain.model.Table
+import com.example.todoschedule.domain.model.User
 import com.example.todoschedule.domain.repository.CourseRepository
 import com.example.todoschedule.domain.repository.GlobalSettingRepository
 import com.example.todoschedule.domain.repository.TableRepository
@@ -15,14 +16,13 @@ import com.example.todoschedule.domain.utils.CalendarUtils
 import com.example.todoschedule.ui.schedule.model.ScheduleUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -30,14 +30,14 @@ import javax.inject.Inject
 
 /** 课程表视图模型 */
 @HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
 class ScheduleViewModel
 @Inject
 constructor(
     private val courseRepository: CourseRepository,
-    private val userRepository: UserRepository,
+    userRepository: UserRepository,
     private val tableRepository: TableRepository,
     private val globalSettingRepository: GlobalSettingRepository,
-    private val databaseInitializer: DatabaseInitializer
 ) : ViewModel() {
 
     // 当前选择的周次
@@ -48,59 +48,127 @@ constructor(
     private val _weekDates = MutableStateFlow<List<LocalDate>>(emptyList())
     val weekDates: StateFlow<List<LocalDate>> = _weekDates
 
-    // 加载状态
-    private val _uiState = MutableStateFlow<ScheduleUiState>(ScheduleUiState.Loading)
-    val uiState: StateFlow<ScheduleUiState> = _uiState
+    // 当前用户状态
+    private val currentUserState: StateFlow<User?> = userRepository.getCurrentUser()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
 
-    // 初始化状态
-    private val _dataLoaded = MutableStateFlow(false)
-
-    // 当前用户ID
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val currentUserId = MutableStateFlow(AppConstants.Ids.INVALID_USER_ID)
-
-    // 当前默认课表ID
-    private val _defaultTableId = MutableStateFlow(AppConstants.Ids.INVALID_TABLE_ID)
-    val defaultTableId: StateFlow<Int> = _defaultTableId
-
-    // 当前课表的开始日期
-    private val _tableStartDate = MutableStateFlow<LocalDate?>(null)
-    val tableStartDate: StateFlow<LocalDate?> = _tableStartDate
-
-    // 当前周的课程列表
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val weekCourses: StateFlow<List<Course>> = combine(
-        _defaultTableId,
-        _dataLoaded
-    ) { tableId, isDataLoaded ->
-        // 创建一个 Pair，包含 tableId 和加载状态，方便后续处理
-        tableId to isDataLoaded
-    }.flatMapLatest { (tableId, isDataLoaded) ->
-        // 检查 tableId 是否有效以及数据是否已加载
-        if (tableId <= 0 || !isDataLoaded) {
-            Log.d("ScheduleViewModel", "flatMapLatest - 无效 tableId 或数据未加载")
-            // 返回一个持续发出空列表的 Flow
-            flowOf(emptyList<Course>())
+    // 当前默认课表ID状态
+    private val _defaultTableIdState: StateFlow<Int> = currentUserState.flatMapLatest { user ->
+        if (user != null) {
+            globalSettingRepository.getDefaultTableIds(user.id)
+                .map { it.firstOrNull() ?: AppConstants.Ids.INVALID_TABLE_ID }
         } else {
-            Log.d("ScheduleViewModel", "flatMapLatest - 有效 tableId: $tableId，数据已加载")
-            // tableId 有效且数据已加载，现在结合 currentWeek 和课程数据流
-            combine(
-                _currentWeek,
-                courseRepository.getCoursesByTableId(tableId) // 直接观察课程数据流
-            ) { week, courses ->
+            flowOf(AppConstants.Ids.INVALID_TABLE_ID)
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = AppConstants.Ids.INVALID_TABLE_ID
+    )
+
+    val defaultTableIdState: StateFlow<Int> = _defaultTableIdState
+
+    // 当前课表状态
+    private val currentTableState: StateFlow<Table?> =
+        _defaultTableIdState.flatMapLatest { tableId ->
+            if (tableId != AppConstants.Ids.INVALID_TABLE_ID) {
+                tableRepository.getTableById(tableId)
+            } else {
+                flowOf(null)
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
+
+    // UI状态 - 声明式定义
+    val uiState: StateFlow<ScheduleUiState> = combine(
+        currentUserState,
+        _defaultTableIdState,
+        currentTableState
+    ) { user, tableId, table ->
+        // 添加日志以便调试
+        Log.d(
+            "ScheduleViewModel",
+            "State combine for UI: user=${user?.id}, tableId=$tableId, table=${table?.id}"
+        )
+        when {
+            // 还在等待用户数据加载 (初始状态 currentUserState.value 可能不是 null)
+            user == null && tableId == AppConstants.Ids.INVALID_TABLE_ID && table == null -> {
+                Log.d("ScheduleViewModel", "UI State: Initial Loading")
+                ScheduleUiState.Loading
+            }
+            // 用户不存在 (currentUserState 不为 null，但 user 为 null)
+            user == null && currentUserState.value != null -> {
+                Log.w("ScheduleViewModel", "UI State: No user found.")
+                ScheduleUiState.Error("未找到用户")
+            }
+            // 用户存在，没有设置默认课表
+            user != null && tableId == AppConstants.Ids.INVALID_TABLE_ID && _defaultTableIdState.value != AppConstants.Ids.INVALID_TABLE_ID -> {
+                Log.w("ScheduleViewModel", "UI State: No default table selected.")
+                ScheduleUiState.Success // 允许无默认课表状态，UI应提示
+            }
+            // 用户存在，有默认课表ID，但无法加载有效的课表
+            user != null && tableId != AppConstants.Ids.INVALID_TABLE_ID && table == null && currentTableState.value != null -> {
+                Log.e("ScheduleViewModel", "UI State: Error loading table ID $tableId")
+                ScheduleUiState.Error("加载课表失败")
+            }
+            // 成功加载所有必要数据 (用户和课表)
+            user != null && table != null -> {
                 Log.d(
                     "ScheduleViewModel",
-                    "Inner combine - week: $week, 原始课程数: ${courses.size}"
+                    "UI State: Success - User: ${user.id}, Table: ${table.id}"
                 )
-                // 在这里进行按周过滤
-                courses
-                    .map {
-                        it.copy(
-                            nodes = it.nodes.filter { node -> node.isInWeek(week) }
+                ScheduleUiState.Success
+            }
+            // 其他情况视为仍在加载中 (例如，用户已加载，正在加载课表)
+            else -> {
+                Log.d("ScheduleViewModel", "UI State: Fallback to Loading")
+                ScheduleUiState.Loading
+            }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ScheduleUiState.Loading // 初始状态为 Loading
+    )
+
+    // 当前周的课程列表
+    val weekCourses: StateFlow<List<Course>> = combine(
+        _defaultTableIdState,
+        _currentWeek
+    ) { tableId, week ->
+        tableId to week
+    }.flatMapLatest { (tableId, week) ->
+        if (tableId <= 0) {
+            Log.d("ScheduleViewModel", "weekCourses - Invalid tableId: $tableId")
+            flowOf(emptyList())
+        } else {
+            Log.d(
+                "ScheduleViewModel",
+                "weekCourses - Fetching courses for tableId: $tableId, week: $week"
+            )
+            courseRepository.getCoursesByTableId(tableId).map { courses ->
+                Log.d(
+                    "ScheduleViewModel",
+                    "weekCourses - Original courses for table $tableId: ${courses.size}"
+                )
+                courses.map { course ->
+                    course.copy(
+                        nodes = course.nodes.filter { node -> node.isInWeek(week) }
+                    )
+                }.filter { it.nodes.isNotEmpty() }
+                    .also {
+                        Log.d(
+                            "ScheduleViewModel",
+                            "weekCourses - Filtered courses for week $week: ${it.size}"
                         )
                     }
-                    .filter { it.nodes.isNotEmpty() }
-                    .also { Log.d("ScheduleViewModel", "Inner combine - 过滤后课程数: ${it.size}") }
             }
         }
     }.stateIn(
@@ -110,81 +178,44 @@ constructor(
     )
 
     init {
-        // 等待数据库初始化完成后再加载数据
+        Log.d("ScheduleViewModel", "ViewModel initialized")
+
+        // 观察课表状态以初始化当前周 (这个仍然需要，用于设置初始周)
         viewModelScope.launch {
-            databaseInitializer.isInitialized.collect { initialized ->
-                if (initialized) {
-                    // 数据库已初始化，可以安全加载数据
-                    loadUserAndSettings()
-                    this.cancel()
+            currentTableState.collect { table ->
+                val startDate = table?.startDate
+                val currentWeekNumber = CalendarUtils.getCurrentWeek(startDate)
+                if (_currentWeek.value != currentWeekNumber) {
+                    Log.d(
+                        "ScheduleViewModel",
+                        "Initializing current week to $currentWeekNumber based on table start date $startDate"
+                    )
+                    _currentWeek.value = currentWeekNumber
                 }
+                updateWeekDates(currentWeekNumber, startDate) // 更新日期列表
             }
         }
     }
 
-    /** 加载用户和设置数据 */
-    private fun loadUserAndSettings() {
-        viewModelScope.launch {
-            try {
-                Log.d("ScheduleViewModel", "开始加载用户和设置数据")
-
-                // 获取当前用户
-                val user = userRepository.getCurrentUser().first()
-                if (user != null) {
-                    currentUserId.value = user.id
-                    Log.d("ScheduleViewModel", "已获取用户ID: ${user.id}")
-
-                    // 获取默认课表ID
-                    val tableIds = globalSettingRepository.getDefaultTableIds(user.id).first()
-                    val tableId = tableIds.firstOrNull() ?: AppConstants.Ids.INVALID_TABLE_ID
-
-                    if (tableId > 0) {
-                        _defaultTableId.value = tableId
-                        Log.d("ScheduleViewModel", "已获取默认课表ID: $tableId")
-
-                        // 获取课表信息
-                        val table = tableRepository.getTableById(tableId)
-                        if (table != null) {
-                            _tableStartDate.value = table.startDate
-                            Log.d("ScheduleViewModel", "获取到课表开始日期: ${table.startDate}")
-                        } else {
-                            Log.w("ScheduleViewModel", "未找到课表 ID: $tableId")
-                        }
-                    } else {
-                        Log.w("ScheduleViewModel", "用户 ${user.id} 没有默认课表")
-                    }
-                } else {
-                    Log.w("ScheduleViewModel", "未找到有效用户")
-                }
-
-                // 计算当前是第几周（使用课表的开始日期）
-                val currentWeekNumber = CalendarUtils.getCurrentWeek(_tableStartDate.value)
-                _currentWeek.value = currentWeekNumber
-
-                // 计算本周日期
-                updateWeekDates(currentWeekNumber)
-
-                // 标记数据已加载
-                _dataLoaded.value = true
-                _uiState.value = ScheduleUiState.Success
-
-                Log.d("ScheduleViewModel", "用户和设置数据加载完成")
-            } catch (e: Exception) {
-                Log.e("ScheduleViewModel", "加载数据失败: ${e.message}", e)
-                _uiState.value = ScheduleUiState.Error(e.message ?: "未知错误")
-            }
-        }
-    }
+    // --- UI 事件处理 ---
 
     /** 更新当前周 */
     fun updateCurrentWeek(week: Int) {
-        _currentWeek.value = week
-        updateWeekDates(week)
+        if (week > 0 && week != _currentWeek.value) {
+            Log.d("ScheduleViewModel", "Updating current week to $week")
+            val currentStartDate = currentTableState.value?.startDate
+            _currentWeek.value = week
+            updateWeekDates(week, currentStartDate)
+        }
     }
 
-    /** 更新周日期 */
-    private fun updateWeekDates(week: Int) {
-        _weekDates.value = CalendarUtils.getWeekDates(week, _tableStartDate.value)
+    /** 更新周日期 (私有辅助函数) */
+    private fun updateWeekDates(week: Int, startDate: LocalDate?) {
+        val newDates = CalendarUtils.getWeekDates(week, startDate)
+        if (_weekDates.value != newDates) {
+            Log.d("ScheduleViewModel", "Updating week dates for week $week, startDate $startDate")
+            _weekDates.value = newDates
+        }
     }
 
     /** 上一周 */
@@ -198,34 +229,25 @@ constructor(
     /** 下一周 */
     fun nextWeek() {
         val newWeek = _currentWeek.value + 1
-        if (newWeek <= CalendarUtils.MAX_WEEKS) {
+        // 考虑课表总周数限制，如果 Table 模型有 totalWeeks 字段会更好
+        if (newWeek <= CalendarUtils.MAX_WEEKS) { // 使用常量或从课表获取
             updateCurrentWeek(newWeek)
         }
     }
 
     /** 回到当前周 */
     fun goToCurrentWeek() {
-        val currentWeekNumber = CalendarUtils.getCurrentWeek(_tableStartDate.value)
+        val currentStartDate = currentTableState.value?.startDate
+        val currentWeekNumber = CalendarUtils.getCurrentWeek(currentStartDate)
+        Log.d("ScheduleViewModel", "Going back to current week: $currentWeekNumber")
         updateCurrentWeek(currentWeekNumber)
     }
 
-    /** 获取特定日期的课程节点 */
-    fun getCourseNodesByDay(day: Int): List<CourseNode> {
+    /** 获取特定日期的课程节点 (优化为使用 StateFlow 的值) */
+    fun getCourseNodesByDay(dayOfWeek: Int): List<CourseNode> {
+        // 直接从 weekCourses 的当前值过滤，无需额外 Flow
         return weekCourses.value.flatMap { course ->
-            course.nodes.filter { node -> node.day == day }
-        }
-    }
-
-    /** 删除课程 */
-    fun deleteCourse(courseId: Int) {
-        viewModelScope.launch {
-            try {
-                courseRepository.deleteCourse(courseId)
-                // 无需重新加载所有数据，只需要更新UI状态
-                _uiState.value = ScheduleUiState.Success
-            } catch (e: Exception) {
-                _uiState.value = ScheduleUiState.Error(e.message ?: "删除课程失败")
-            }
+            course.nodes.filter { node -> node.day == dayOfWeek }
         }
     }
 }

@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,6 +53,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,23 +69,19 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.mykotlinapplication.utils.injectjs.injectHeadRepairScript
-import com.example.todoschedule.ui.course.add.AddCourseViewModel
-import com.example.todoschedule.ui.course.add.CourseNodeUiState
+import com.example.todoschedule.domain.model.Course
+import com.example.todoschedule.domain.model.CourseNode
 import com.example.todoschedule.ui.navigation.NavigationState
-import com.example.todoschedule.ui.schedule.ScheduleViewModel
 import com.example.todoschedule.utils.courseadapter.bean.ParserResult
-import com.google.gson.GsonBuilder
-import kotlinx.coroutines.launch
 import main.java.parser.ZZUParser
 
 @Composable
 fun WebViewScreen(
     navigationState: NavigationState,
     url: String,
-    viewModel: AddCourseViewModel = hiltViewModel(),
-    hViewModel: ScheduleViewModel = hiltViewModel()
+    tableId: Int,
+    viewModel: WebViewScreenViewModel = hiltViewModel(),
 ) {
     var currentUrl by remember { mutableStateOf(url) }
     var isLoading by remember { mutableStateOf(true) }
@@ -91,6 +90,7 @@ fun WebViewScreen(
     var showHelpDialog by remember { mutableStateOf(true) } // 初始显示弹窗
 
     val context = LocalContext.current
+    val saveState by viewModel.saveState.collectAsState()
 
     val webView = rememberWebView(
         initialUrl = url,
@@ -124,6 +124,41 @@ fun WebViewScreen(
                 }
             }
         )
+    }
+
+    // 根据保存状态显示不同内容或执行操作
+    when (val state = saveState) {
+        is SaveCourseState.Idle -> {
+            // 初始状态或重置后的状态，可以显示保存按钮等
+        }
+
+        is SaveCourseState.Saving -> {
+            // 显示加载指示器
+            CircularProgressIndicator() // 或者其他加载 UI
+        }
+
+        is SaveCourseState.Success -> {
+            // 保存成功
+            // 可以显示一个 Snackbar 提示成功，然后导航回上一个屏幕
+            LaunchedEffect(state) { // 使用 LaunchedEffect 在状态变为 Success 后执行一次性操作
+                // scaffoldState.snackbarHostState.showSnackbar("保存成功！") // 假设你有 scaffoldState
+                Log.d("WebViewScreen", "Save successful, table ID: ${state.tableId}")
+                // 在这里执行导航操作，例如：
+                // navController.popBackStack()
+                // viewModel.resetSaveState() // 可选：导航后重置状态
+            }
+        }
+
+        is SaveCourseState.Error -> {
+            // 保存失败
+            // 可以显示一个 Snackbar 提示错误信息
+            LaunchedEffect(state) { // 使用 LaunchedEffect 在状态变为 Error 后执行一次性操作
+                // scaffoldState.snackbarHostState.showSnackbar("保存失败: ${state.message}") // 假设你有 scaffoldState
+                Log.e("WebViewScreen", "Save failed: ${state.message}")
+                // 可以提供重试按钮，并在点击时调用 viewModel.saveCourse(...)
+                // 用户处理完错误后，可能需要调用 viewModel.resetSaveState()
+            }
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -274,9 +309,9 @@ fun WebViewScreen(
                             try {
                                 val parserResult = ZZUParser(unescapedHtml).saveCourse()
                                 saveParserResult(
+                                    tableId = tableId,
                                     parserResult = parserResult,
                                     viewModel = viewModel,
-                                    hViewModel = hViewModel
                                 )
                                 // 2. 使用解析后的HTML
                                 Toast.makeText(context, "导入成功", Toast.LENGTH_SHORT).show()
@@ -289,7 +324,7 @@ fun WebViewScreen(
                             Toast.makeText(context, "导入失败", Toast.LENGTH_SHORT).show()
                         }
                         // 4. 返回导航操作
-                        navigationState.navigateToSchedule()
+                        navigationState.navigateToSchedule(isPop = true)
                     }
                 },
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer
@@ -485,46 +520,32 @@ fun rememberWebView(
 
 @SuppressLint("StateFlowValueCalledInComposition")
 private fun saveParserResult(
+    tableId: Int,
     parserResult: ParserResult,
-    viewModel: AddCourseViewModel,
-    hViewModel: ScheduleViewModel
+    viewModel: WebViewScreenViewModel,
 ) {
-    val tableId = hViewModel.defaultTableId.value
-    val gson = GsonBuilder().create()
-
-    viewModel.viewModelScope.launch {
-        parserResult.baseList.forEach { course ->
-            Log.i("course:", gson.toJson(course))
-            // 重置 ViewModel 状态
-            viewModel.resetAllFields()
-
-            // 更新课程信息
-            viewModel.updateCourseCode(course.courseID)
-            viewModel.updateCourseName(course.courseName)
-            viewModel.updateCredit(course.credit.toString())
-            viewModel.updateColor(course.color)
-
-            // 添加关联的节点
-            parserResult.detailList
+    val courseList = parserResult.baseList.map { course ->
+        Course(
+            courseName = course.courseName,
+            color = course.color,
+            credit = course.credit,
+            courseCode = course.courseID,
+            nodes = parserResult.detailList
                 .filter { it.id == course.id }
-                .forEach { detail ->
-                    viewModel.addCourseNode(
-                        CourseNodeUiState(
-                            day = detail.day,
-                            startNode = detail.startNode,
-                            step = detail.step,
-                            startWeek = detail.startWeek,
-                            endWeek = detail.endWeek,
-                            weekType = detail.type,
-                            room = detail.room ?: "",
-                            teacher = detail.teacher ?: ""
-                        )
+                .map {
+                    CourseNode(
+                        day = it.day,
+                        startNode = it.startNode,
+                        step = it.step,
+                        startWeek = it.startWeek,
+                        endWeek = it.endWeek,
+                        weekType = it.type,
+                        room = it.room ?: "",
+                        teacher = it.teacher ?: ""
                     )
                 }
-
-            // 保存课程
-            viewModel.asyncSaveCourse(tableId = tableId)
-        }
-
+        )
     }
+
+    viewModel.saveCourse(tableId, courseList)
 }
