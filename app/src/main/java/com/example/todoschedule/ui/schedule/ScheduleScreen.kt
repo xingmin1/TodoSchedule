@@ -157,9 +157,15 @@ fun ScheduleScreen(
                         EmptyScheduleScreen()
                     } else {
                         ScheduleContent(
+                            tableId = defaultTableId,
                             weekDates = weekDates,
                             weekCourses = weekCourses,
-                            onCourseClick = { navigationState.navigateToCourseDetail(it) }
+                            onCourseClick = { tableId, courseId ->
+                                navigationState.navigateToCourseDetail(
+                                    tableId,
+                                    courseId
+                                )
+                            }
                         )
                     }
                 }
@@ -259,9 +265,10 @@ fun ErrorScreen(errorMessage: String) {
  */
 @Composable
 fun ScheduleContent(
+    tableId: Int,
     weekDates: List<LocalDate>,
     weekCourses: List<Course>,
-    onCourseClick: (Int) -> Unit
+    onCourseClick: (Int, Int) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -282,6 +289,7 @@ fun ScheduleContent(
 
             // 课程网格
             CourseGrid(
+                tableId = tableId,
                 courses = weekCourses,
                 onCourseClick = onCourseClick
             )
@@ -395,8 +403,9 @@ fun TimeColumn() {
  */
 @Composable
 fun CourseGrid(
+    tableId: Int,
     courses: List<Course>,
-    onCourseClick: (Int) -> Unit
+    onCourseClick: (Int, Int) -> Unit
 ) {
     // 为每一天创建一列
     Row(
@@ -431,7 +440,7 @@ fun CourseGrid(
                         CourseCard(
                             course = course,
                             node = node,
-                            onClick = { onCourseClick(course.id) }
+                            onClick = { onCourseClick(tableId, course.id) }
                         )
 
                         // 标记课程占用的所有时间槽为已渲染
@@ -770,8 +779,11 @@ fun PreviewScheduleContent() {
         ),
     )
     ScheduleContent(
+        tableId = 0,
         weekDates = weekDates,
         weekCourses = weekCourses,
-    ) { }
+    ) { tableId, courseId ->
+        Log.d("PreviewScheduleContent", "Clicked on Course ID: $courseId in Table ID: $tableId")
+    }
 }
 

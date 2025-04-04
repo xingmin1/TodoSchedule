@@ -55,9 +55,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseDetailScreen(
+    tableId: Int,
     courseId: Int,
     onNavigateBack: () -> Unit,
-    onNavigateToEdit: (Int) -> Unit,
+    onNavigateToEdit: (Int, Int) -> Unit,
     viewModel: CourseDetailViewModel = hiltViewModel()
 ) {
     // 加载课程数据
@@ -83,7 +84,7 @@ fun CourseDetailScreen(
                 ),
                 actions = {
                     // 编辑按钮
-                    IconButton(onClick = { onNavigateToEdit(courseId) }) {
+                    IconButton(onClick = { onNavigateToEdit(tableId, courseId) }) {
                         Icon(Icons.Default.Edit, contentDescription = "编辑课程")
                     }
 

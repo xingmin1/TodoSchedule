@@ -69,6 +69,7 @@ import kotlinx.coroutines.flow.collectLatest
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditCourseScreen(
+    tableId: Int,
     courseId: Int,
     onNavigateBack: () -> Unit,
     onCourseUpdated: () -> Unit,
@@ -126,7 +127,7 @@ fun EditCourseScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.updateCourse() },
+                onClick = { viewModel.updateCourse(tableId) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) { Icon(Icons.Default.Check, contentDescription = "保存") }

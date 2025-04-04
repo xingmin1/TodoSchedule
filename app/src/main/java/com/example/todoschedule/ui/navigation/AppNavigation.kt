@@ -77,16 +77,20 @@ fun AppNavigation(
         composable(
             route = AppRoutes.CourseDetail.route,
             arguments = listOf(
-                navArgument("courseId") { type = NavType.IntType }
+                navArgument("tableId") { type = NavType.IntType },
+                navArgument("courseId") { type = NavType.IntType },
             )
         ) { backStackEntry ->
+            val tableId =
+                backStackEntry.arguments?.getInt("tableId") ?: AppConstants.Ids.INVALID_TABLE_ID
             val courseId =
                 backStackEntry.arguments?.getInt("courseId") ?: AppConstants.Ids.INVALID_COURSE_ID
             CourseDetailScreen(
+                tableId = tableId,
                 courseId = courseId,
                 onNavigateBack = { navigationState.navigateBack() },
-                onNavigateToEdit = { courseId ->
-                    navigationState.navigateToEditCourse(courseId)
+                onNavigateToEdit = { tableId, courseId ->
+                    navigationState.navigateToEditCourse(tableId, courseId)
                 }
             )
         }
@@ -95,12 +99,16 @@ fun AppNavigation(
         composable(
             route = AppRoutes.EditCourse.route,
             arguments = listOf(
-                navArgument("courseId") { type = NavType.IntType }
+                navArgument("tableId") { type = NavType.IntType },
+                navArgument("courseId") { type = NavType.IntType },
             )
         ) { backStackEntry ->
+            val tableId =
+                backStackEntry.arguments?.getInt("tableId") ?: AppConstants.Ids.INVALID_TABLE_ID
             val courseId =
                 backStackEntry.arguments?.getInt("courseId") ?: AppConstants.Ids.INVALID_COURSE_ID
             EditCourseScreen(
+                tableId = tableId,
                 courseId = courseId,
                 onNavigateBack = { navigationState.navigateBack() },
                 onCourseUpdated = { navigationState.navigateBack() }

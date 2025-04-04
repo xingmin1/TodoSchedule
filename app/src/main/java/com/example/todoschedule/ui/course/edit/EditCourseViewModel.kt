@@ -122,7 +122,7 @@ class EditCourseViewModel @Inject constructor(
     /**
      * 更新课程
      */
-    fun updateCourse() {
+    fun updateCourse(tableId: Int) {
         if (!validateForm()) {
             viewModelScope.launch {
                 _events.send(EditCourseEvent.ShowError("请填写必要的课程信息"))
@@ -143,8 +143,7 @@ class EditCourseViewModel @Inject constructor(
                     nodes = _courseNodes.value.map { it.toDomain() }
                 )
 
-                TODO()
-                // courseRepository.updateCourse(course)
+                courseRepository.updateCourse(course, tableId)
                 _events.send(EditCourseEvent.CourseUpdated)
             } catch (e: Exception) {
                 _events.send(EditCourseEvent.ShowError(e.message ?: "更新课程失败"))

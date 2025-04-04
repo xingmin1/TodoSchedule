@@ -63,15 +63,15 @@ class NavigationState(
     /**
      * 导航到课程详情页面
      */
-    fun navigateToCourseDetail(courseId: Int) {
-        navController.navigate(AppRoutes.CourseDetail.createRoute(courseId))
+    fun navigateToCourseDetail(tableId: Int, courseId: Int) {
+        navController.navigate(AppRoutes.CourseDetail.createRoute(tableId, courseId))
     }
 
     /**
      * 导航到编辑课程页面
      */
-    fun navigateToEditCourse(courseId: Int) {
-        navController.navigate(AppRoutes.EditCourse.createRoute(courseId))
+    fun navigateToEditCourse(tableId: Int, courseId: Int) {
+        navController.navigate(AppRoutes.EditCourse.createRoute(tableId, courseId))
     }
 
     /**

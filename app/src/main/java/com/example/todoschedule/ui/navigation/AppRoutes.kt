@@ -35,15 +35,15 @@ sealed class AppRoutes(val route: String) {
     /**
      * 课程详情
      */
-    object CourseDetail : AppRoutes("course_detail/{courseId}") {
-        fun createRoute(courseId: Int) = "course_detail/$courseId"
+    object CourseDetail : AppRoutes("course_detail/{tableId}/{courseId}") {
+        fun createRoute(tableId: Int, courseId: Int) = "course_detail/$tableId/$courseId"
     }
 
     /**
      * 编辑课程
      */
-    object EditCourse : AppRoutes("edit_course/{courseId}") {
-        fun createRoute(courseId: Int) = "edit_course/$courseId"
+    object EditCourse : AppRoutes("edit_course/{tableId}/{courseId}") {
+        fun createRoute(tableId: Int, courseId: Int) = "edit_course/$tableId/$courseId"
     }
 
     /**
