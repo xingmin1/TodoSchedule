@@ -1,10 +1,7 @@
 package com.example.todoschedule.core.constants
 
 import com.example.todoschedule.ui.navigation.AppRoutes
-import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
 /** 应用中使用的常量 */
 object AppConstants {
@@ -55,7 +52,7 @@ object AppConstants {
         const val DB_VERSION = 2 // 数据库版本
         const val DEFAULT_TABLE_NAME = "默认课表" // 默认课表名称
         val DEFAULT_TABLE_START_DATE: LocalDate =
-            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date // 默认课表开始日期
+            LocalDate(2025, 2, 17) // 默认课表开始日期
         const val DEFAULT_USER_NAME = "默认用户" // 默认用户名称
         const val DEFAULT_TIME_CONFIG_TABLE_NAME = "默认时间配置表" // 默认时间配置表名称
     }

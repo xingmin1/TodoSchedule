@@ -1,5 +1,6 @@
 package com.example.todoschedule.domain.utils
 
+import com.example.todoschedule.core.constants.AppConstants
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.DateTimeUnit
@@ -13,9 +14,6 @@ import kotlinx.datetime.toLocalDateTime
  * 日历工具类
  */
 object CalendarUtils {
-    // 默认的学期开始日期（仅在无法获取课表开始日期时使用）
-    private val DEFAULT_TERM_START_DATE: LocalDate = LocalDate(2025, 2, 17)
-
     // 最大周数
     const val MAX_WEEKS = 25
 
@@ -26,7 +24,7 @@ object CalendarUtils {
      * @return 当前周次
      */
     fun getCurrentWeek(termStartDate: LocalDate? = null): Int {
-        val startDate = termStartDate ?: DEFAULT_TERM_START_DATE
+        val startDate = termStartDate ?: AppConstants.Database.DEFAULT_TABLE_START_DATE
         val today = Clock.System.now()
             .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date
 
@@ -46,7 +44,7 @@ object CalendarUtils {
      * @return 该周的日期列表（周一到周日）
      */
     fun getWeekDates(week: Int, termStartDate: LocalDate? = null): List<LocalDate> {
-        val startDate = termStartDate ?: DEFAULT_TERM_START_DATE
+        val startDate = termStartDate ?: AppConstants.Database.DEFAULT_TABLE_START_DATE
 
         // 计算该周的开始日期
         val weekStartDate = startDate.plus((week - 1) * 7, DateTimeUnit.DAY)
