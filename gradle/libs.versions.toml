@@ -7,22 +7,16 @@ constraintlayoutCompose = "1.1.1"
 coreKtx = "1.15.0"
 coreSplashscreen = "1.0.1"
 espressoCore = "3.6.1"
-gitHooksGradlePlugin = "0.0.2"
-gradle = "8.1.4"
 hiltAndroid = "2.49"
 hiltAndroidCompiler = "2.48"
 hiltNavigationCompose = "1.2.0"
-jsoup = "1.14.3"
 kotlin = "2.0.0"
 junit = "4.13.2"
-kotlinGradlePlugin = "1.9.0"
 kotlinxDatetime = "0.4.0"
 kotlinxSerialization = "1.7.0"
-ktlintGradle = "11.6.1"
 lifecycleRuntimeKtx = "2.8.7"
 loggingInterceptor = "4.11.0"
 navigationCompose = "2.8.9"
-pinyin4j = "2.5.1"
 retrofit = "2.11.0"
 room = "2.6.1"
 
@@ -42,11 +36,8 @@ androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref =
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
-git-hooks-gradle-plugin = { module = "com.github.jakemarsden:git-hooks-gradle-plugin", version.ref = "gitHooksGradlePlugin" }
-gradle = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroid" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hiltAndroidCompiler" }
-jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
@@ -57,13 +48,10 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
-kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlinGradlePlugin" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
-ktlint-gradle = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlintGradle" }
 logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "loggingInterceptor" }
 material3 = { module = "androidx.compose.material3:material3" }
-pinyin4j = { module = "com.belerweb:pinyin4j", version.ref = "pinyin4j" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 ui = { module = "androidx.compose.ui:ui" }
 ui-graphics = { module = "androidx.compose.ui:ui-graphics" }

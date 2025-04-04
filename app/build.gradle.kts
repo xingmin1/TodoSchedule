@@ -6,7 +6,6 @@ plugins {
     id("kotlin-parcelize")
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    id("org.jlleitschuh.gradle.ktlint")
 }
 
 android {
@@ -121,10 +120,10 @@ dependencies {
     implementation(libs.logging.interceptor)
 
     //拼音库
-    implementation(libs.pinyin4j)
+    implementation("com.belerweb:pinyin4j:2.5.1")
 
     //jsoup库
-    implementation(libs.jsoup)
+    implementation("org.jsoup:jsoup:1.14.3")
 
     // 日期时间处理
     implementation(libs.kotlinx.datetime)
