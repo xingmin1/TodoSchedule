@@ -7,14 +7,18 @@ import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.converter.Converters
 import com.example.todoschedule.data.database.dao.CourseDao
 import com.example.todoschedule.data.database.dao.GlobalSettingDao
+import com.example.todoschedule.data.database.dao.OrdinaryScheduleDao
 import com.example.todoschedule.data.database.dao.TableDao
 import com.example.todoschedule.data.database.dao.TimeConfigDao
+import com.example.todoschedule.data.database.dao.TimeSlotDao
 import com.example.todoschedule.data.database.dao.UserDao
 import com.example.todoschedule.data.database.entity.CourseEntity
 import com.example.todoschedule.data.database.entity.CourseNodeEntity
 import com.example.todoschedule.data.database.entity.GlobalTableSettingEntity
+import com.example.todoschedule.data.database.entity.OrdinaryScheduleEntity
 import com.example.todoschedule.data.database.entity.TableEntity
 import com.example.todoschedule.data.database.entity.TimeDetailEntity
+import com.example.todoschedule.data.database.entity.TimeSlotEntity
 import com.example.todoschedule.data.database.entity.TimeTableEntity
 import com.example.todoschedule.data.database.entity.UserEntity
 
@@ -28,7 +32,9 @@ import com.example.todoschedule.data.database.entity.UserEntity
             CourseEntity::class,
             CourseNodeEntity::class,
             TimeTableEntity::class,
-            TimeDetailEntity::class],
+            TimeDetailEntity::class,
+            OrdinaryScheduleEntity::class,
+            TimeSlotEntity::class],
     version = AppConstants.Database.DB_VERSION,
     exportSchema = false
 )
@@ -48,4 +54,10 @@ abstract class AppDatabase : RoomDatabase() {
 
     /** 获取时间配置DAO */
     abstract fun timeConfigDao(): TimeConfigDao
+
+    /** 获取普通日程DAO */
+    abstract fun ordinaryScheduleDao(): OrdinaryScheduleDao
+
+    /** 获取时间槽DAO */
+    abstract fun timeSlotDao(): TimeSlotDao
 }

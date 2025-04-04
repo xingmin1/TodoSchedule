@@ -139,4 +139,25 @@ dependencies {
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
+
+    // Room
+    androidTestImplementation(libs.androidx.room.testing)
+
+    // AndroidX Test Core & JUnit
+    androidTestImplementation(libs.core.ktx)
+    androidTestImplementation(libs.androidx.junit.ktx)
+    androidTestImplementation(libs.androidx.test.runner)
+
+    // Coroutines Test
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+
+    // Truth Assertions (提供更流畅的断言)
+    androidTestImplementation(libs.truth) // 或更高版本
+
+    // Hilt Testing
+    androidTestImplementation(libs.hilt.android.testing)
+    kaptAndroidTest(libs.hilt.compiler)
+
+    // Android Architecture Components testing - for InstantTaskExecutorRule
+    androidTestImplementation(libs.androidx.core.testing)
 }

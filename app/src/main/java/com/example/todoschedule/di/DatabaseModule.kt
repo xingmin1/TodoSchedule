@@ -6,8 +6,10 @@ import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.AppDatabase
 import com.example.todoschedule.data.database.dao.CourseDao
 import com.example.todoschedule.data.database.dao.GlobalSettingDao
+import com.example.todoschedule.data.database.dao.OrdinaryScheduleDao
 import com.example.todoschedule.data.database.dao.TableDao
 import com.example.todoschedule.data.database.dao.TimeConfigDao
+import com.example.todoschedule.data.database.dao.TimeSlotDao
 import com.example.todoschedule.data.database.dao.UserDao
 import dagger.Module
 import dagger.Provides
@@ -81,5 +83,23 @@ object DatabaseModule {
     @Singleton
     fun provideTimeConfigDao(database: AppDatabase): TimeConfigDao {
         return database.timeConfigDao()
+    }
+
+    /**
+     * 提供普通日程DAO
+     */
+    @Provides
+    @Singleton
+    fun provideOrdinaryScheduleDao(database: AppDatabase): OrdinaryScheduleDao {
+        return database.ordinaryScheduleDao()
+    }
+
+    /**
+     * 提供时间槽DAO
+     */
+    @Provides
+    @Singleton
+    fun provideTimeSlotDao(database: AppDatabase): TimeSlotDao {
+        return database.timeSlotDao()
     }
 }

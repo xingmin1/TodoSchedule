@@ -34,4 +34,8 @@ interface UserDao {
     /** 获取用户数量 */
     @Query("SELECT COUNT(*) FROM user")
     suspend fun getUserCount(): Int
+
+    /** 删除用户 */
+    @Query("DELETE FROM user WHERE id = :userId")
+    fun deleteUser(userId: Int)
 }
