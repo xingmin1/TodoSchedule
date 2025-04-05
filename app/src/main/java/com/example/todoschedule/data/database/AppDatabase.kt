@@ -35,8 +35,8 @@ import com.example.todoschedule.data.database.entity.UserEntity
         OrdinaryScheduleEntity::class,
         TimeSlotEntity::class
     ],
-    version = AppConstants.Database.DB_VERSION + 1,
-    exportSchema = false
+    version = AppConstants.Database.DB_VERSION,
+    exportSchema = false,
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {

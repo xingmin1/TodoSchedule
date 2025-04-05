@@ -1,5 +1,6 @@
 package com.example.todoschedule.data.repository
 
+import android.util.Log
 import androidx.room.Transaction
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.data.database.dao.OrdinaryScheduleDao
@@ -33,6 +34,8 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
         val scheduleEntity = schedule.toEntity()
         val scheduleId = ordinaryScheduleDao.insertSchedule(scheduleEntity)
 
+        Log.d("OrdinaryScheduleRepo", "成功插入日程 ID: $scheduleId")
+
         // 2. 准备 TimeSlotEntity 列表 (设置 scheduleId 和 scheduleType)
         val timeSlotEntities = schedule.timeSlots.map {
             // 确保传入正确的 ID
@@ -43,6 +46,7 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
         if (timeSlotEntities.isNotEmpty()) {
             timeSlotDao.insertTimeSlots(timeSlotEntities)
         }
+        Log.d("OrdinaryScheduleRepo", "成功插入时间槽，数量: ${timeSlotEntities.size}")
         return scheduleId
     }
 
@@ -98,9 +102,9 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getAllSchedules(): Flow<List<OrdinarySchedule>> {
+    override fun getAllSchedules(userId: Int): Flow<List<OrdinarySchedule>> {
         // 使用新的 DAO 方法
-        return ordinaryScheduleDao.getAllSchedulesWithTimeSlots().map { list ->
+        return ordinaryScheduleDao.getAllSchedulesWithTimeSlots(userId).map { list ->
             list.map { scheduleWithSlots ->
                 // 映射到 Domain Model，在映射中过滤时间槽类型
                 scheduleWithSlots
@@ -110,12 +114,12 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
     }
 
     @Transaction
-    override suspend fun deleteAllSchedules() {
+    override suspend fun deleteAllSchedules(userId: Int) {
         // 1. 获取所有普通日程的 ID (使用新的 DAO 方法，或者直接查询 IDs)
         //   由于 @Relation 返回的是 Flow<List<...>>，直接获取 ID 列表可能需要 .first()
         //   或者在 DAO 中添加一个仅查询 ID 的方法。
         //   为了简单起见，我们仍然可以查询整个对象列表，然后提取 ID。
-        val allScheduleIds = ordinaryScheduleDao.getAllSchedulesWithTimeSlots()
+        val allScheduleIds = ordinaryScheduleDao.getAllSchedulesWithTimeSlots(userId)
             .map { list -> list.map { it.schedule.id } } // 映射到 ID 列表的 Flow
             .firstOrNull() ?: emptyList() // 获取第一个列表或空列表
 
@@ -125,6 +129,6 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
         }
 
         // 3. 删除所有普通日程
-        ordinaryScheduleDao.deleteAllSchedules()
+        ordinaryScheduleDao.deleteAllSchedules(userId)
     }
 }

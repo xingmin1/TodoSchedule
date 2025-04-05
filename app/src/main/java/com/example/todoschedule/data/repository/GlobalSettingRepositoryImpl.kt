@@ -63,19 +63,37 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
 
     override suspend fun updateDefaultTableIds(userId: Int, tableIds: List<Int>) {
         try {
-            // 获取用户的全局设置
+            // 获取用户的全局设置实体
             val settingEntity = globalSettingDao.getGlobalSettingByUserId(userId).first()
 
-            // 如果存在，则更新默认课表ID
             if (settingEntity != null) {
+                // 找到了现有设置，更新它
                 val setting = settingEntity.toGlobalTableSetting()
                 val updatedSetting = setting.copy(defaultTableIds = tableIds)
-                updateGlobalSetting(updatedSetting)
+                updateGlobalSetting(updatedSetting) // 调用 updateGlobalSetting
+                Log.d("GlobalSettingRepo", "Updated defaultTableIds for existing user $userId")
             } else {
-                Log.w("GlobalSettingRepo", "未找到用户 $userId 的全局设置，无法更新默认课表")
+                // 未找到现有设置，创建新的设置记录
+                Log.w(
+                    "GlobalSettingRepo",
+                    "未找到用户 $userId 的全局设置，将创建新的默认设置并设置默认课表"
+                )
+                val newDefaultSetting = GlobalTableSetting(
+                    userId = userId,
+                    defaultTableIds = tableIds, // 使用传入的 tableIds
+                    // 使用与 initDefaultSettingIfNeeded 中相同的默认值
+                    showWeekend = true,
+                    courseNotificationStyle = AppConstants.Notification.STYLE_SIMPLE,
+                    notifyBeforeMinutes = AppConstants.Notification.DEFAULT_NOTIFY_MINUTES,
+                    autoSwitchWeek = true,
+                    showCourseTime = true
+                )
+                // 调用 addGlobalSetting 来插入新记录
+                addGlobalSetting(newDefaultSetting)
             }
         } catch (e: Exception) {
             Log.e("GlobalSettingRepo", "更新默认课表ID失败: ${e.message}")
+            // 可以考虑向上抛出异常或返回一个结果
         }
     }
 

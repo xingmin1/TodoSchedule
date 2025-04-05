@@ -9,6 +9,7 @@ import com.example.todoschedule.domain.model.CourseNode
 import com.example.todoschedule.domain.model.Table
 import com.example.todoschedule.domain.repository.CourseRepository
 import com.example.todoschedule.domain.repository.TableRepository
+import com.example.todoschedule.domain.use_case.auth.GetLoginUserIdFlowUseCase
 import com.example.todoschedule.ui.theme.courseColors
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +24,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AddCourseViewModel @Inject constructor(
     private val courseRepository: CourseRepository,
-    private val tableRepository: TableRepository
+    private val tableRepository: TableRepository,
+    private val getLoginUserIdFlowUseCase: GetLoginUserIdFlowUseCase
 ) : ViewModel() {
 
     // 课程名称
@@ -170,8 +172,15 @@ class AddCourseViewModel @Inject constructor(
                     ) == null
                 ) {
                     Log.e("AddCourseViewModel", "课表ID无效或未找到课表，创建默认课表")
-                    // 创建默认课表并获取新ID
+                    val currentUserId = getLoginUserIdFlowUseCase().value
+                    if (currentUserId == null) {
+                        _saveState.value = SaveState.Error("用户未登录，无法创建课表")
+                        return@launch
+                    }
+                    val userId = currentUserId.toInt()
+                    // 创建默认课表并获取新ID                    // 创建默认课表并获取新ID
                     val newTable = Table(
+                        userId = userId,
                         tableName = AppConstants.Database.DEFAULT_TABLE_NAME,
                         startDate = AppConstants.Database.DEFAULT_TABLE_START_DATE,
                     )

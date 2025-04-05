@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -134,41 +135,44 @@ fun ScheduleScreen(
             )
         },
         floatingActionButton = {
-            Column(  // 改为垂直排列的列
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // 新增的下载按钮
-                FloatingActionButton(
-                    onClick = { navigationState.navigateSchoolSelectorScreen(defaultTableId) },
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            // 只在 Success 状态下显示 FAB
+            if (uiState is ScheduleUiState.Success) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Download,
-                        contentDescription = "选择学校"
-                    )
-                }
+                    // 下载按钮 (选择学校)
+                    FloatingActionButton(
+                        onClick = { navigationState.navigateSchoolSelectorScreen(defaultTableId) },
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ) {
+                        Icon(
+                            Icons.Default.Download,
+                            contentDescription = "选择学校"
+                        )
+                    }
 
-                // 新增：添加普通日程按钮
-                FloatingActionButton(
-                    onClick = { navigationState.navigateToAddEditOrdinarySchedule() },
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                ) {
-                    Icon(
-                        Icons.Default.Event,
-                        contentDescription = "添加日程"
-                    )
-                }
+                    // 添加日程按钮
+                    FloatingActionButton(
+                        onClick = { navigationState.navigateToAddEditOrdinarySchedule() },
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    ) {
+                        Icon(
+                            Icons.Default.Event,
+                            contentDescription = "添加日程"
+                        )
+                    }
 
-                // 原有的添加课程按钮
-                FloatingActionButton(
-                    onClick = { navigationState.navigateToAddCourse(defaultTableId) },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "添加课程")
+                    // 添加课程按钮
+                    FloatingActionButton(
+                        onClick = { navigationState.navigateToAddCourse(defaultTableId) },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "添加课程")
+                    }
                 }
             }
         }
@@ -180,8 +184,12 @@ fun ScheduleScreen(
         ) {
             when (uiState) {
                 ScheduleUiState.Loading -> LoadingScreen()
-                is ScheduleUiState.Success -> {
+                ScheduleUiState.Success -> {
+                    // 成功状态下，检查时间槽是否为空
                     if (displayableTimeSlots.isEmpty()) {
+                        // TODO: 区分是真的这周没课/日程，还是因为没有默认课表？
+                        // 目前 _defaultTableIdState 的逻辑应保证 Success 时 tableId 有效
+                        // 所以这里是真 · 空状态
                         EmptyScheduleScreen()
                     } else {
                         ScheduleContent(
@@ -231,9 +239,20 @@ fun ScheduleScreen(
                         )
                     }
                 }
-
                 is ScheduleUiState.Error -> ErrorScreen((uiState as ScheduleUiState.Error).message)
-                ScheduleUiState.Empty -> TODO()
+                // 处理新的 NoTableSelected 状态
+                ScheduleUiState.NoTableSelected -> {
+                    NoTableSelectedScreen(
+                        navigationState = navigationState,
+                        onNavigateToImport = {
+                            navigationState.navigateSchoolSelectorScreen(
+                                AppConstants.Ids.INVALID_TABLE_ID
+                            )
+                        }
+                    )
+                }
+
+                ScheduleUiState.Empty -> EmptyScheduleScreen() // 将 Empty 状态映射到空屏幕
             }
         }
     }
@@ -319,6 +338,36 @@ fun ErrorScreen(errorMessage: String) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+/**
+ * 没有选中/没有默认课表的提示屏幕
+ */
+@Composable
+fun NoTableSelectedScreen(
+    navigationState: NavigationState,
+    onNavigateToImport: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("您还没有选择或创建课表", style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("请先创建新课表或从教务系统导入", style = MaterialTheme.typography.bodyMedium)
+        Spacer(modifier = Modifier.height(32.dp))
+        Button(onClick = onNavigateToImport) {
+            Text("从教务系统导入课表")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = { navigationState.navigateToCreateEditTable() }) {
+            Text("手动创建新课表")
+        }
+        // TODO: 添加选择现有课表的按钮 (如果允许多课表)
     }
 }
 

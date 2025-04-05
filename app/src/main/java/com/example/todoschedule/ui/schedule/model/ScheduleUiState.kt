@@ -20,6 +20,11 @@ sealed class ScheduleUiState {
     data class Error(val message: String) : ScheduleUiState()
 
     /**
+     * 用户已登录，但没有默认课表被选中或存在。
+     */
+    object NoTableSelected : ScheduleUiState()
+
+    /**
      * 成功状态
      */
     object Success : ScheduleUiState()

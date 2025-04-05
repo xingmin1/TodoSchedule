@@ -160,4 +160,10 @@ dependencies {
 
     // Android Architecture Components testing - for InstantTaskExecutorRule
     androidTestImplementation(libs.androidx.core.testing)
+
+    // DataStore Preferences
+    implementation(libs.androidx.datastore.preferences)
+
+    // Password Hashing
+    implementation(libs.jbcrypt)
 }

@@ -19,9 +19,9 @@ interface UserDao {
     @Query("SELECT * FROM user WHERE id = :userId")
     suspend fun getUserById(userId: Int): UserEntity?
 
-    /** 获取当前活跃用户（目前简单实现，取第一个用户） */
-    @Query("SELECT * FROM user ORDER BY id LIMIT 1")
-    fun getCurrentUser(): Flow<UserEntity?>
+    /** 根据用户名获取用户 */
+    @Query("SELECT * FROM user WHERE username = :username")
+    suspend fun getUserByUsername(username: String): UserEntity?
 
     /** 插入用户 */
     @Insert(onConflict = OnConflictStrategy.REPLACE)

@@ -10,12 +10,11 @@ import com.example.todoschedule.domain.model.OrdinarySchedule
 import com.example.todoschedule.domain.model.Table
 import com.example.todoschedule.domain.model.TableTimeConfig
 import com.example.todoschedule.domain.model.TimeSlot
-import com.example.todoschedule.domain.model.User
 import com.example.todoschedule.domain.repository.CourseRepository
 import com.example.todoschedule.domain.repository.GlobalSettingRepository
+import com.example.todoschedule.domain.repository.SessionRepository
 import com.example.todoschedule.domain.repository.TableRepository
 import com.example.todoschedule.domain.repository.TableTimeConfigRepository
-import com.example.todoschedule.domain.repository.UserRepository
 import com.example.todoschedule.domain.use_case.ordinary_schedule.AddOrdinaryScheduleUseCase
 import com.example.todoschedule.domain.use_case.ordinary_schedule.DeleteOrdinaryScheduleUseCase
 import com.example.todoschedule.domain.use_case.ordinary_schedule.GetOrdinarySchedulesUseCase
@@ -55,17 +54,14 @@ class ScheduleViewModel
 @Inject
 constructor(
     private val courseRepository: CourseRepository,
-    userRepository: UserRepository,
+    sessionRepository: SessionRepository,
     private val tableRepository: TableRepository,
     private val globalSettingRepository: GlobalSettingRepository,
-    // 注入普通日程 Use Cases
     getOrdinarySchedulesUseCase: GetOrdinarySchedulesUseCase,
     private val addOrdinaryScheduleUseCase: AddOrdinaryScheduleUseCase,
     private val updateOrdinaryScheduleUseCase: UpdateOrdinaryScheduleUseCase,
     private val deleteOrdinaryScheduleUseCase: DeleteOrdinaryScheduleUseCase,
-    // 注入获取时间配置的 Use Case
     private val getDefaultTableTimeConfigUseCase: GetDefaultTableTimeConfigUseCase,
-    // 注入 Repository 以便调用 ensureDefaultTimeConfig
     private val tableTimeConfigRepository: TableTimeConfigRepository
 ) : ViewModel() {
 
@@ -77,18 +73,13 @@ constructor(
     private val _weekDates = MutableStateFlow<List<LocalDate>>(emptyList())
     val weekDates: StateFlow<List<LocalDate>> = _weekDates
 
-    // 当前用户状态
-    private val currentUserState: StateFlow<User?> = userRepository.getCurrentUser()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
+    // 当前登录用户 ID 状态
+    private val currentUserIdState: StateFlow<Long?> = sessionRepository.currentUserIdFlow
 
     // 当前默认课表ID状态
-    private val _defaultTableIdState: StateFlow<Int> = currentUserState.flatMapLatest { user ->
-        if (user != null) {
-            globalSettingRepository.getDefaultTableIds(user.id)
+    private val _defaultTableIdState: StateFlow<Int> = currentUserIdState.flatMapLatest { userId ->
+        if (userId != null && userId != -1L) {
+            globalSettingRepository.getDefaultTableIds(userId.toInt())
                 .map { it.firstOrNull() ?: AppConstants.Ids.INVALID_TABLE_ID }
         } else {
             flowOf(AppConstants.Ids.INVALID_TABLE_ID)
@@ -141,69 +132,89 @@ constructor(
             initialValue = null
         )
 
-    // 获取所有普通日程
-    private val ordinarySchedules: StateFlow<List<OrdinarySchedule>> = getOrdinarySchedulesUseCase()
-        .stateIn(
+    // 获取当前登录用户的普通日程
+    private val ordinarySchedules: StateFlow<List<OrdinarySchedule>> =
+        currentUserIdState.flatMapLatest { userId ->
+            if (userId != null && userId != -1L) {
+                getOrdinarySchedulesUseCase(userId.toInt())
+            } else {
+                flowOf(emptyList())
+            }
+        }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
+    // --- 新增: 组合用户相关的课表数据 ---
+    private val userTableDataFlow = combine(
+        currentUserIdState.filterNotNull(),
+        currentTableState.filterNotNull(),
+        currentTableTimeConfig.filterNotNull()
+    ) { userId, table, config ->
+        // 可选：添加校验，确保 table.userId 与当前 userId 一致
+        if (table.userId == userId.toInt()) {
+            Triple(userId, table, config)
+        } else {
+            Log.e(
+                "ScheduleViewModel",
+                "User ID mismatch between session (${userId}) and table (${table.userId})"
+            )
+            null // 如果不一致，则发 null
+        }
+    }.filterNotNull() // 过滤掉不一致的情况
+
     // UI状态 - 声明式定义
     val uiState: StateFlow<ScheduleUiState> = combine(
-        currentUserState,
+        currentUserIdState,
         _defaultTableIdState,
         currentTableState,
-        currentTableTimeConfig,
-        ordinarySchedules
-    ) { user, tableId, table, tableTimeConfig, _ ->
-        // 添加日志以便调试
+        currentTableTimeConfig
+    ) { userId, tableId, table, tableTimeConfig ->
         Log.d(
             "ScheduleViewModel",
-            "State combine for UI: user=${user?.id}, tableId=$tableId, table=${table?.id}"
+            "State combine for UI: userId=$userId, tableId=$tableId, table=${table?.id}, config=${tableTimeConfig != null}"
         )
         when {
-            // 还在等待用户数据加载 (初始状态 currentUserState.value 可能不是 null)
-            user == null && tableId == AppConstants.Ids.INVALID_TABLE_ID && table == null -> {
-                Log.d("ScheduleViewModel", "UI State: Initial Loading")
+            // 1. 等待 userId 确定 (初始状态)
+            userId == null && currentUserIdState.value == null -> {
+                Log.d("ScheduleViewModel", "UI State: Initial Loading (Waiting for userId)")
                 ScheduleUiState.Loading
             }
-            // 用户不存在 (currentUserState 不为 null，但 user 为 null)
-            user == null && currentUserState.value != null -> {
-                Log.w("ScheduleViewModel", "UI State: No user found.")
-                ScheduleUiState.Error("未找到用户")
+            // 2. 用户未登录 (userId 最终确定为 null 或 -1L)
+            userId == null || userId == -1L -> {
+                Log.w("ScheduleViewModel", "UI State: User not logged in.")
+                ScheduleUiState.NoTableSelected // 未登录视为无课表状态
             }
-            // 用户存在，没有设置默认课表
-            user != null && tableId == AppConstants.Ids.INVALID_TABLE_ID && _defaultTableIdState.value != AppConstants.Ids.INVALID_TABLE_ID -> {
-                Log.w("ScheduleViewModel", "UI State: No default table selected.")
-                ScheduleUiState.Success // 允许无默认课表状态，UI应提示
+            // 3. 已登录，但没有有效的默认课表 ID (tableId 加载完成但值为 -1)
+            tableId == AppConstants.Ids.INVALID_TABLE_ID -> {
+                Log.w(
+                    "ScheduleViewModel",
+                    "UI State: No default table selected (tableId is invalid)."
+                )
+                ScheduleUiState.NoTableSelected
             }
-            // 用户存在，有默认课表ID，但无法加载有效的课表
-            user != null && tableId != AppConstants.Ids.INVALID_TABLE_ID && table == null && currentTableState.value != null -> {
-                Log.e("ScheduleViewModel", "UI State: Error loading table ID $tableId")
-                ScheduleUiState.Error("加载课表失败")
-            }
-            // 成功加载所有必要数据 (用户、课表、普通日程)
-            user != null && table != null -> {
+            // 4. 有有效 tableId，但课表或时间配置的详细信息仍在加载
+            table == null || tableTimeConfig == null -> {
                 Log.d(
                     "ScheduleViewModel",
-                    "UI State: Success - User: ${user.id}, Table: ${table.id}, Ordinary Schedules loaded."
+                    "UI State: Loading table/config details for tableId $tableId"
                 )
-                ScheduleUiState.Success
+                ScheduleUiState.Loading
             }
-            // 其他情况视为仍在加载中
+            // 5. 成功加载所有必要数据
             else -> {
                 Log.d(
                     "ScheduleViewModel",
-                    "UI State: Fallback to Loading - Waiting for user, table, or schedules."
+                    "UI State: Success - UserID: $userId, Table: ${table.id}, Config: ${tableTimeConfig.id}"
                 )
-                ScheduleUiState.Loading
+                ScheduleUiState.Success
             }
         }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ScheduleUiState.Loading // 初始状态为 Loading
+        initialValue = ScheduleUiState.Loading
     )
 
     // 当前周的课程列表
@@ -247,26 +258,25 @@ constructor(
 
     // 合并后的、用于UI显示的时间项列表
     val displayableTimeSlots: StateFlow<List<TimeSlot>> = combine(
-        ordinarySchedules,
-        weekCourses,
-        currentTableState.filterNotNull(),
-        currentTableTimeConfig.filterNotNull(),
-        _currentWeek
-    ) { schedules, courses, table, tableTimeConfig, week ->
+        ordinarySchedules, // Flow 1: List<OrdinarySchedule> (已关联用户)
+        weekCourses,       // Flow 2: List<Course> (已关联课表和周)
+        userTableDataFlow, // Flow 3: Triple<Long, Table, TableTimeConfig>
+        _currentWeek       // Flow 4: Int
+    ) { schedules, courses, userTableData, week ->
+
+        val (userId, table, tableTimeConfig) = userTableData // 解构 Triple
+
         Log.d(
             "ScheduleViewModel",
-            "Combining displayableTimeSlots: week=$week, tableId=${table.id}, coursesCount=${courses.size}, schedulesCount=${schedules.size}"
+            "Combining displayableTimeSlots: userId=$userId, week=$week, tableId=${table.id}, coursesCount=${courses.size}, schedulesCount=${schedules.size}"
         )
 
         // 1. 过滤普通日程 TimeSlot 到当前周
         val tableStartDate = table.startDate
-
-        // **修正**: 正确计算目标周的周一开始日期
         val firstDayOfWeekTableStarts = tableStartDate.dayOfWeek.isoDayNumber
         val firstMondayOfTable =
             tableStartDate.minus(DatePeriod(days = firstDayOfWeekTableStarts - 1))
         val weekStartLocalDate = firstMondayOfTable.plus(DatePeriod(days = (week - 1) * 7))
-
         val nextWeekStartLocalDate = weekStartLocalDate.plus(DatePeriod(days = 7))
         val weekStartInstant =
             weekStartLocalDate.atTime(0, 0).toInstant(TimeZone.currentSystemDefault())
@@ -293,7 +303,7 @@ constructor(
 
         // 2. 将 CourseNode 转换为 TimeSlot (并填充显示字段)
         val courseTimeSlotsInWeek =
-            convertCourseNodesToTimeSlots(courses, week, tableTimeConfig, table)
+            convertCourseNodesToTimeSlots(courses, week, tableTimeConfig, table, userId.toInt())
         Log.d("ScheduleViewModel", "Course time slots in week $week: ${courseTimeSlotsInWeek.size}")
 
         // 3. 合并列表并排序 (可选)
@@ -320,35 +330,35 @@ constructor(
                     )
                     _currentWeek.value = currentWeekNumber
                 }
-                updateWeekDates(currentWeekNumber, startDate) // 更新日期列表
+                updateWeekDates(currentWeekNumber, startDate)
             }
         }
 
-        // **新增**: 检查并确保默认时间配置存在
+        // 检查并确保默认时间配置存在
         ensureDefaultTimeConfigExists()
     }
 
-    // **新增**: 检查并确保默认时间配置存在的函数
+    // 检查并确保默认时间配置存在的函数
     private fun ensureDefaultTimeConfigExists() {
-        combine(currentTableState, currentTableTimeConfig) { table, config ->
-            // 只处理 table 加载完成但 config 尚未加载（或加载为 null）的情况
-            table to config
+        combine(
+            currentTableState,
+            currentTableTimeConfig,
+            currentUserIdState.filterNotNull()
+        ) { table, config, userId ->
+            Triple(table, config, userId)
         }
-            .distinctUntilChanged() // 避免不必要的重复检查
-            .onEach { (table, config) ->
+            .distinctUntilChanged()
+            .onEach { (table, config, userId) ->
                 if (table != null && config == null && table.id != AppConstants.Ids.INVALID_TABLE_ID) {
                     Log.w(
                         "ScheduleViewModel",
                         "Default time config not found for table ${table.id}. Attempting to create one."
                     )
                     try {
-                        // 在后台协程中调用 ensureDefaultTimeConfig
-                        // 注意：这里只是触发创建，不会立即影响 currentTableTimeConfig 的当前值
-                        // currentTableTimeConfig 流会在数据插入后自动更新（如果 DAO 返回 Flow）
-                        tableTimeConfigRepository.ensureDefaultTimeConfig(table.id)
+                        tableTimeConfigRepository.ensureDefaultTimeConfig(table.id, userId.toInt())
                         Log.i(
                             "ScheduleViewModel",
-                            "ensureDefaultTimeConfig called for table ${table.id}."
+                            "ensureDefaultTimeConfig called for table ${table.id}, userId ${table.userId}."
                         )
                     } catch (e: Exception) {
                         Log.e(
@@ -359,7 +369,7 @@ constructor(
                     }
                 }
             }
-            .launchIn(viewModelScope) // 在 ViewModel 的作用域内启动 Flow 收集
+            .launchIn(viewModelScope)
     }
 
     // --- UI 事件处理 ---
@@ -394,8 +404,7 @@ constructor(
     /** 下一周 */
     fun nextWeek() {
         val newWeek = _currentWeek.value + 1
-        // 考虑课表总周数限制，如果 Table 模型有 totalWeeks 字段会更好
-        if (newWeek <= CalendarUtils.MAX_WEEKS) { // 使用常量或从课表获取
+        if (newWeek <= CalendarUtils.MAX_WEEKS) {
             updateCurrentWeek(newWeek)
         }
     }
@@ -408,27 +417,20 @@ constructor(
         updateCurrentWeek(currentWeekNumber)
     }
 
-    /** 获取特定日期的课程节点 (这个方法可能不再直接被 UI 使用，UI 应使用 displayableTimeSlots) */
-    /*
-    fun getCourseNodesByDay(dayOfWeek: Int): List<CourseNode> {
-        // 直接从 weekCourses 的当前值过滤，无需额外 Flow
-        return weekCourses.value.flatMap { course ->
-            course.nodes.filter { node -> node.day == dayOfWeek }
-        }
-    }
-    */
-
     // --- 普通日程操作 ---
 
     /** 添加普通日程 */
     fun addOrdinarySchedule(schedule: OrdinarySchedule) {
         viewModelScope.launch {
+            val userId = currentUserIdState.value?.toInt()
+            if (userId == null) {
+                Log.e("ScheduleViewModel", "Cannot add schedule: User not logged in")
+                return@launch
+            }
             try {
-                addOrdinaryScheduleUseCase(schedule)
-                // 可以添加成功提示或状态更新
+                addOrdinaryScheduleUseCase(schedule.copy(userId = userId))
             } catch (e: Exception) {
                 Log.e("ScheduleViewModel", "Error adding ordinary schedule", e)
-                // 处理错误，例如显示错误消息
             }
         }
     }
@@ -436,6 +438,14 @@ constructor(
     /** 更新普通日程 */
     fun updateOrdinarySchedule(schedule: OrdinarySchedule) {
         viewModelScope.launch {
+            val userId = currentUserIdState.value?.toInt()
+            if (userId == null || schedule.userId != userId) {
+                Log.e(
+                    "ScheduleViewModel",
+                    "Cannot update schedule: User not logged in or ID mismatch"
+                )
+                return@launch
+            }
             try {
                 updateOrdinaryScheduleUseCase(schedule)
             } catch (e: Exception) {
@@ -447,6 +457,14 @@ constructor(
     /** 删除普通日程 */
     fun deleteOrdinarySchedule(schedule: OrdinarySchedule) {
         viewModelScope.launch {
+            val userId = currentUserIdState.value?.toInt()
+            if (userId == null || schedule.userId != userId) {
+                Log.e(
+                    "ScheduleViewModel",
+                    "Cannot delete schedule: User not logged in or ID mismatch"
+                )
+                return@launch
+            }
             try {
                 deleteOrdinaryScheduleUseCase(schedule)
             } catch (e: Exception) {
@@ -463,11 +481,12 @@ constructor(
         courses: List<Course>,
         week: Int,
         tableTimeConfig: TableTimeConfig,
-        table: Table
+        table: Table,
+        userId: Int
     ): List<TimeSlot> {
         Log.d(
             "ScheduleViewModel",
-            "convertCourseNodesToTimeSlots START: week=$week, configId=${tableTimeConfig.id}, tableId=${table.id}, coursesInputCount=${courses.size}"
+            "convertCourseNodesToTimeSlots START: userId=$userId, week=$week, configId=${tableTimeConfig.id}, tableId=${table.id}, coursesInputCount=${courses.size}"
         )
 
         val tableStartDate = table.startDate
@@ -521,7 +540,7 @@ constructor(
 
                     resultSlots.add(
                         TimeSlot(
-                            userId = table.userId,
+                            userId = userId,
                             startTime = startMillis,
                             endTime = endMillis,
                             scheduleType = ScheduleType.COURSE,
@@ -551,4 +570,10 @@ constructor(
         )
         return resultSlots
     }
+}
+
+// 扩展函数: 检查节点是否在指定周
+private fun com.example.todoschedule.domain.model.CourseNode.isInWeek(week: Int): Boolean {
+    return week in startWeek..endWeek &&
+            (weekType == 0 || (weekType == 1 && week % 2 != 0) || (weekType == 2 && week % 2 == 0))
 }

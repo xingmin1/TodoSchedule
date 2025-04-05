@@ -16,6 +16,17 @@ class NavigationState(
         get() = navController.currentDestination?.route
 
     /**
+     * 导航到注册页面
+     */
+    fun navigateToRegister() {
+        navController.navigate(AppRoutes.Register.route) {
+            popUpTo(AppRoutes.Login.route) {
+                inclusive = true
+            }
+        }
+    }
+
+    /**
      * 导航到首页
      */
     fun navigateToHome() {
@@ -110,4 +121,10 @@ class NavigationState(
         navController.navigate(AppRoutes.OrdinaryScheduleDetail.createRoute(scheduleId))
     }
 
+    /**
+     * 导航到创建/编辑课表页面
+     */
+    fun navigateToCreateEditTable(tableId: Int? = null) {
+        navController.navigate(AppRoutes.CreateEditTable.createRoute(tableId))
+    }
 }

@@ -33,9 +33,16 @@ interface OrdinaryScheduleDao {
     fun getScheduleWithTimeSlotsById(id: Int): Flow<OrdinaryScheduleWithTimeSlots?>
 
     @Transaction
-    @Query("SELECT * FROM ordinary_schedule ORDER BY id DESC") // 示例排序
-    fun getAllSchedulesWithTimeSlots(): Flow<List<OrdinaryScheduleWithTimeSlots>>
+    @Query(
+        """
+        SELECT * 
+        FROM ordinary_schedule 
+        WHERE userId = :userId
+        ORDER BY id DESC
+        """
+    )
+    fun getAllSchedulesWithTimeSlots(userId: Int): Flow<List<OrdinaryScheduleWithTimeSlots>>
 
-    @Query("DELETE FROM ordinary_schedule")
-    suspend fun deleteAllSchedules() // 删除所有日程
+    @Query("DELETE FROM ordinary_schedule WHERE userId = :userId")
+    suspend fun deleteAllSchedules(userId: Int) // 删除所有日程
 }

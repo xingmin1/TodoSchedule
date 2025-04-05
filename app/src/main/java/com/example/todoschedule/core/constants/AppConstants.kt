@@ -9,7 +9,7 @@ object AppConstants {
     object Ids {
         // 无效的ID值，用于表示未找到或未设置的ID
         const val INVALID_ID = -1
-        const val INVALID_USER_ID = -1
+        const val INVALID_USER_ID = -1L
         const val INVALID_TABLE_ID = -1
         const val INVALID_SETTING_ID = -1
         const val INVALID_COURSE_ID = -1
@@ -46,10 +46,12 @@ object AppConstants {
         const val STYLE_SILENT = 2 // 静默样式
     }
 
+    val UserPreferencesName: String = "user_preferences"
+
     /** 数据库相关常量 */
     object Database {
         const val DB_NAME = "todo_schedule.db" // 数据库名称
-        const val DB_VERSION = 2 // 数据库版本
+        const val DB_VERSION = 4 // 数据库版本
         const val DEFAULT_TABLE_NAME = "默认课表" // 默认课表名称
         val DEFAULT_TABLE_START_DATE: LocalDate =
             LocalDate(2025, 2, 17) // 默认课表开始日期

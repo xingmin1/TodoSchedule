@@ -64,11 +64,13 @@ import com.example.todoschedule.BuildConfig
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
+    onLogout: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val darkTheme by viewModel.darkTheme.collectAsState()
     val materialYou by viewModel.materialYou.collectAsState()
     val firstDayOfWeek by viewModel.firstDayOfWeek.collectAsState()
+    var showLogoutConfirmDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -152,11 +154,46 @@ fun SettingsScreen(
                 )
             }
 
-            // 开发者选项（仅在开发环境中显示）
+            // ----- 用户账户 ----- (新类别)
+            SettingsCategory(title = "账户") {
+                // TODO: 添加修改密码、绑定手机/邮箱等入口
+
+                // 登出按钮
+                SettingsClickableItem(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    title = "退出登录",
+                    onClick = { showLogoutConfirmDialog = true }
+                )
+            }
+
+            // 开发者选项
             if (BuildConfig.DEBUG) {
                 DeveloperOptions(viewModel)
             }
         }
+    }
+
+    // 登出确认对话框
+    if (showLogoutConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutConfirmDialog = false },
+            title = { Text("确认退出") },
+            text = { Text("您确定要退出当前账号吗？") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLogoutConfirmDialog = false
+                    viewModel.logout()
+                    onLogout()
+                }) {
+                    Text("退出")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutConfirmDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
     }
 }
 
@@ -408,4 +445,12 @@ fun DeveloperOptions(viewModel: SettingsViewModel) {
             onClick = { showConfirmDialog = true }
         )
     }
+}
+
+/**
+ * 数据库操作状态处理
+ */
+@Composable
+fun DatabaseOperationHandler(viewModel: SettingsViewModel) {
+    // Implementation of the new method
 } 

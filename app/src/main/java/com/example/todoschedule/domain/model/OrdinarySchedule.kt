@@ -7,6 +7,7 @@ import com.example.todoschedule.data.database.converter.ScheduleStatus // 引入
  */
 data class OrdinarySchedule(
     val id: Int = 0,
+    val userId: Int,
     val title: String,
     val description: String? = null,
     val location: String? = null,

@@ -11,11 +11,14 @@ interface UserRepository {
     /** 获取指定ID的用户 */
     suspend fun getUserById(userId: Int): User?
 
-    /** 获取当前活跃用户 */
-    fun getCurrentUser(): Flow<User?>
-
     /** 添加用户 */
     suspend fun addUser(user: User): Long
+
+    /** 注册新用户（包含密码哈希处理） */
+    suspend fun registerUser(user: User): Result<Long>
+
+    /** 根据用户名查找用户 */
+    suspend fun findUserByUsername(username: String): User?
 
     /** 更新用户 */
     suspend fun updateUser(user: User)

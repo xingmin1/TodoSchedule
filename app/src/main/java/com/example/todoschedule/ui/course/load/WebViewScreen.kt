@@ -32,9 +32,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
@@ -233,7 +233,7 @@ fun WebViewScreen(
                 modifier = Modifier.size(40.dp) // 缩小按钮尺寸
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "返回",
                     tint = if (canGoBack) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
@@ -285,7 +285,7 @@ fun WebViewScreen(
                 modifier = Modifier.padding(bottom = 8.dp),
                 containerColor = MaterialTheme.colorScheme.secondaryContainer
             ) {
-                Icon(Icons.Default.Help, "帮助")
+                Icon(Icons.AutoMirrored.Filled.Help, "帮助")
             }
 
             FloatingActionButton(
@@ -335,6 +335,7 @@ fun WebViewScreen(
     }
 }
 
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun rememberWebView(
     initialUrl: String,

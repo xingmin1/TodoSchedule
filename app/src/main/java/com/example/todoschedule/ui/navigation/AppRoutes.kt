@@ -83,4 +83,30 @@ sealed class AppRoutes(val route: String) {
         fun createRoute(scheduleId: Int) = "ordinary_schedule_detail/$scheduleId"
         const val ARG_SCHEDULE_ID = "scheduleId" // Argument name constant
     }
+
+    /**
+     * 登录页面
+     */
+    object Login : AppRoutes("login")
+
+    /**
+     * 注册页面
+     */
+    object Register : AppRoutes("register")
+
+    /**
+     * 创建/编辑课表页面
+     * 可选参数 tableId 用于编辑模式
+     */
+    object CreateEditTable : AppRoutes("create_edit_table?tableId={tableId}") {
+        fun createRoute(tableId: Int? = null): String {
+            return if (tableId != null) {
+                "create_edit_table?tableId=$tableId"
+            } else {
+                "create_edit_table"
+            }
+        }
+
+        const val ARG_TABLE_ID = "tableId" // Argument name
+    }
 }

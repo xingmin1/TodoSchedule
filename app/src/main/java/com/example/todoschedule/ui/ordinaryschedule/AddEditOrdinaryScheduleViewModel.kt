@@ -8,7 +8,7 @@ import com.example.todoschedule.data.database.converter.ScheduleStatus
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.domain.model.OrdinarySchedule
 import com.example.todoschedule.domain.model.TimeSlot
-import com.example.todoschedule.domain.repository.UserRepository
+import com.example.todoschedule.domain.repository.SessionRepository
 import com.example.todoschedule.domain.use_case.ordinary_schedule.AddOrdinaryScheduleUseCase
 import com.example.todoschedule.domain.use_case.ordinary_schedule.GetOrdinaryScheduleByIdUseCase
 import com.example.todoschedule.domain.use_case.ordinary_schedule.UpdateOrdinaryScheduleUseCase
@@ -60,10 +60,10 @@ data class AddEditOrdinaryScheduleUiState(
 @HiltViewModel
 class AddEditOrdinaryScheduleViewModel @Inject constructor(
     private val addOrdinaryScheduleUseCase: AddOrdinaryScheduleUseCase,
-    private val getOrdinaryScheduleByIdUseCase: GetOrdinaryScheduleByIdUseCase, // Inject Get UseCase
-    private val updateOrdinaryScheduleUseCase: UpdateOrdinaryScheduleUseCase, // Inject Update UseCase
-    private val userRepository: UserRepository,
-    savedStateHandle: SavedStateHandle // Inject SavedStateHandle
+    private val getOrdinaryScheduleByIdUseCase: GetOrdinaryScheduleByIdUseCase,
+    private val updateOrdinaryScheduleUseCase: UpdateOrdinaryScheduleUseCase,
+    private val sessionRepository: SessionRepository,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddEditOrdinaryScheduleUiState())
@@ -233,9 +233,9 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             try {
-                val currentUser = userRepository.getCurrentUser().first()
-                if (currentUser == null) {
-                    Log.e("AddEditVM", "Save failed: Current user not found.")
+                val currentUserId = sessionRepository.currentUserIdFlow.first()
+                if (currentUserId == null || currentUserId == -1L) {
+                    Log.e("AddEditVM", "Save failed: Current user not logged in or invalid ID.")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -244,8 +244,8 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
                     }
                     return@launch
                 }
-                val currentUserId = currentUser.id
-                Log.d("AddEditVM", "Current User ID for TimeSlot: $currentUserId")
+                val userIdInt = currentUserId.toInt()
+                Log.d("AddEditVM", "Current User ID for TimeSlot: $userIdInt")
 
                 // Convert to Milliseconds
                 val zoneId = ZoneId.systemDefault()
@@ -259,12 +259,13 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
                     startTime = startMillis,
                     endTime = endMillis,
                     scheduleType = ScheduleType.ORDINARY,
-                    scheduleId = currentState.scheduleId ?: 0, // Use existing ID if editing
-                    userId = currentUserId
+                    scheduleId = currentState.scheduleId ?: 0,
+                    userId = userIdInt
                 )
 
                 val scheduleToSave = OrdinarySchedule(
                     id = currentState.scheduleId ?: 0,
+                    userId = userIdInt,
                     title = currentState.title,
                     description = currentState.description,
                     location = currentState.location,
@@ -275,6 +276,19 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
                 )
 
                 if (currentState.isEditMode) {
+                    if (scheduleToSave.userId != userIdInt) {
+                        Log.e(
+                            "AddEditVM",
+                            "Update failed: User ID mismatch. Cannot edit other user's schedule."
+                        )
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = "无法编辑此日程"
+                            )
+                        }
+                        return@launch
+                    }
                     updateOrdinaryScheduleUseCase(scheduleToSave)
                     Log.d("AddEditVM", "Updating schedule: ${scheduleToSave.id}")
                 } else {
@@ -284,7 +298,7 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
 
                 _uiState.update { it.copy(isLoading = false, isSaved = true) }
             } catch (e: Exception) {
-                Log.e("AddEditVM", "Save failed with exception", e) // Log the actual exception
+                Log.e("AddEditVM", "Save failed with exception", e)
                 _uiState.update {
                     it.copy(
                         isLoading = false,

@@ -11,7 +11,7 @@ import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
 import com.example.todoschedule.domain.repository.CourseRepository
 import com.example.todoschedule.domain.repository.GlobalSettingRepository
-import com.example.todoschedule.domain.repository.UserRepository
+import com.example.todoschedule.domain.repository.SessionRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -24,19 +24,19 @@ class CourseRepositoryImpl
 @Inject
 constructor(
     private val courseDao: CourseDao,
-    private val userRepository: UserRepository,
+    private val sessionRepository: SessionRepository,
     private val globalSettingRepository: GlobalSettingRepository
 ) : CourseRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun getAllCourses(): Flow<List<Course>> {
-        return userRepository.getCurrentUser().flatMapLatest { user ->
-            if (user != null) {
-                globalSettingRepository.getDefaultTableIds(user.id).flatMapLatest { tableIds ->
+        return sessionRepository.currentUserIdFlow.flatMapLatest { userId ->
+            if (userId != null && userId != -1L) {
+                globalSettingRepository.getDefaultTableIds(userId.toInt())
+                    .flatMapLatest { tableIds ->
                     val tableId = tableIds.firstOrNull() ?: AppConstants.Ids.INVALID_TABLE_ID
                     if (tableId == AppConstants.Ids.INVALID_TABLE_ID) {
-                        // 如果没有有效的课表ID，记录日志并返回空列表
-                        Log.w("CourseRepositoryImpl", "未找到默认课表ID，用户ID: ${user.id}")
+                        Log.w("CourseRepositoryImpl", "未找到默认课表ID，用户ID: $userId")
                         flowOf(emptyList())
                     } else {
                         courseDao.getCoursesByTableId(tableId).map { courseWithNodes ->
@@ -45,8 +45,7 @@ constructor(
                     }
                 }
             } else {
-                // 如果没有用户，返回空列表
-                Log.w("CourseRepositoryImpl", "未找到当前用户")
+                Log.w("CourseRepositoryImpl", "未找到当前用户或用户未登录 (userId: $userId)")
                 flowOf(emptyList())
             }
         }
@@ -78,7 +77,6 @@ constructor(
 
     override suspend fun updateCourse(course: Course, tableId: Int) {
         courseDao.updateCourse(course.toCourseEntity(tableId))
-        // 先删除原有节点再添加新节点
         courseDao.deleteAllNodesOfCourse(course.id)
         course.nodes.forEach { node ->
             courseDao.insertCourseNode(node.toCourseNodeEntity(course.id))

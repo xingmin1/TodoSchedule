@@ -8,6 +8,7 @@ import com.example.todoschedule.domain.model.OrdinarySchedule
 fun OrdinarySchedule.toEntity(): OrdinaryScheduleEntity {
     return OrdinaryScheduleEntity(
         id = this.id,
+        userId = this.userId,
         title = this.title,
         description = this.description,
         location = this.location,
@@ -23,6 +24,7 @@ fun OrdinaryScheduleWithTimeSlots.filterAndToDomainModel(): OrdinarySchedule {
 
     return OrdinarySchedule(
         id = this.schedule.id,
+        userId = this.schedule.userId,
         title = this.schedule.title,
         description = this.schedule.description,
         location = this.schedule.location,

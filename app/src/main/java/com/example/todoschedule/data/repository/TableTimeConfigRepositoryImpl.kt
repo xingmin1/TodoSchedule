@@ -31,20 +31,20 @@ constructor(private val tableTimeConfigDao: TableTimeConfigDao) : TableTimeConfi
     }
 
     /** 确保指定课表存在默认时间配置，如果不存在则创建。 */
-    override suspend fun ensureDefaultTimeConfig(tableId: Int): Int? {
+    override suspend fun ensureDefaultTimeConfig(tableId: Int, userId: Int): Int? {
         // 1. 检查是否已存在默认配置
         val existingDefault =
             tableTimeConfigDao.getDefaultTimeConfigWithNodes(tableId).firstOrNull()
         if (existingDefault != null) {
-            return existingDefault.config.id // 已存在，返回其 ID
+            return existingDefault.config.id
         }
 
         // 2. 创建默认时间配置实体
         val newConfig =
             TableTimeConfigEntity(
                 tableId = tableId,
-                name = AppConstants.Database.DEFAULT_TIME_CONFIG_TABLE_NAME, // 使用常量
-                isDefault = true // 标记为默认
+                name = AppConstants.Database.DEFAULT_TIME_CONFIG_TABLE_NAME,
+                isDefault = true
             )
         val newConfigId = tableTimeConfigDao.insertTimeConfig(newConfig)
 
@@ -54,8 +54,6 @@ constructor(private val tableTimeConfigDao: TableTimeConfigDao) : TableTimeConfi
             tableTimeConfigDao.insertNodeDetails(defaultNodes)
             return newConfigId.toInt()
         } else {
-            // 插入失败
-            // 可以记录错误日志或抛出异常
             println("Error: Failed to insert default time config for table $tableId")
             return null
         }

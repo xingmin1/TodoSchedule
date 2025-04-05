@@ -8,10 +8,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /** 应用类 */
 @HiltAndroidApp
 class TodoScheduleApplication : Application() {
+
+    // 注入 DevUtils
+    @Inject
+    lateinit var devUtils: DevUtils
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -31,8 +36,8 @@ class TodoScheduleApplication : Application() {
             // 第一步：如果开启了开发模式，首先清空数据库
             // 这确保了数据库初始化前先删除所有数据
             if (CLEAR_DATABASE_ON_START) {
-                Log.d("TodoScheduleApplication", "清空数据库...")
-                DevUtils.clearDatabase(this@TodoScheduleApplication)
+                Log.d("TodoScheduleApplication", "清空数据库和 DataStore...")
+                devUtils.clearDatabaseAndDataStore()
             }
         }
     }
