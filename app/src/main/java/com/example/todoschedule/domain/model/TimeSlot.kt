@@ -19,5 +19,10 @@ data class TimeSlot(
     val isRepeated: Boolean = false, // 是否重复
     val repeatPattern: String? = null, // 重复模式
     val reminderType: ReminderType? = ReminderType.NONE, // 使用枚举类型
-    val reminderOffset: Long? = null // 提醒偏移量 (毫秒)
+    val reminderOffset: Long? = null, // 提醒偏移量 (毫秒)
+
+    // --- 新增用于 UI 显示的字段 ---
+    val displayTitle: String = "", // 要显示的标题 (课程名/日程标题)
+    val displaySubtitle: String? = null, // 要显示的副标题 (教室/地点)
+    val displayColor: String? = null // 用于背景的颜色字符串 (例如 "#FF0000")
 ) 

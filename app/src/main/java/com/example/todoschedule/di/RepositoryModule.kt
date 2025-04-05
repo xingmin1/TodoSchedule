@@ -4,13 +4,13 @@ import com.example.todoschedule.data.repository.CourseRepositoryImpl
 import com.example.todoschedule.data.repository.GlobalSettingRepositoryImpl
 import com.example.todoschedule.data.repository.OrdinaryScheduleRepositoryImpl
 import com.example.todoschedule.data.repository.TableRepositoryImpl
-import com.example.todoschedule.data.repository.TimeConfigRepositoryImpl
+import com.example.todoschedule.data.repository.TableTimeConfigRepositoryImpl
 import com.example.todoschedule.data.repository.UserRepositoryImpl
 import com.example.todoschedule.domain.repository.CourseRepository
 import com.example.todoschedule.domain.repository.GlobalSettingRepository
 import com.example.todoschedule.domain.repository.OrdinaryScheduleRepository
 import com.example.todoschedule.domain.repository.TableRepository
-import com.example.todoschedule.domain.repository.TimeConfigRepository
+import com.example.todoschedule.domain.repository.TableTimeConfigRepository
 import com.example.todoschedule.domain.repository.UserRepository
 import dagger.Binds
 import dagger.Module
@@ -56,8 +56,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindTimeConfigRepository(
-        timeConfigRepositoryImpl: TimeConfigRepositoryImpl
-    ): TimeConfigRepository
+        TableTimeConfigRepositoryImpl: TableTimeConfigRepositoryImpl
+    ): TableTimeConfigRepository
 
     /** 绑定普通日程仓库实现 */
     @Binds

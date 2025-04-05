@@ -5,7 +5,7 @@ import kotlinx.datetime.LocalDate
 /** 课表领域模型 */
 data class Table(
     val id: Int = 0,
-    val userId: Int = 1,
+    val userId: Int = 1, // TODO: 需要从登录功能中获取
     val tableName: String,
     val background: String = "",
     val startDate: LocalDate,

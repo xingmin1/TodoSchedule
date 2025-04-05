@@ -1,17 +1,17 @@
 package com.example.todoschedule.ui.schedule
 
-import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,11 +26,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -43,31 +45,45 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
+import com.example.todoschedule.core.constants.AppConstants
+import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
+import com.example.todoschedule.domain.model.TimeSlot
 import com.example.todoschedule.ui.navigation.NavigationState
 import com.example.todoschedule.ui.schedule.model.ScheduleUiState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.plus
+import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toLocalDateTime
+import java.time.format.DateTimeFormatter
+import kotlin.math.max
 
 /**
  * 课程表屏幕
@@ -83,7 +99,7 @@ fun ScheduleScreen(
     val uiState by viewModel.uiState.collectAsState()
     val currentWeek by viewModel.currentWeek.collectAsState()
     val weekDates by viewModel.weekDates.collectAsState()
-    val weekCourses by viewModel.weekCourses.collectAsState()
+    val displayableTimeSlots by viewModel.displayableTimeSlots.collectAsState()
     val defaultTableId by viewModel.defaultTableIdState.collectAsState()
 
     Scaffold(
@@ -125,12 +141,24 @@ fun ScheduleScreen(
                 // 新增的下载按钮
                 FloatingActionButton(
                     onClick = { navigationState.navigateSchoolSelectorScreen(defaultTableId) },
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 ) {
                     Icon(
                         Icons.Default.Download,
                         contentDescription = "选择学校"
+                    )
+                }
+
+                // 新增：添加普通日程按钮
+                FloatingActionButton(
+                    onClick = { navigationState.navigateToAddEditOrdinarySchedule() },
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                ) {
+                    Icon(
+                        Icons.Default.Event,
+                        contentDescription = "添加日程"
                     )
                 }
 
@@ -153,18 +181,52 @@ fun ScheduleScreen(
             when (uiState) {
                 ScheduleUiState.Loading -> LoadingScreen()
                 is ScheduleUiState.Success -> {
-                    if (weekCourses.isEmpty()) {
+                    if (displayableTimeSlots.isEmpty()) {
                         EmptyScheduleScreen()
                     } else {
                         ScheduleContent(
                             tableId = defaultTableId,
                             weekDates = weekDates,
-                            weekCourses = weekCourses,
-                            onCourseClick = { tableId, courseId ->
-                                navigationState.navigateToCourseDetail(
-                                    tableId,
-                                    courseId
+                            timeSlots = displayableTimeSlots,
+                            onTimeSlotClick = { timeSlot ->
+                                Log.d(
+                                    "ScheduleScreen",
+                                    "Clicked on TimeSlot: Type=${timeSlot.scheduleType}, ScheduleID=${timeSlot.scheduleId}, Head='${timeSlot.head}'"
                                 )
+                                when (timeSlot.scheduleType) {
+                                    ScheduleType.COURSE -> {
+                                        if (defaultTableId != AppConstants.Ids.INVALID_TABLE_ID) {
+                                            Log.i(
+                                                "ScheduleScreen",
+                                                "Navigating to Course Detail: tableId=$defaultTableId, courseId=${timeSlot.scheduleId}"
+                                            )
+                                            navigationState.navigateToCourseDetail(
+                                                tableId = defaultTableId,
+                                                courseId = timeSlot.scheduleId
+                                            )
+                                        } else {
+                                            Log.w(
+                                                "ScheduleScreen",
+                                                "Cannot navigate to course detail, defaultTableId is invalid."
+                                            )
+                                        }
+                                    }
+
+                                    ScheduleType.ORDINARY -> {
+                                        Log.i(
+                                            "ScheduleScreen",
+                                            "Navigating to Ordinary Schedule Detail for scheduleId=${timeSlot.scheduleId}"
+                                        )
+                                        navigationState.navigateToOrdinaryScheduleDetail(timeSlot.scheduleId)
+                                    }
+
+                                    else -> {
+                                        Log.w(
+                                            "ScheduleScreen",
+                                            "Navigation not implemented for ScheduleType: ${timeSlot.scheduleType}"
+                                        )
+                                    }
+                                }
                             }
                         )
                     }
@@ -267,32 +329,63 @@ fun ErrorScreen(errorMessage: String) {
 fun ScheduleContent(
     tableId: Int,
     weekDates: List<LocalDate>,
-    weekCourses: List<Course>,
-    onCourseClick: (Int, Int) -> Unit
+    timeSlots: List<TimeSlot>,
+    onTimeSlotClick: (TimeSlot) -> Unit
 ) {
+    val scrollState = rememberScrollState()
+    val maxNodes = 12 // TODO: 从配置或计算得出最大节数 (对应小时数?)
+    val hourHeight = 60.dp // 每小时的高度
+    val totalHeight = (maxNodes * hourHeight.value).dp
+
+    // State to hold the calculated width for a day column
+    var dayWidth by remember { mutableStateOf(0.dp) }
+    val density = LocalDensity.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
     ) {
-        // 周日期头部
+        // 星期和日期标题行
         WeekHeader(weekDates = weekDates)
 
-        // 课程表格
-        Row(
+        // 时间轴和课程/日程格子
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp)
+                .height(totalHeight)
+                // Calculate dayWidth once the layout is measured
+                .onGloballyPositioned { coordinates ->
+                    with(density) {
+                        // Calculate width available for 7 days after the time axis
+                        val availableWidth = coordinates.size.width.toDp() - TIME_AXIS_WIDTH
+                        // Ensure positive width before calculating dayWidth
+                        if (availableWidth > 0.dp) {
+                            dayWidth = availableWidth / 7
+                        }
+                    }
+                }
         ) {
-            // 时间列
-            TimeColumn()
+            // 时间轴 (左侧)
+            TimeAxis(maxNodes = maxNodes, hourHeight = hourHeight)
 
-            // 课程网格
-            CourseGrid(
-                tableId = tableId,
-                courses = weekCourses,
-                onCourseClick = onCourseClick
-            )
+            // 绘制背景网格线 (需要 dayWidth)
+            if (dayWidth > 0.dp) { // Only draw grid if dayWidth is calculated
+                WeekGrid(maxNodes = maxNodes, hourHeight = hourHeight, dayWidth = dayWidth)
+            }
+
+            // 放置 TimeSlot Items (需要 dayWidth)
+            if (dayWidth > 0.dp) { // Only place items if dayWidth is calculated
+                timeSlots.forEach { timeSlot ->
+                    TimeSlotItem(
+                        timeSlot = timeSlot,
+                        hourHeight = hourHeight,
+                        dayWidth = dayWidth,
+                        gridStartHour = 8, // Assume grid starts at 8 AM
+                        onTimeSlotClick = { onTimeSlotClick(timeSlot) },
+                    )
+                }
+            }
         }
     }
 }
@@ -365,10 +458,10 @@ fun WeekHeader(weekDates: List<LocalDate>) {
 }
 
 /**
- * 时间列
+ * 时间轴
  */
 @Composable
-fun TimeColumn() {
+fun TimeAxis(maxNodes: Int, hourHeight: Dp) {
     val times = listOf(
         "8:00", "9:00", "10:00", "11:00", "12:00",
         "13:00", "14:00", "15:00", "16:00", "17:00",
@@ -399,152 +492,170 @@ fun TimeColumn() {
 }
 
 /**
- * 课程网格
+ * 绘制背景网格线
  */
 @Composable
-fun CourseGrid(
-    tableId: Int,
-    courses: List<Course>,
-    onCourseClick: (Int, Int) -> Unit
-) {
-    // 为每一天创建一列
-    Row(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        // 创建7列（周一到周日）
-        for (day in 1..7) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                // 过滤出当天的课程节点
-                val nodesToday = courses.flatMap { course ->
-                    course.nodes
-                        .filter { it.day == day }
-                        .map { node -> Pair(course, node) }
-                }
-
-                // 用于跟踪已渲染的时间槽
-                val renderedSlots = mutableSetOf<Int>()
-
-                // 遍历每个时间槽 (1-12)
-                for (slot in 1..12) {
-                    // 检查是否已经渲染过这个时间槽
-                    if (slot in renderedSlots) continue
-
-                    // 查找在这个时间槽开始的课程
-                    val courseAtSlot = nodesToday.find { (_, node) -> node.startNode == slot }
-
-                    if (courseAtSlot != null) {
-                        // 有课程，渲染课程卡片
-                        val (course, node) = courseAtSlot
-                        CourseCard(
-                            course = course,
-                            node = node,
-                            onClick = { onCourseClick(tableId, course.id) }
-                        )
-
-                        // 标记课程占用的所有时间槽为已渲染
-                        for (i in node.startNode until node.startNode + node.step) {
-                            renderedSlots.add(i)
-                        }
-                    } else {
-                        // 没有课程，渲染空时间槽
-                        EmptyTimeSlot()
-                        renderedSlots.add(slot)
-                    }
-                }
-            }
+fun WeekGrid(maxNodes: Int, hourHeight: Dp, dayWidth: Dp) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Horizontal lines
+        (0..maxNodes).forEach { node -> // Start from 0 for the top line
+            Divider(
+                color = Color.LightGray.copy(alpha = 0.3f),
+                thickness = 0.5.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopStart)
+                    .offset(y = (node * hourHeight.value).dp)
+            )
+        }
+        // Vertical lines (after time axis)
+        (0..7).forEach { dayIndex -> // Draw 8 lines for 7 columns
+            Divider(
+                color = Color.LightGray.copy(alpha = 0.3f),
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(0.5.dp)
+                    .align(Alignment.TopStart)
+                    // Offset starts from TIME_AXIS_WIDTH
+                    .offset(x = TIME_AXIS_WIDTH + (dayIndex * dayWidth.value).dp)
+            )
         }
     }
 }
 
-/**
- * 空时间槽
- */
-@Composable
-fun EmptyTimeSlot() {
-    Box(
-        modifier = Modifier
-            .height(60.dp)
-            .padding(1.dp)
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(4.dp)
-            )
-    )
-}
+// Formatter for displaying time in TimeSlotItem
+private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
 /**
- * 课程卡片
+ * 显示单个时间槽的 Composable
  */
-@SuppressLint("UseKtx")
 @Composable
-fun CourseCard(
-    course: Course,
-    node: CourseNode,
-    onClick: () -> Unit
+fun TimeSlotItem(
+    timeSlot: TimeSlot,
+    hourHeight: Dp,
+    dayWidth: Dp,
+    gridStartHour: Int,
+    onTimeSlotClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val cardColor = try {
-        Color(course.color.toColorInt())
-    } catch (_: Exception) {
-        Log.e("CourseCard", course.color)
-        MaterialTheme.colorScheme.primary
+    val density = LocalDensity.current
+
+    // 1. 计算 TimeSlot 的位置和大小
+    val startInstant = Instant.fromEpochMilliseconds(timeSlot.startTime)
+    val endInstant = Instant.fromEpochMilliseconds(timeSlot.endTime)
+    val startTimeLocal = startInstant.toLocalDateTime(TimeZone.currentSystemDefault())
+    val endTimeLocal = endInstant.toLocalDateTime(TimeZone.currentSystemDefault())
+    val dayOfWeek = startTimeLocal.dayOfWeek.isoDayNumber
+    val startHourFraction = startTimeLocal.hour + startTimeLocal.minute / 60.0
+    val durationMillis = max(1, timeSlot.endTime - timeSlot.startTime)
+    val durationHours = durationMillis / (1000.0 * 60 * 60)
+    val topOffset = ((startHourFraction - gridStartHour) * hourHeight.value).dp
+    val itemHeight = (durationHours * hourHeight.value).dp
+    val leftOffset = TIME_AXIS_WIDTH + ((dayOfWeek - 1) * dayWidth.value).dp
+    val itemWidth = dayWidth - 4.dp
+    val finalHeight = max(1f, itemHeight.value - 4).dp
+    val finalWidth = max(1f, itemWidth.value).dp
+
+    // 2. 获取显示信息和颜色 (使用新字段)
+    val title = timeSlot.displayTitle // 使用 displayTitle
+    // 格式化时间 + 地点/副标题
+    val timeString =
+        "${startTimeLocal.format(timeFormatter)} - ${endTimeLocal.format(timeFormatter)}"
+    val details = if (!timeSlot.displaySubtitle.isNullOrBlank()) {
+        "$timeString\n@${timeSlot.displaySubtitle}" // 如果有副标题，换行显示
+    } else {
+        timeString
     }
 
-    val textColor = if (isColorDark(cardColor)) {
-        Color.White
-    } else {
-        Color.Black
+    // 解析背景颜色，提供默认值
+    val backgroundColor = remember(timeSlot.displayColor) { // Remember based on color string
+        try {
+            timeSlot.displayColor?.let { Color(it.toColorInt()) }
+                ?: fallbackColor(timeSlot.scheduleType)
+        } catch (e: Exception) {
+            Log.w("TimeSlotItem", "Invalid color string: ${timeSlot.displayColor}, using fallback.")
+            fallbackColor(timeSlot.scheduleType)
+        }
+    }
+    // 根据背景色决定内容颜色以确保可读性
+    val contentColor = remember(backgroundColor) {
+        if (backgroundColor.isDark()) Color.White else Color.Black.copy(alpha = 0.87f)
+    }
+
+    // Prevent item from drawing outside the grid boundaries (optional but good practice)
+    if (topOffset < 0.dp || leftOffset < TIME_AXIS_WIDTH || dayWidth <= 0.dp) {
+        // Log error or skip rendering if position calculation is invalid
+        Log.e(
+            "TimeSlotItem",
+            "Invalid position calculated for TimeSlot ${timeSlot.id}, skipping render."
+        )
+        return // Don't draw if position is invalid
     }
 
     Card(
-        modifier = Modifier
-            .height(60.dp * node.step)
-            .padding(1.dp)
-            .clickable(onClick = onClick),
+        modifier = modifier
+            .padding(horizontal = 2.dp, vertical = 2.dp)
+            .offset(x = leftOffset, y = topOffset)
+            .width(finalWidth)
+            .height(finalHeight)
+            .clickable(onClick = onTimeSlotClick),
+        shape = RoundedCornerShape(6.dp),
         colors = CardDefaults.cardColors(
-            containerColor = cardColor
+            containerColor = backgroundColor,
+            contentColor = contentColor
         ),
-        shape = RoundedCornerShape(4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(4.dp),
-            verticalArrangement = Arrangement.Center
+                .padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalArrangement = Arrangement.Top,
         ) {
-            // 课程名称
+            // 显示标题
             Text(
-                text = course.courseName,
-                style = MaterialTheme.typography.bodySmall,
-                color = textColor,
+                text = title,
                 fontWeight = FontWeight.Bold,
-                maxLines = 2,
+                fontSize = 11.sp,
+                maxLines = 2, // 允许标题最多两行
                 overflow = TextOverflow.Ellipsis
             )
-
-            // 如果有足够的空间，显示教室
-            if (node.step >= 2 && !node.room.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = node.room,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = textColor.copy(alpha = 0.8f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Spacer(modifier = Modifier.height(2.dp))
+            // 显示详情 (时间 +/- 地点)
+            Text(
+                text = details,
+                fontSize = 9.sp,
+                maxLines = 2, // 允许详情两行 (时间+地点)
+                overflow = TextOverflow.Ellipsis,
+                color = contentColor.copy(alpha = 0.8f)
+            )
         }
     }
 }
 
-/**
- * 判断颜色是否为深色
- */
-fun isColorDark(color: Color): Boolean {
-    val darkness = 1 - (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue)
-    return darkness > 0.5
+private fun LocalDateTime.format(formatter: DateTimeFormatter): String {
+    return this.toJavaLocalDateTime().format(formatter)
 }
+
+// 辅助函数：根据类型提供备用颜色
+private fun fallbackColor(type: ScheduleType): Color {
+    return when (type) {
+        ScheduleType.COURSE -> Color(0xFF03A9F4) // 蓝色
+        ScheduleType.ORDINARY -> Color(0xFF4CAF50) // 绿色
+        ScheduleType.HOMEWORK -> Color(0xFFFF9800) // 橙色
+        ScheduleType.EXAM -> Color(0xFFF44336) // 红色
+        else -> Color.LightGray
+    }
+}
+
+// 辅助函数：判断颜色是否深色 (可能需要调整阈值)
+fun Color.isDark(): Boolean {
+    val darkness = 1 - (0.299 * red + 0.587 * green + 0.114 * blue) * alpha
+    return darkness >= 0.5 // 阈值可以调整
+}
+
+// 假设的时间轴宽度常量
+private val TIME_AXIS_WIDTH = 40.dp
 
 @Preview(showBackground = true)
 @Composable
@@ -781,9 +892,26 @@ fun PreviewScheduleContent() {
     ScheduleContent(
         tableId = 0,
         weekDates = weekDates,
-        weekCourses = weekCourses,
-    ) { tableId, courseId ->
-        Log.d("PreviewScheduleContent", "Clicked on Course ID: $courseId in Table ID: $tableId")
-    }
+        timeSlots = weekCourses.flatMap { course ->
+            course.nodes.map { node ->
+                TimeSlot(
+                    id = course.id,
+                    scheduleType = ScheduleType.COURSE,
+                    scheduleId = course.id,
+                    head = "${course.courseName} - ${node.room}",
+                    startTime = System.currentTimeMillis() + node.startNode * 3600000L, // 使用毫秒时间戳
+                    endTime = System.currentTimeMillis() + (node.startNode + node.step) * 3600000L,
+                    userId = 1 // 添加userId参数
+                )
+
+            }
+        },
+        onTimeSlotClick = { timeSlot ->
+            Log.d(
+                "PreviewScheduleContent",
+                "Clicked on TimeSlot: ${timeSlot.id}, Type: ${timeSlot.scheduleType}, ScheduleID: ${timeSlot.scheduleId}"
+            )
+        }
+    )
 }
 

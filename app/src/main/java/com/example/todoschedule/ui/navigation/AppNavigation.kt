@@ -16,6 +16,8 @@ import com.example.todoschedule.ui.course.edit.EditCourseScreen
 import com.example.todoschedule.ui.course.load.SchoolSelectorScreen
 import com.example.todoschedule.ui.course.load.WebViewScreen
 import com.example.todoschedule.ui.home.HomeScreen
+import com.example.todoschedule.ui.ordinaryschedule.AddEditOrdinaryScheduleScreen
+import com.example.todoschedule.ui.ordinaryschedule.OrdinaryScheduleDetailScreen
 import com.example.todoschedule.ui.schedule.ScheduleScreen
 import com.example.todoschedule.ui.settings.SettingsScreen
 import com.example.todoschedule.ui.todo.TodoScreen
@@ -153,5 +155,36 @@ fun AppNavigation(
             WebViewScreen(navigationState, originalUrl, tableId)
         }
 
+        // 更新: 添加/编辑普通日程页面，处理可选参数
+        composable(
+            route = AppRoutes.AddEditOrdinarySchedule.route,
+            arguments = listOf(navArgument(AppRoutes.AddEditOrdinarySchedule.ARG_SCHEDULE_ID) {
+                type = NavType.IntType
+                defaultValue = -1 // Use -1 or another invalid ID to indicate 'add' mode
+            })
+        ) { backStackEntry ->
+            val scheduleId =
+                backStackEntry.arguments?.getInt(AppRoutes.AddEditOrdinarySchedule.ARG_SCHEDULE_ID)
+            AddEditOrdinaryScheduleScreen(
+                navigationState = navigationState
+                // Pass scheduleId to ViewModel if needed for editing: scheduleId = if (scheduleId == -1) null else scheduleId
+            )
+        }
+
+        // 新增: 普通日程详情页面
+        composable(
+            route = AppRoutes.OrdinaryScheduleDetail.route,
+            arguments = listOf(navArgument(AppRoutes.OrdinaryScheduleDetail.ARG_SCHEDULE_ID) {
+                type = NavType.IntType
+            })
+        ) { backStackEntry ->
+            val scheduleId =
+                backStackEntry.arguments?.getInt(AppRoutes.OrdinaryScheduleDetail.ARG_SCHEDULE_ID)
+            requireNotNull(scheduleId) { "scheduleId parameter missing!" } // Ensure ID is present
+            OrdinaryScheduleDetailScreen(
+                // scheduleId = scheduleId,
+                navigationState = navigationState
+            )
+        }
     }
 }

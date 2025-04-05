@@ -95,4 +95,19 @@ class NavigationState(
         navController.navigate(AppRoutes.SchoolWebView.createRoute(encodeUrl, tableId))
     }
 
+    /**
+     * 导航到添加/编辑普通日程页面
+     */
+    fun navigateToAddEditOrdinarySchedule(scheduleId: Int? = null) {
+        val route = AppRoutes.AddEditOrdinarySchedule.createRoute(scheduleId)
+        navController.navigate(route)
+    }
+
+    /**
+     * 导航到普通日程详情页面
+     */
+    fun navigateToOrdinaryScheduleDetail(scheduleId: Int) {
+        navController.navigate(AppRoutes.OrdinaryScheduleDetail.createRoute(scheduleId))
+    }
+
 }

@@ -59,4 +59,28 @@ sealed class AppRoutes(val route: String) {
     object SchoolWebView : AppRoutes("webView/{encodedUrl}/{tableId}") {
         fun createRoute(encodedUrl: String, tableId: Int) = "webView/$encodedUrl/$tableId"
     }
+
+    /**
+     * 添加/编辑普通日程页面
+     */
+    object AddEditOrdinarySchedule :
+        AppRoutes("add_edit_ordinary_schedule?scheduleId={scheduleId}") {
+        fun createRoute(scheduleId: Int? = null): String {
+            return if (scheduleId != null) {
+                "add_edit_ordinary_schedule?scheduleId=$scheduleId"
+            } else {
+                "add_edit_ordinary_schedule"
+            }
+        }
+
+        const val ARG_SCHEDULE_ID = "scheduleId" // Argument name constant
+    }
+
+    /**
+     * 普通日程详情页面
+     */
+    object OrdinaryScheduleDetail : AppRoutes("ordinary_schedule_detail/{scheduleId}") {
+        fun createRoute(scheduleId: Int) = "ordinary_schedule_detail/$scheduleId"
+        const val ARG_SCHEDULE_ID = "scheduleId" // Argument name constant
+    }
 }

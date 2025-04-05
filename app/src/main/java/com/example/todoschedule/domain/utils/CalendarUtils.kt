@@ -59,7 +59,7 @@ object CalendarUtils {
     /**
      * 获取一周的开始日期（周一）
      */
-    private fun getWeekStartDate(date: LocalDate): LocalDate {
+    fun getWeekStartDate(date: LocalDate): LocalDate {
         val dayOfWeek = date.dayOfWeek.isoDayNumber
         // 如果不是周一，回退到本周的周一
         return if (dayOfWeek == 1) date else date.minus(DatePeriod(days = dayOfWeek - 1))
