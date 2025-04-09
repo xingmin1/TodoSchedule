@@ -63,6 +63,8 @@ class ZZUParser (source: String) : Parser(source) {
                         importBeanList.addAll(parseImportBean(countDay,td.html(), node))
                 }
             }
+        } else {
+            throw Exception()
         }
         // return ArrayList<Course>()
         return importList2CourseList(importBeanList, source)
