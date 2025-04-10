@@ -1,6 +1,12 @@
 package com.example.todoschedule.ui.schedule
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +25,7 @@ import androidx.compose.ui.unit.sp
  * @param startHour 时间轴开始的小时 (包含)。
  * @param endHour 时间轴结束的小时 (不包含)。
  * @param hourHeight 每个小时标签占据的高度。
+ * @param scrollState 共享的滚动状态
  * @param modifier Modifier，通常包含垂直偏移量。
  */
 @Composable
@@ -26,12 +33,13 @@ fun TimeAxis(
     startHour: Int,
     endHour: Int,
     hourHeight: Dp,
-    modifier: Modifier = Modifier // Modifier 由 WeekSchedulePage 传递，包含偏移
+    scrollState: ScrollState,
+    modifier: Modifier = Modifier // 外部可以设置宽度等
 ) {
     Column(
         modifier = modifier
-            .fillMaxHeight() // 仍然需要填充高度，但滚动由外部控制
             .padding(end = 4.dp)
+            .verticalScroll(scrollState) // 应用垂直滚动
     ) {
         // 绘制从 startHour 到 endHour - 1 的时间标签
         (startHour until endHour).forEach { hour ->
