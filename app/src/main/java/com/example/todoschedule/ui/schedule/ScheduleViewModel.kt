@@ -65,6 +65,10 @@ constructor(
     private val tableTimeConfigRepository: TableTimeConfigRepository
 ) : ViewModel() {
 
+    // 添加时间槽状态流
+    private val _timeSlots = MutableStateFlow<List<TimeSlot>>(emptyList())
+    val timeSlots: StateFlow<List<TimeSlot>> = _timeSlots
+
     // 当前选择的周次
     private val _currentWeek = MutableStateFlow(1)
     val currentWeek: StateFlow<Int> = _currentWeek

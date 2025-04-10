@@ -11,6 +11,8 @@ coreSplashscreen = "1.0.1"
 coreTesting = "2.2.0"
 datastorePreferences = "1.1.4"
 espressoCore = "3.6.1"
+foundation = "1.7.8"
+foundationPager = "1.0.0"
 hiltAndroid = "2.49"
 hiltAndroidCompiler = "2.48"
 hiltNavigationCompose = "1.2.0"
@@ -26,10 +28,14 @@ navigationCompose = "2.8.9"
 retrofit = "2.11.0"
 room = "2.6.1"
 truth = "1.1.5"
+pager = "0.33.0-alpha"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
+androidx-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }
+androidx-foundation-layout = { module = "androidx.compose.foundation:foundation-layout", version.ref = "foundation" }
+androidx-foundation-pager = { module = "androidx.compose.foundation:foundation-pager", version.ref = "foundationPager" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidjunitrunner" }
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "androidxComposeBom" }
 androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayoutCompose" }
@@ -77,6 +83,7 @@ ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-pager = { group = "androidx.compose.pager", name = "pager", version.ref = "pager" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
