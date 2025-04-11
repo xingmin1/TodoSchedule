@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,22 +18,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,10 +45,10 @@ import java.time.format.DateTimeFormatter
 /**
  * 首页
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navigationState: NavigationState,
+    paddingValues: PaddingValues,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val todayDate = LocalDate.now()
@@ -70,164 +65,135 @@ fun HomeScreen(
         else -> ""
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("课程待办") },
-                actions = {
-                    IconButton(onClick = { navigationState.navigateToSettings() }) {
-                        Icon(Icons.Default.Settings, contentDescription = "设置")
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = true,
-                    onClick = { /* 已在首页 */ },
-                    icon = { Icon(Icons.Default.DateRange, contentDescription = "首页") },
-                    label = { Text("首页") }
-                )
-
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navigationState.navigateToSchedule() },
-                    icon = { Icon(Icons.Default.Schedule, contentDescription = "课表") },
-                    label = { Text("课表") }
-                )
-
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navigationState.navigateToTodo() },
-                    icon = { Icon(Icons.Default.Today, contentDescription = "待办") },
-                    label = { Text("待办") }
-                )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .verticalScroll(rememberScrollState())
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("课程待办", style = MaterialTheme.typography.titleLarge)
+            IconButton(onClick = { navigationState.navigateToSettings() }) {
+                Icon(Icons.Default.Settings, contentDescription = "设置")
             }
         }
-    ) { innerPadding ->
-        Column(
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-        ) {
-            // 日期卡片
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = formattedDate,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-
-                    Text(
-                        text = dayOfWeek,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-
-                    // 今日课程概览按钮
-                    Button(
-                        onClick = { navigationState.navigateToSchedule() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp)
-                    ) {
-                        Text("查看今日课程")
-                    }
-                }
-            }
-
-            // 功能区域标题
-            Text(
-                text = "功能",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
             )
-
-            // 功能卡片
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                FeatureCard(
-                    icon = Icons.Default.Schedule,
-                    title = "课表",
-                    backgroundColor = MaterialTheme.colorScheme.primary,
-                    onClick = { navigationState.navigateToSchedule() },
-                    modifier = Modifier.weight(1f)
-                )
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                FeatureCard(
-                    icon = Icons.Default.Today,
-                    title = "待办",
-                    backgroundColor = MaterialTheme.colorScheme.secondary,
-                    onClick = { navigationState.navigateToTodo() },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // 待办事项标题
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "今日待办",
-                    style = MaterialTheme.typography.titleMedium
+                    text = formattedDate,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+
+                Text(
+                    text = dayOfWeek,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
 
                 Button(
-                    onClick = { navigationState.navigateToTodo() },
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Text("查看全部")
-                }
-            }
-
-            // 待办事项列表
-            if (viewModel.todoItems.isEmpty()) {
-                Box(
+                    onClick = { navigationState.navigateToSchedule() },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
+                        .padding(top = 16.dp)
                 ) {
-                    Text(
-                        text = "今天没有待办事项",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
+                    Text("查看今日课程")
                 }
-            } else {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                ) {
-                    viewModel.todoItems.forEach { todo ->
-                        TodoListItem(todo)
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
+            }
+        }
+
+        Text(
+            text = "功能",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            FeatureCard(
+                icon = Icons.Default.Schedule,
+                title = "课表",
+                backgroundColor = MaterialTheme.colorScheme.primary,
+                onClick = { navigationState.navigateToSchedule() },
+                modifier = Modifier.weight(1f)
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            FeatureCard(
+                icon = Icons.Default.Today,
+                title = "待办",
+                backgroundColor = MaterialTheme.colorScheme.secondary,
+                onClick = { navigationState.navigateToTask() },
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "今日待办",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Button(
+                onClick = { navigationState.navigateToTask() },
+                modifier = Modifier.padding(end = 8.dp)
+            ) {
+                Text("查看全部")
+            }
+        }
+
+        if (viewModel.todoItems.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "今天没有待办事项",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) {
+                viewModel.todoItems.forEach { todo ->
+                    TodoListItem(todo)
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }

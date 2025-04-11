@@ -21,6 +21,21 @@ sealed class AppRoutes(val route: String) {
     object Todo : AppRoutes("todo")
 
     /**
+     * 任务页面
+     */
+    object Task : AppRoutes("task")
+
+    /**
+     * 学习页面
+     */
+    object Study : AppRoutes("study")
+
+    /**
+     * 我的页面
+     */
+    object Profile : AppRoutes("profile")
+
+    /**
      * 设置页面
      */
     object Settings : AppRoutes("settings")

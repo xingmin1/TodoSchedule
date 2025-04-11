@@ -1,12 +1,11 @@
 package parser
 
 import Common
+import android.graphics.Color
 import bean.Course
 import bean.CourseBaseBean
 import bean.CourseDetailBean
-import main.java.Generator
 import bean.TimeTable
-import android.graphics.Color
 import com.example.todoschedule.utils.courseadapter.bean.ParserResult
 
 abstract class Parser(val source: String) {

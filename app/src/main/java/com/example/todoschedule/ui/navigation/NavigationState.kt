@@ -43,18 +43,52 @@ class NavigationState(
      * 导航到课表页面
      */
     fun navigateToSchedule(isPop: Boolean = false) {
-        if (isPop) {
-            navController.popBackStack(AppRoutes.Schedule.route, false)
-        } else {
-            navController.navigate(AppRoutes.Schedule.route)
+        navController.navigate(AppRoutes.Schedule.route) {
+            popUpTo(navController.graph.startDestinationId) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
         }
     }
 
     /**
      * 导航到待办页面
      */
-    fun navigateToTodo() {
-        navController.navigate(AppRoutes.Todo.route)
+    fun navigateToTask() {
+        navController.navigate(AppRoutes.Task.route) {
+            popUpTo(navController.graph.startDestinationId) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    /**
+     * 导航到学习页面
+     */
+    fun navigateToStudy() {
+        navController.navigate(AppRoutes.Study.route) {
+            popUpTo(navController.graph.startDestinationId) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    /**
+     * 导航到我的页面
+     */
+    fun navigateToProfile() {
+        navController.navigate(AppRoutes.Profile.route) {
+            popUpTo(navController.graph.startDestinationId) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
     }
 
     /**

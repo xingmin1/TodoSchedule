@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,31 +26,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -119,14 +108,14 @@ private const val GRID_END_HOUR = 24 // 到 24 点结束 (显示 0:00 到 23:00 
  *
  * @param navigationState 用于处理导航事件的对象。
  * @param onNavigateToSettings 当点击设置图标时触发的回调。
+ * @param paddingValues 用于处理 Scaffold 的 padding 参数。
  * @param viewModel ScheduleViewModel 的实例，用于获取界面状态和数据。
  */
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
     navigationState: NavigationState,
     onNavigateToSettings: () -> Unit,
+    paddingValues: PaddingValues,
     viewModel: ScheduleViewModel = hiltViewModel()
 ) {
     // --- 主题颜色定义 --- //
@@ -144,210 +133,182 @@ fun ScheduleScreen(
     val displayableTimeSlots by viewModel.displayableTimeSlots.collectAsState() // 需要在课表上显示的时间槽 (课程/日程) 列表
     val defaultTableId by viewModel.defaultTableIdState.collectAsState() // 当前使用的课表 ID
 
-    // --- 使用 Scaffold --- //
-    Scaffold(
-        topBar = {
-            // --- 顶部栏 --- //
-            TopAppBar(
-                modifier = Modifier.fillMaxWidth(),
-                title = {
-                    val currentDate = Clock.System.now()
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                        .date
-                    val formattedDate = "${currentDate.year}/${
-                        currentDate.monthNumber.toString().padStart(2, '0')
-                    }/${currentDate.dayOfMonth.toString().padStart(2, '0')}"
+    // --- Root layout: Box to allow FAB placement over content --- 
+    Box(modifier = Modifier.fillMaxSize()) { // Keep outer Box for FAB
 
-                    Column {
-                        Text(
-                            text = formattedDate,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        )
-                        Text(
-                            text = "第${currentWeek}周 ${currentDate.dayOfWeek.getChineseWeekName()}",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        )
-                    }
-                },
-                actions = {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(end = 16.dp)
-                    ) {
-                        IconButton(onClick = {
-                            navigationState.navigateToAddCourse(
-                                defaultTableId ?: AppConstants.Ids.INVALID_TABLE_ID
-                            )
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "添加",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                        IconButton(onClick = {
-                            navigationState.navigateSchoolSelectorScreen(
-                                defaultTableId ?: AppConstants.Ids.INVALID_TABLE_ID
-                            )
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.Download,
-                                contentDescription = "下载",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                        IconButton(onClick = { /* TODO: 分享 */ }) {
-                            Icon(
-                                imageVector = Icons.Default.Share,
-                                contentDescription = "分享",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                        IconButton(onClick = { /* TODO: 更多选项 */ }) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "更多",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = headerColor,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        },
-        bottomBar = {
-            // --- 底部导航栏 --- //
-            NavigationBar(
-                modifier = Modifier.fillMaxWidth(),
-                containerColor = MaterialTheme.colorScheme.primaryContainer
+        // --- Main Content Column --- 
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues) // Apply padding from parameter
+                .background(backgroundColor) // Apply background here if needed
+        ) {
+            // --- TopAppBar Replacement (Similar to HomeScreen) ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // .background(headerColor) // Apply background if desired
+                    .padding(horizontal = 16.dp, vertical = 8.dp), // Adjust padding
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                val items = listOf(
-                    Triple("首页", Icons.Default.Home, "home"),
-                    Triple("课表", Icons.Default.DateRange, "schedule"),
-                    Triple("任务", Icons.AutoMirrored.Filled.Assignment, "task"),
-                    Triple("学习", Icons.Default.School, "study"),
-                    Triple("我的", Icons.Default.Person, "profile")
-                )
-
-                items.forEach { (title, icon, route) ->
-                    NavigationBarItem(
-                        icon = { Icon(icon, contentDescription = title) },
-                        label = { Text(title) },
-                        selected = route == "schedule",
-                        onClick = { /* TODO: 导航 */ },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            unselectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(
-                                alpha = 0.6f
-                            ),
-                            unselectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(
-                                alpha = 0.6f
-                            ),
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                        )
+                // Title part (Date and Week info)
+                val currentDate = Clock.System.now()
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                    .date
+                val formattedDate = "${currentDate.year}/${
+                    currentDate.monthNumber.toString().padStart(2, '0')
+                }/${currentDate.dayOfMonth.toString().padStart(2, '0')}"
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = formattedDate,
+                        style = MaterialTheme.typography.titleLarge // Adjust style as needed
+                        // color = MaterialTheme.colorScheme.onPrimaryContainer // Adjust color if needed
+                    )
+                    Text(
+                        text = "第${currentWeek}周 ${currentDate.dayOfWeek.getChineseWeekName()}",
+                        style = MaterialTheme.typography.bodyMedium // Adjust style as needed
+                        // color = MaterialTheme.colorScheme.onPrimaryContainer // Adjust color if needed
                     )
                 }
+
+                // Actions part
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                    // modifier = Modifier.padding(end = 16.dp) // Padding handled by outer Row
+                ) {
+                    IconButton(onClick = {
+                        navigationState.navigateToAddCourse(
+                            defaultTableId ?: AppConstants.Ids.INVALID_TABLE_ID
+                        )
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "添加",
+                            // tint = MaterialTheme.colorScheme.onPrimaryContainer // Adjust tint
+                        )
+                    }
+                    IconButton(onClick = {
+                        navigationState.navigateSchoolSelectorScreen(
+                            defaultTableId ?: AppConstants.Ids.INVALID_TABLE_ID
+                        )
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = "下载",
+                            // tint = MaterialTheme.colorScheme.onPrimaryContainer // Adjust tint
+                        )
+                    }
+                    IconButton(onClick = { /* TODO: 分享 */ }) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "分享",
+                            // tint = MaterialTheme.colorScheme.onPrimaryContainer // Adjust tint
+                        )
+                    }
+                    IconButton(onClick = { /* TODO: 更多选项 */ }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "更多",
+                            // tint = MaterialTheme.colorScheme.onPrimaryContainer // Adjust tint
+                        )
+                    }
+                }
             }
-        },
-        floatingActionButton = {
-            // --- 浮动按钮 --- //
-            FloatingActionButton(
-                onClick = { navigationState.navigateToAddEditOrdinarySchedule(null) },
-                // Modifier.align is not needed here as Scaffold handles placement
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // --- 内容区域 (The when block) --- //
+            // Apply weight modifier to the Box containing the 'when' statement
+            // so it takes up the remaining space BELOW the header Row.
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "添加普通日程"
-                )
-            }
-        },
-        containerColor = backgroundColor // Set background color for the Scaffold itself
-    ) { innerPadding -> // Content lambda provides padding
-        // --- 内容区域 --- //
-        Box(
-            modifier = Modifier
-                .padding(innerPadding) // Apply padding from Scaffold
-                .fillMaxSize() // Content should fill the space provided by Scaffold
-        ) {
-            when (uiState) {
-                is ScheduleUiState.Loading -> LoadingScreen()
-                is ScheduleUiState.Success -> {
-                    // 调用新的 ScheduleContent
-                    ScheduleContent(
-                        currentWeek = currentWeek,
-                        timeSlotsForCurrentWeek = displayableTimeSlots, // 来自 ViewModel
-                        onWeekChange = viewModel::updateCurrentWeek,
-                        onTimeSlotClick = {
-                            // 复用之前的点击逻辑
-                            Log.d(
-                                "ScheduleScreen",
-                                "Clicked on TimeSlot: Type=${it.scheduleType}, ScheduleID=${it.scheduleId}, Head='${it.head}'"
-                            )
-                            when (it.scheduleType) {
-                                ScheduleType.COURSE -> {
-                                    val currentTableId = defaultTableId
-                                    if (currentTableId != null && currentTableId != AppConstants.Ids.INVALID_TABLE_ID) {
+                when (uiState) {
+                    is ScheduleUiState.Loading -> LoadingScreen()
+                    is ScheduleUiState.Success -> {
+                        ScheduleContent(
+                            currentWeek = currentWeek,
+                            timeSlotsForCurrentWeek = displayableTimeSlots,
+                            onWeekChange = viewModel::updateCurrentWeek,
+                            onTimeSlotClick = {
+                                // 复用之前的点击逻辑
+                                Log.d(
+                                    "ScheduleScreen",
+                                    "Clicked on TimeSlot: Type=${it.scheduleType}, ScheduleID=${it.scheduleId}, Head='${it.head}'"
+                                )
+                                when (it.scheduleType) {
+                                    ScheduleType.COURSE -> {
+                                        val currentTableId = defaultTableId
+                                        if (currentTableId != null && currentTableId != AppConstants.Ids.INVALID_TABLE_ID) {
+                                            Log.i(
+                                                "ScheduleScreen",
+                                                "Navigating to Course Detail: tableId=$currentTableId, courseId=${it.scheduleId}"
+                                            )
+                                            navigationState.navigateToCourseDetail(
+                                                tableId = currentTableId,
+                                                courseId = it.scheduleId
+                                            )
+                                        } else {
+                                            Log.w(
+                                                "ScheduleScreen",
+                                                "Cannot navigate to course detail, defaultTableId is invalid or null."
+                                            )
+                                        }
+                                    }
+
+                                    ScheduleType.ORDINARY -> {
                                         Log.i(
                                             "ScheduleScreen",
-                                            "Navigating to Course Detail: tableId=$currentTableId, courseId=${it.scheduleId}"
+                                            "Navigating to Ordinary Schedule Detail for scheduleId=${it.scheduleId}"
                                         )
-                                        navigationState.navigateToCourseDetail(
-                                            tableId = currentTableId,
-                                            courseId = it.scheduleId
-                                        )
-                                    } else {
+                                        navigationState.navigateToOrdinaryScheduleDetail(it.scheduleId)
+                                    }
+
+                                    else -> {
                                         Log.w(
                                             "ScheduleScreen",
-                                            "Cannot navigate to course detail, defaultTableId is invalid or null."
+                                            "Navigation not implemented for ScheduleType: ${it.scheduleType}"
                                         )
                                     }
                                 }
-
-                                ScheduleType.ORDINARY -> {
-                                    Log.i(
-                                        "ScheduleScreen",
-                                        "Navigating to Ordinary Schedule Detail for scheduleId=${it.scheduleId}"
-                                    )
-                                    navigationState.navigateToOrdinaryScheduleDetail(it.scheduleId)
-                                }
-
-                                else -> {
-                                    Log.w(
-                                        "ScheduleScreen",
-                                        "Navigation not implemented for ScheduleType: ${it.scheduleType}"
-                                    )
-                                }
                             }
+                        )
+                    }
+
+                    is ScheduleUiState.Error -> ErrorScreen((uiState as ScheduleUiState.Error).message)
+                    is ScheduleUiState.Empty -> EmptyScheduleScreen()
+                    is ScheduleUiState.NoTableSelected -> NoTableSelectedScreen(
+                        navigationState = navigationState,
+                        onNavigateToImport = {
+                            navigationState.navigateSchoolSelectorScreen(
+                                AppConstants.Ids.INVALID_TABLE_ID
+                            )
                         }
                     )
                 }
+            } // End Content 'when' Box
+        } // End Main Content Column
 
-                is ScheduleUiState.Error -> ErrorScreen((uiState as ScheduleUiState.Error).message)
-                is ScheduleUiState.Empty -> EmptyScheduleScreen() // 假设有这个状态
-                is ScheduleUiState.NoTableSelected -> NoTableSelectedScreen(
-                    navigationState = navigationState,
-                    onNavigateToImport = {
-                        navigationState.navigateSchoolSelectorScreen(
-                            // 传递无效ID而不是null
-                            AppConstants.Ids.INVALID_TABLE_ID
-                        )
-                    }
-                )
-            }
-        } // End of Content Box
-    } // End of Scaffold
+        // --- FloatingActionButton remains positioned relative to the outer Box --- 
+        FloatingActionButton(
+            onClick = { navigationState.navigateToAddEditOrdinarySchedule(null) },
+            modifier = Modifier
+                .padding(16.dp) // Standard FAB padding
+                // Apply padding also from the bottom provided by Scaffold via paddingValues
+                // This ensures FAB is above the bottom nav bar area
+                .padding(bottom = paddingValues.calculateBottomPadding())
+                .align(Alignment.BottomEnd), // Align within the outer Box
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "添加普通日程"
+            )
+        }
+    } // End Outer Box
 }
 
 /**
