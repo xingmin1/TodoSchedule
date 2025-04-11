@@ -2,10 +2,12 @@ package com.example.todoschedule.ui.course.edit
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
 import com.example.todoschedule.domain.repository.CourseRepository
 import com.example.todoschedule.ui.course.add.CourseNodeUiState
+import com.example.todoschedule.ui.theme.ColorSchemeEnum
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,8 +53,9 @@ class EditCourseViewModel @Inject constructor(
     private val _courseName = MutableStateFlow("")
     val courseName = _courseName.asStateFlow()
 
-    private val _color = MutableStateFlow("#F44336")
-    val color = _color.asStateFlow()
+    // 课程颜色
+    private val _color = MutableStateFlow<ColorSchemeEnum>(AppConstants.DEFAULT_COURSE_COLOR)
+    val color: StateFlow<ColorSchemeEnum> = _color.asStateFlow()
 
     private val _room = MutableStateFlow("")
     val room = _room.asStateFlow()
@@ -161,7 +164,7 @@ class EditCourseViewModel @Inject constructor(
     /**
      * 更新课程颜色
      */
-    fun updateColor(newColor: String) {
+    fun updateColor(newColor: ColorSchemeEnum) {
         _color.value = newColor
     }
 

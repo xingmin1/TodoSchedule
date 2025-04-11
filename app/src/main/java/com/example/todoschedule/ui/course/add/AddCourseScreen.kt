@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -57,10 +56,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.todoschedule.core.constants.AppConstants
-import com.example.todoschedule.ui.theme.courseColors
+import com.example.todoschedule.ui.theme.ColorSchemeEnum
 
 /** 添加课程界面 */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,6 +83,8 @@ fun AddCourseScreen(
     var nodeEditIndex by remember { mutableStateOf(-1) }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val colorScheme = MaterialTheme.colorScheme
+
 
     LaunchedEffect(saveState) {
         when (saveState) {
@@ -162,13 +162,15 @@ fun AddCourseScreen(
                     Text(text = "选择颜色")
 
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(courseColors) { courseColor ->
+                        val courseColors = ColorSchemeEnum.getColorSchemeEnumList()
+                        items(courseColors.size) { index ->
+                            val courseColor = courseColors[index]
                             Box(
                                 modifier =
                                     Modifier
                                         .size(40.dp)
                                         .clip(CircleShape)
-                                        .background(Color(courseColor.toColorInt()))
+                                        .background(courseColor.toColor(colorScheme))
                                         .border(
                                             width = 2.dp,
                                             color =

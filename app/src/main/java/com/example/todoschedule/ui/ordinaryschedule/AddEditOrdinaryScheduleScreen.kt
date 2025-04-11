@@ -1,5 +1,9 @@
 package com.example.todoschedule.ui.ordinaryschedule
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,10 +12,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,6 +41,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -52,9 +62,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.todoschedule.ui.navigation.NavigationState
+import com.example.todoschedule.ui.theme.getColorListFromColorScheme
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -73,6 +86,7 @@ fun AddEditOrdinaryScheduleScreen(
     navigationState: NavigationState,
     viewModel: AddEditOrdinaryScheduleViewModel = hiltViewModel()
 ) {
+    val courseScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -216,6 +230,18 @@ fun AddEditOrdinaryScheduleScreen(
         }
     }
 
+    // --- Color Picker Dialog --- (We'll define this later)
+    if (uiState.showColorPickerDialog) {
+        ColorPickerDialog(
+            predefinedColors = getColorListFromColorScheme(colorScheme), // Use colors from theme
+            onColorSelected = { hexColor ->
+                viewModel.onColorChange(hexColor) // Update ViewModel
+                viewModel.dismissColorPicker()   // Close dialog
+            },
+            onDismissRequest = { viewModel.dismissColorPicker() }
+        )
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
@@ -288,15 +314,35 @@ fun AddEditOrdinaryScheduleScreen(
                     singleLine = true
                 )
 
-                // 新增: Color (简单的文本输入，后续可改进为颜色选择器)
-                OutlinedTextField(
-                    value = uiState.color ?: "",
-                    onValueChange = { viewModel.onColorChange(it) },
-                    label = { Text("颜色 (例如 #FF0000)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                    // TODO: Add color preview circle?
-                )
+                // --- Replace Color TextField with Preview and Button ---
+                Text("颜色", style = MaterialTheme.typography.titleMedium)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Color Preview Box
+                    val previewColor = remember(uiState.color) {
+                        parseColor(
+                            uiState.color ?: "#"
+                        ) // Use helper to parse, default to transparent/error color if invalid
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(previewColor)
+                            .border(
+                                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                CircleShape
+                            )
+                    )
+                    // Button to open picker
+                    TextButton(onClick = { viewModel.showColorPicker() }) {
+                        Text("选择颜色")
+                    }
+                }
+                // --- End Color Section ---
 
                 // 新增: Status (使用 Dropdown)
                 StatusDropdown( // Extract to separate composable?
@@ -470,4 +516,71 @@ private fun StatusDropdown(
             }
         }
     }
+}
+
+/**
+ * Helper function to safely parse a Hex color string.
+ * Returns the parsed Color or a default color (e.g., transparent or gray) if parsing fails.
+ */
+fun parseColor(hexString: String?, defaultColor: Color = Color.Transparent): Color {
+    if (hexString.isNullOrBlank()) return defaultColor
+    return try {
+        // Ensure the string starts with # and handle potential alpha
+        val cleanHexString = if (hexString.startsWith("#")) hexString else "#$hexString"
+        val colorInt = android.graphics.Color.parseColor(cleanHexString)
+        Color(colorInt)
+    } catch (e: IllegalArgumentException) {
+        // Log.w("ColorParse", "Invalid color string: $hexString", e) // Optional logging
+        defaultColor // Return default on error
+    }
+}
+
+// Placeholder for ColorPickerDialog (to be implemented next)
+@Composable
+fun ColorPickerDialog(
+    predefinedColors: List<Color>,
+    onColorSelected: (String) -> Unit,
+    onDismissRequest: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text("选择颜色") },
+        text = {
+            // Use LazyVerticalGrid to display color swatches
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 48.dp), // Adjust minSize as needed
+                modifier = Modifier
+                    .heightIn(max = 300.dp) // Limit height
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(predefinedColors) { colorHex ->
+                    val color = remember(colorHex) {
+                        parseColor(
+                            colorHex.toString(),
+                            Color.Gray
+                        )
+                    } // Default to gray on error
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                            .border(
+                                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                CircleShape
+                            )
+                            .clickable { onColorSelected(colorHex.toString()) } // Select color on click
+                    )
+                }
+            }
+        },
+        confirmButton = { // Using confirmButton slot for the dismiss action text
+            TextButton(onClick = onDismissRequest) {
+                Text("取消")
+            }
+        },
+        dismissButton = null // No explicit dismiss button needed if clicking outside closes it
+    )
 } 

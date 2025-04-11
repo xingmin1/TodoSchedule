@@ -714,15 +714,25 @@ fun TimeSlotItem(
     // --- Colors (Adaptive & Low Saturation/Brightness) ---
     val isDarkTheme = isSystemInDarkTheme()
     // 使用新的自适应颜色生成逻辑，忽略 timeSlot.displayColor
-    val backgroundColor = remember(timeSlot.scheduleId, isDarkTheme) {
-        // 使用 scheduleId 作为种子，确保同一课程颜色稳定
+//    val backgroundColor = remember(timeSlot.scheduleId, isDarkTheme) {
+//        // 使用 scheduleId 作为种子，确保同一课程颜色稳定
+//        generateAdaptiveCourseColor(timeSlot.scheduleId, isDarkTheme)
+//    }
+    val backgroundColor = timeSlot.displayColor?.toColor(MaterialTheme.colorScheme) ?: run {
+        // 使用课程 ID 作为种子，确保同一课程颜色稳定
         generateAdaptiveCourseColor(timeSlot.scheduleId, isDarkTheme)
     }
-    val contentColor = remember(backgroundColor) {
-        // 基于背景亮度决定内容颜色，保证对比度
-        if (backgroundColor.calculateLuminance() < 0.5f) Color.White.copy(alpha = 0.95f) // Dark background -> Light text
-        else Color.Black.copy(alpha = 0.87f) // Light background -> Dark text
-    }
+    val bc = timeSlot.displayColor.toString()
+    val contentColor =
+//        ColorSchemeEnum.fromString("ON$bc")?.toColor(MaterialTheme.colorScheme) ?:
+        {
+            // 基于背景亮度决定内容颜色，保证对比度
+            if (backgroundColor.calculateLuminance() < 0.5f)
+                Color.White.copy(alpha = 0.95f) // Dark background -> Light text
+            else
+                Color.Black.copy(alpha = 0.87f) // Light background -> Dark text
+        }()
+    Log.w("TimeSlotItem", "backgroundColor: $backgroundColor, contentColor: $contentColor")
 
     // --- Render Card ---
     Card(
@@ -751,7 +761,8 @@ fun TimeSlotItem(
                 fontSize = 11.sp,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
-                lineHeight = 13.sp
+                lineHeight = 13.sp,
+                color = contentColor,
             )
             Text(
                 text = details,

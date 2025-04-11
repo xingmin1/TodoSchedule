@@ -49,6 +49,7 @@ data class AddEditOrdinaryScheduleUiState(
     val showStartTimePicker: Boolean = false,
     val showEndDatePicker: Boolean = false,
     val showEndTimePicker: Boolean = false,
+    val showColorPickerDialog: Boolean = false,
     val isLoading: Boolean = false,
     val isInitializing: Boolean = true, // Indicate initial loading for edit mode
     val errorMessage: String? = null,
@@ -207,6 +208,16 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
     fun dismissEndTimePicker() {
         _uiState.update { it.copy(showEndTimePicker = false) }
     }
+
+    // --- Color Picker Dialog Control ---
+    fun showColorPicker() {
+        _uiState.update { it.copy(showColorPickerDialog = true) }
+    }
+
+    fun dismissColorPicker() {
+        _uiState.update { it.copy(showColorPickerDialog = false) }
+    }
+    // --- End Color Picker Dialog Control ---
 
     fun saveSchedule() {
         viewModelScope.launch {

@@ -1,10 +1,13 @@
 package com.example.todoschedule.data.mapper
 
+import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.entity.CourseEntity
 import com.example.todoschedule.data.database.entity.CourseNodeEntity
 import com.example.todoschedule.data.model.CourseWithNodes
 import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
+import com.example.todoschedule.ui.theme.ColorSchemeEnum
+import com.example.todoschedule.ui.theme.toColorSchemeEnum
 
 /**
  * 将CourseEntity转换为Course领域模型
@@ -13,7 +16,8 @@ fun CourseWithNodes.toCourse(): Course {
     return Course(
         id = course.id,
         courseName = course.courseName,
-        color = course.color,
+        color = (course.color.toColorSchemeEnum()
+            ?: AppConstants::DEFAULT_COURSE_COLOR) as ColorSchemeEnum,
         room = course.room,
         teacher = course.teacher,
         credit = course.credit,
@@ -30,7 +34,7 @@ fun Course.toCourseEntity(tableId: Int): CourseEntity {
         id = id,
         tableId = tableId,
         courseName = courseName,
-        color = color,
+        color = color.toString(),
         room = room,
         teacher = teacher,
         credit = credit,

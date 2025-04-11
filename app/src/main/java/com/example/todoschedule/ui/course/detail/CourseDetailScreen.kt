@@ -46,7 +46,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 
 /**
@@ -185,11 +184,7 @@ private fun CourseDetail(course: CourseDetailModel) {
             .verticalScroll(rememberScrollState())
     ) {
         // 课程颜色和名称
-        val backgroundColor = try {
-            Color(course.color.toColorInt())
-        } catch (_: Exception) {
-            MaterialTheme.colorScheme.primary
-        }
+        val backgroundColor = course.color.toColor(MaterialTheme.colorScheme)
 
         Card(
             modifier = Modifier.fillMaxWidth(),

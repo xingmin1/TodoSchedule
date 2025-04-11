@@ -22,6 +22,8 @@ import com.example.todoschedule.domain.use_case.ordinary_schedule.UpdateOrdinary
 import com.example.todoschedule.domain.use_case.table_time_config.GetDefaultTableTimeConfigUseCase
 import com.example.todoschedule.domain.utils.CalendarUtils
 import com.example.todoschedule.ui.schedule.model.ScheduleUiState
+import com.example.todoschedule.ui.theme.ColorSchemeEnum
+import com.example.todoschedule.ui.theme.toColor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -301,7 +303,11 @@ constructor(
                 slot.copy(
                     displayTitle = slot.head ?: schedule.title,
                     displaySubtitle = schedule.location,
-                    displayColor = schedule.color
+                    displayColor =
+                        if (schedule.color != null)
+                            ColorSchemeEnum.Fixed(schedule.color.toColor())
+                        else
+                            AppConstants.DEFAULT_COURSE_COLOR,
                 )
             }
         }

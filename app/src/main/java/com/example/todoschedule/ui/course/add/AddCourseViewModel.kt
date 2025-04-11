@@ -10,7 +10,7 @@ import com.example.todoschedule.domain.model.Table
 import com.example.todoschedule.domain.repository.CourseRepository
 import com.example.todoschedule.domain.repository.TableRepository
 import com.example.todoschedule.domain.use_case.auth.GetLoginUserIdFlowUseCase
-import com.example.todoschedule.ui.theme.courseColors
+import com.example.todoschedule.ui.theme.ColorSchemeEnum
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,8 +33,8 @@ class AddCourseViewModel @Inject constructor(
     val courseName: StateFlow<String> = _courseName.asStateFlow()
 
     // 课程颜色
-    private val _color = MutableStateFlow(courseColors.first())
-    val color: StateFlow<String> = _color.asStateFlow()
+    private val _color = MutableStateFlow<ColorSchemeEnum>(AppConstants.DEFAULT_COURSE_COLOR)
+    val color: StateFlow<ColorSchemeEnum> = _color.asStateFlow()
 
     // 教室
     private val _room = MutableStateFlow("")
@@ -65,7 +65,7 @@ class AddCourseViewModel @Inject constructor(
      */
     fun resetAllFields() {
         _courseName.value = ""
-        _color.value = courseColors.first()
+        _color.value = AppConstants.DEFAULT_COURSE_COLOR
         _room.value = ""
         _teacher.value = ""
         _credit.value = ""
@@ -84,7 +84,7 @@ class AddCourseViewModel @Inject constructor(
     /**
      * 更新课程颜色
      */
-    fun updateColor(color: String) {
+    fun updateColor(color: ColorSchemeEnum) {
         _color.value = color
     }
 

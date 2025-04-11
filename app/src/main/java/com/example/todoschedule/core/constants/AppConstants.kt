@@ -1,6 +1,7 @@
 package com.example.todoschedule.core.constants
 
 import com.example.todoschedule.ui.navigation.AppRoutes
+import com.example.todoschedule.ui.theme.ColorSchemeEnum
 import kotlinx.datetime.LocalDate
 
 /** 应用中使用的常量 */
@@ -63,4 +64,6 @@ object AppConstants {
     object Routes {
         val START_SCREEN = AppRoutes.Home
     }
+
+    val DEFAULT_COURSE_COLOR = ColorSchemeEnum.ONERROR // 默认课程颜色
 }

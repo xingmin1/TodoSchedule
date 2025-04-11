@@ -2,6 +2,7 @@ package com.example.todoschedule.domain.model
 
 import com.example.todoschedule.data.database.converter.ReminderType // 引入枚举
 import com.example.todoschedule.data.database.converter.ScheduleType // 引入枚举
+import com.example.todoschedule.ui.theme.ColorSchemeEnum
 import kotlinx.datetime.toLocalDateTime
 
 /**
@@ -25,7 +26,7 @@ data class TimeSlot(
     // --- 新增用于 UI 显示的字段 ---
     val displayTitle: String = "", // 要显示的标题 (课程名/日程标题)
     val displaySubtitle: String? = null, // 要显示的副标题 (教室/地点)
-    val displayColor: String? = null // 用于背景的颜色字符串 (例如 "#FF0000")
+    val displayColor: ColorSchemeEnum? = null // 用于背景的颜色字符串 (例如 "#FF0000")
 
 
 ) {

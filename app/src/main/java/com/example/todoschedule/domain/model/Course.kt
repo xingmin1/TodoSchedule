@@ -1,5 +1,7 @@
 package com.example.todoschedule.domain.model
 
+import com.example.todoschedule.ui.theme.ColorSchemeEnum
+
 /**
  * 课程领域模型
  *
@@ -14,7 +16,7 @@ package com.example.todoschedule.domain.model
 data class Course(
     val id: Int = 0,
     val courseName: String,
-    val color: String,
+    val color: ColorSchemeEnum,
     val room: String? = null,
     val teacher: String? = null,
     val credit: Float? = null,
