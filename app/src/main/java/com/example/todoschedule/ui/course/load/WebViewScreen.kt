@@ -298,7 +298,7 @@ fun WebViewScreen(
             FloatingActionButton(
                 onClick = {
                     webView.evaluateJavascript("document.documentElement.outerHTML") { escapedHtml ->
-                        // 1. 处理转义字符
+                        // 处理转义字符
                         val unescapedHtml = escapedHtml
                             ?.removeSurrounding("\"")  // 去除首尾的双引号
                             ?.replace("\\\"", "\"")    // 替换转义双引号
@@ -313,10 +313,8 @@ fun WebViewScreen(
                                     parserResult = parserResult,
                                     viewModel = viewModel,
                                 )
-                                // 2. 使用解析后的HTML
                                 Toast.makeText(context, "导入成功", Toast.LENGTH_SHORT).show()
                             } catch (e: Exception) {
-                                // 3. 细化异常提示
                                 Toast.makeText(context, "导入失败", Toast.LENGTH_SHORT).show()
                             }
 
@@ -348,7 +346,7 @@ fun rememberWebView(
 
     return remember(initialUrl) {
         WebView(context).apply {
-            // 核心配置（网页1、网页2、网页3）
+            // 核心配置
             settings.apply {
                 userAgentString = if (isDesktopMode) {
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -386,7 +384,7 @@ fun rememberWebView(
 
             }
 
-            // Cookie管理（网页1、网页6）
+            // Cookie管理
             CookieManager.getInstance().run {
                 setAcceptThirdPartyCookies(this@apply, true)
                 acceptCookie()
@@ -428,7 +426,7 @@ fun rememberWebView(
                 }
 
 
-                // 证书处理（网页7）
+                // 证书处理
                 override fun onReceivedSslError(
                     view: WebView?,
                     handler: SslErrorHandler?,
@@ -462,7 +460,7 @@ fun rememberWebView(
                     }
                 }
 
-                // 弹窗处理（网页3）
+                // 弹窗处理
                 override fun onCreateWindow(
                     view: WebView?,
                     isDialog: Boolean,
@@ -478,7 +476,7 @@ fun rememberWebView(
                 }
             }
 
-            // 初始化加载（网页2）
+            // 初始化加载
             clearCache(true)
             loadUrl(initialUrl)
         }
@@ -512,7 +510,7 @@ fun rememberWebView(
             }
         }
 
-        // 远程调试支持（网页4）
+        // 远程调试支持
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             WebView.setWebContentsDebuggingEnabled(true)
         }
