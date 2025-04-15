@@ -13,6 +13,7 @@ import com.example.todoschedule.domain.use_case.ordinary_schedule.AddOrdinarySch
 import com.example.todoschedule.domain.use_case.ordinary_schedule.GetOrdinaryScheduleByIdUseCase
 import com.example.todoschedule.domain.use_case.ordinary_schedule.UpdateOrdinaryScheduleUseCase
 import com.example.todoschedule.ui.navigation.AppRoutes
+import com.example.todoschedule.ui.theme.ColorSchemeEnum
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +40,7 @@ data class AddEditOrdinaryScheduleUiState(
     val description: String? = null,
     val location: String? = null,
     val category: String? = null,
-    val color: String? = null,
+    val color: ColorSchemeEnum? = null,
     val status: ScheduleStatus = ScheduleStatus.TODO,
     val startDate: LocalDate? = null,
     val startTime: LocalTime? = null,
@@ -150,7 +151,7 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
         _uiState.update { it.copy(category = newCategory) }
     }
 
-    fun onColorChange(newColor: String) {
+    fun onColorChange(newColor: ColorSchemeEnum) {
         _uiState.update { it.copy(color = newColor) }
     }
 
@@ -236,7 +237,7 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
             // Validate end time is after start time
             val startDateTime = currentState.startDate.atTime(currentState.startTime)
             val endDateTime = currentState.endDate.atTime(currentState.endTime)
-            if (endDateTime <= startDateTime) {
+            if (endDateTime < startDateTime) {
                 _uiState.update { it.copy(errorMessage = "结束时间必须晚于开始时间") }
                 return@launch
             }

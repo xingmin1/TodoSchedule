@@ -13,11 +13,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -34,11 +37,16 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -70,6 +78,8 @@ import com.example.todoschedule.domain.model.TimeSlot
 import com.example.todoschedule.domain.utils.CalendarUtils
 import com.example.todoschedule.ui.navigation.NavigationState
 import com.example.todoschedule.ui.schedule.model.ScheduleUiState
+import com.example.todoschedule.ui.theme.ColorSchemeEnum
+import com.example.todoschedule.ui.utils.ColorUtils
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DayOfWeek
@@ -111,6 +121,7 @@ private const val GRID_END_HOUR = 24 // 到 24 点结束 (显示 0:00 到 23:00 
  * @param paddingValues 用于处理 Scaffold 的 padding 参数。
  * @param viewModel ScheduleViewModel 的实例，用于获取界面状态和数据。
  */
+@OptIn(ExperimentalMaterial3Api::class) // Opt-in for experimental ModalBottomSheetState
 @Composable
 fun ScheduleScreen(
     navigationState: NavigationState,
@@ -133,20 +144,20 @@ fun ScheduleScreen(
     val displayableTimeSlots by viewModel.displayableTimeSlots.collectAsState() // 需要在课表上显示的时间槽 (课程/日程) 列表
     val defaultTableId by viewModel.defaultTableIdState.collectAsState() // 当前使用的课表 ID
 
-    // --- Root layout: Box to allow FAB placement over content --- 
-    Box(modifier = Modifier.fillMaxSize()) { // Keep outer Box for FAB
+    // --- 新增: BottomSheet 状态 ---
+    val sheetState = rememberModalBottomSheetState()
+    var showBottomSheet by remember { mutableStateOf(false) }
 
-        // --- Main Content Column --- 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues) // Apply padding from parameter
-                .background(backgroundColor) // Apply background here if needed
-        ) {
+    // --- Root layout: Box to allow FAB placement over content ---
+    // 将Scaffold包裹原来的内容，并在外部添加ModalBottomSheet
+    Scaffold(
+        // TopAppBar 和 SnackbarHost 保持不变
+        topBar = {
             // --- TopAppBar Replacement (Similar to HomeScreen) ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding() // 添加状态栏 padding
                     // .background(headerColor) // Apply background if desired
                     .padding(horizontal = 16.dp, vertical = 8.dp), // Adjust padding
                 verticalAlignment = Alignment.CenterVertically
@@ -173,8 +184,10 @@ fun ScheduleScreen(
 
                 // Actions part
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement
+                        .Absolute.Right,
+//                        .spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                     // modifier = Modifier.padding(end = 16.dp) // Padding handled by outer Row
                 ) {
                     IconButton(onClick = {
@@ -215,14 +228,47 @@ fun ScheduleScreen(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                // onClick = { navigationState.navigateToAddEditOrdinarySchedule(null) }, // 旧逻辑
+                onClick = { showBottomSheet = true }, // 新逻辑: 显示 BottomSheet
+                modifier = Modifier
+                    .padding(16.dp) // Standard FAB padding
+                    // Apply padding also from the bottom provided by Scaffold via paddingValues
+                    // This ensures FAB is above the bottom nav bar area
+                    .padding(bottom = paddingValues.calculateBottomPadding()),
+                // .align(Alignment.BottomEnd), // 在Scaffold中，FAB默认就在右下角，无需额外align
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "添加日程" // 更新描述
+                )
+            }
+        }
+    ) { innerPadding -> // Scaffold 提供内边距
+        // --- Main Content Column ---
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    top = innerPadding.calculateTopPadding(),
+                    start = innerPadding.calculateStartPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+                    end = innerPadding.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+                    // 组合内部 Scaffold 和外部传入的 paddingValues 的底部 padding
+                    bottom = paddingValues.calculateBottomPadding()
+                ) // 应用Scaffold提供的内边距，并确保底部不与导航栏重叠
+                .background(backgroundColor) // 应用背景色
+        ) {
+            // --- TopAppBar 占位符或者实际内容 ---
+            // Spacer(modifier = Modifier.height(8.dp)) // 这个Spacer可能不再需要，因为TopAppBar已在Scaffold中定义
 
             // --- 内容区域 (The when block) --- //
-            // Apply weight modifier to the Box containing the 'when' statement
-            // so it takes up the remaining space BELOW the header Row.
             Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(1f) // 占据剩余空间
                     .fillMaxWidth()
             ) {
                 when (uiState) {
@@ -290,25 +336,58 @@ fun ScheduleScreen(
                 }
             } // End Content 'when' Box
         } // End Main Content Column
+    } // End Scaffold
 
-        // --- FloatingActionButton remains positioned relative to the outer Box --- 
-        FloatingActionButton(
-            onClick = { navigationState.navigateToAddEditOrdinarySchedule(null) },
-            modifier = Modifier
-                .padding(16.dp) // Standard FAB padding
-                // Apply padding also from the bottom provided by Scaffold via paddingValues
-                // This ensures FAB is above the bottom nav bar area
-                .padding(bottom = paddingValues.calculateBottomPadding())
-                .align(Alignment.BottomEnd), // Align within the outer Box
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
+    // --- ModalBottomSheet ---
+    // 当 showBottomSheet 为 true 时显示
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showBottomSheet = false }, // 点击外部或向下滑动时关闭
+            sheetState = sheetState // 控制 BottomSheet 的状态
         ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "添加普通日程"
+            // --- 这里是 BottomSheet 的内容 ---
+            QuickAddScheduleSheetContent(
+                // onSave = { itemData ->
+                //     // 调用 ViewModel 保存
+                //     Log.d("ScheduleScreen", "Save clicked with data: $itemData") // 临时打印
+                //     viewModel.quickAddSchedule(itemData) // 旧的调用方式
+                //     showBottomSheet = false // 保存后关闭
+                // },
+                onDismiss = { showBottomSheet = false },
+                // onNavigateToDetail = { type, data ->
+                //     // 根据 type 和 data 导航到详细页面
+                //     Log.d(
+                //         "ScheduleScreen",
+                //         "Navigate to detail for type: $type, data: $data"
+                //     ) // 临时打印
+                //     when (type) {
+                //         ScheduleType.ORDINARY -> {
+                //             // TODO: 如果 data 不为 null, 传递数据到 AddEditOrdinaryScheduleScreen (可能需要修改导航参数)
+                //             navigationState.navigateToAddEditOrdinarySchedule(null)
+                //         }
+                //
+                //         ScheduleType.COURSE -> {
+                //             // TODO: 如果 data 不为 null, 预填充 AddCourseScreen (需要修改 AddCourseScreen 和导航)
+                //             // 暂时导航到添加课程，tableId 需要确定，这里用 defaultTableId
+                //             navigationState.navigateToAddCourse(
+                //                 defaultTableId ?: AppConstants.Ids.INVALID_TABLE_ID
+                //             )
+                //         }
+                //
+                //         else -> {
+                //             Log.w(
+                //                 "ScheduleScreen",
+                //                 "Navigation to detail not implemented for type: $type"
+                //             )
+                //             // TODO: 可能需要显示一个提示
+                //         }
+                //     }
+                //     showBottomSheet = false // 导航前关闭
+                // }
+                // ViewModel 会被 Hilt 自动注入，无需手动传递
             )
         }
-    } // End Outer Box
+    }
 }
 
 /**
@@ -694,7 +773,7 @@ fun WeekHeader(
 fun TimeSlotItem(
     timeSlot: TimeSlot,
     onTimeSlotClick: () -> Unit,
-    modifier: Modifier = Modifier // Implicitly contains size from Layout
+    modifier: Modifier = Modifier
 ) {
     // --- Get display info ---
     val startInstant = Instant.fromEpochMilliseconds(timeSlot.startTime)
@@ -703,75 +782,95 @@ fun TimeSlotItem(
     val endTimeLocal = endInstant.toLocalDateTime(TimeZone.currentSystemDefault())
 
     val title = timeSlot.displayTitle ?: "无标题"
-    val timeString =
-        "${startTimeLocal.format(timeFormatter)} - ${endTimeLocal.format(timeFormatter)}"
-    val details = if (!timeSlot.displaySubtitle.isNullOrBlank()) {
-        "@${timeSlot.displaySubtitle}"
+    val details = if (timeSlot.scheduleType == ScheduleType.ORDINARY) {
+        timeSlot.displaySubtitle // 只显示地点，不显示时间
     } else {
-        timeString
+        if (!timeSlot.displaySubtitle.isNullOrBlank()) {
+            "@${timeSlot.displaySubtitle}"
+        } else {
+            "${startTimeLocal.format(timeFormatter)} - ${endTimeLocal.format(timeFormatter)}"
+        }
     }
 
-    // --- Colors (Adaptive & Low Saturation/Brightness) ---
+    // 判断是否为时间点
+    val isTimePoint = timeSlot.startTime == timeSlot.endTime
+
+    // --- Colors ---
     val isDarkTheme = isSystemInDarkTheme()
-    // 使用新的自适应颜色生成逻辑，忽略 timeSlot.displayColor
-//    val backgroundColor = remember(timeSlot.scheduleId, isDarkTheme) {
-//        // 使用 scheduleId 作为种子，确保同一课程颜色稳定
-//        generateAdaptiveCourseColor(timeSlot.scheduleId, isDarkTheme)
-//    }
-    val backgroundColor = timeSlot.displayColor?.toColor(MaterialTheme.colorScheme) ?: run {
-        // 使用课程 ID 作为种子，确保同一课程颜色稳定
-        generateAdaptiveCourseColor(timeSlot.scheduleId, isDarkTheme)
-    }
-    val bc = timeSlot.displayColor.toString()
-    val contentColor =
-//        ColorSchemeEnum.fromString("ON$bc")?.toColor(MaterialTheme.colorScheme) ?:
-        {
-            // 基于背景亮度决定内容颜色，保证对比度
-            if (backgroundColor.calculateLuminance() < 0.5f)
-                Color.White.copy(alpha = 0.95f) // Dark background -> Light text
-            else
-                Color.Black.copy(alpha = 0.87f) // Light background -> Dark text
-        }()
-    Log.w("TimeSlotItem", "backgroundColor: $backgroundColor, contentColor: $contentColor")
+    val (backgroundColor, contentColor) = ColorUtils.calculateTimeSlotColors(
+        timeSlot.displayColor,
+        timeSlot.scheduleId,
+        isDarkTheme,
+        MaterialTheme.colorScheme
+    )
 
-    // --- Render Card ---
-    Card(
-        // Apply modifier passed by Layout (contains size)
-        modifier = modifier
-            .fillMaxSize() // Fill the size given by Layout
-            .padding(horizontal = 2.dp, vertical = 1.dp) // Internal padding
-            .clickable(onClick = onTimeSlotClick),
-        shape = RoundedCornerShape(4.dp), // Slightly smaller radius? Adjust as needed
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor,
-            contentColor = contentColor
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        // Column for content, padding adjusted for the Card's internal padding
+    if (isTimePoint) {
+        val (_, contentColor) = ColorUtils.calculateTimeSlotColors(
+            ColorSchemeEnum.SURFACECONTAINER,
+            timeSlot.scheduleId,
+            isDarkTheme,
+            MaterialTheme.colorScheme
+        )
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 4.dp, vertical = 2.dp), // Padding for text inside the card
-            verticalArrangement = Arrangement.SpaceBetween
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = 2.dp)
+                .clickable(onClick = onTimeSlotClick)
         ) {
             Text(
                 text = title,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelSmall,
                 fontSize = 11.sp,
-                maxLines = 3,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                lineHeight = 13.sp,
-                color = contentColor,
+                modifier = Modifier.padding(bottom = 2.dp),
+                color = contentColor
             )
-            Text(
-                text = details,
-                fontSize = 9.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                color = contentColor.copy(alpha = 0.8f),
-                lineHeight = 11.sp
+            HorizontalDivider(
+                thickness = 2.dp,
+                color = backgroundColor
             )
+        }
+    } else {
+        // 普通时间段显示为卡片样式
+        Card(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = 2.dp, vertical = 1.dp)
+                .clickable(onClick = onTimeSlotClick),
+            shape = RoundedCornerShape(4.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = backgroundColor,
+                contentColor = contentColor
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 13.sp,
+                    color = contentColor,
+                )
+                if (!details.isNullOrBlank()) {
+                    Text(
+                        text = details,
+                        fontSize = 9.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = contentColor.copy(alpha = 0.8f),
+                        lineHeight = 11.sp
+                    )
+                }
+            }
         }
     }
 }
@@ -967,7 +1066,7 @@ fun ScheduleGridWithTimeSlots(
             val yOffsetPx = (startMinutesPastGridStart / 60.0 * hourHeightPx).toFloat()
 
             // Height (Calculate full slot height first)
-            val durationMillis = max(1, timeSlot.endTime - timeSlot.startTime)
+            val durationMillis = max(1 * 1000 * 20 * 60, timeSlot.endTime - timeSlot.startTime)
             val durationMinutes = durationMillis / (1000.0 * 60.0)
             val fullSlotHeightPx = (durationMinutes / 60.0 * hourHeightPx).toFloat()
             // Actual measurable height = full height - internal padding

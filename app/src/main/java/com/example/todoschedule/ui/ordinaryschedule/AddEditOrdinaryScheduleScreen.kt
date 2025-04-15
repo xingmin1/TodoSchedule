@@ -67,7 +67,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.todoschedule.ui.navigation.NavigationState
-import com.example.todoschedule.ui.theme.getColorListFromColorScheme
+import com.example.todoschedule.ui.theme.ColorSchemeEnum
+import com.example.todoschedule.ui.theme.toColorOrDefault
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -86,9 +87,10 @@ fun AddEditOrdinaryScheduleScreen(
     navigationState: NavigationState,
     viewModel: AddEditOrdinaryScheduleViewModel = hiltViewModel()
 ) {
-    val courseScheme = MaterialTheme.colorScheme
+    val courseScheme = colorScheme
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val colorScheme = colorScheme
 
     // --- State for Pickers --- (Create separate states with keys)
 
@@ -233,9 +235,9 @@ fun AddEditOrdinaryScheduleScreen(
     // --- Color Picker Dialog --- (We'll define this later)
     if (uiState.showColorPickerDialog) {
         ColorPickerDialog(
-            predefinedColors = getColorListFromColorScheme(colorScheme), // Use colors from theme
-            onColorSelected = { hexColor ->
-                viewModel.onColorChange(hexColor) // Update ViewModel
+            predefinedColors = ColorSchemeEnum.getColorList(), // Use colors from theme
+            onColorSelected = { color ->
+                viewModel.onColorChange(color) // Update ViewModel
                 viewModel.dismissColorPicker()   // Close dialog
             },
             onDismissRequest = { viewModel.dismissColorPicker() }
@@ -323,9 +325,10 @@ fun AddEditOrdinaryScheduleScreen(
                 ) {
                     // Color Preview Box
                     val previewColor = remember(uiState.color) {
-                        parseColor(
-                            uiState.color ?: "#"
-                        ) // Use helper to parse, default to transparent/error color if invalid
+                        uiState.color.toColorOrDefault(colorScheme)
+//                        parseColor(
+//                            uiState.color ?: "#"
+//                        ) // Use helper to parse, default to transparent/error color if invalid
                     }
                     Box(
                         modifier = Modifier
@@ -484,7 +487,7 @@ private fun StatusDropdown(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val items = com.example.todoschedule.data.database.converter.ScheduleStatus.entries.toList()
+    val items = com.example.todoschedule.data.database.converter.ScheduleStatus.values()
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -538,8 +541,8 @@ fun parseColor(hexString: String?, defaultColor: Color = Color.Transparent): Col
 // Placeholder for ColorPickerDialog (to be implemented next)
 @Composable
 fun ColorPickerDialog(
-    predefinedColors: List<Color>,
-    onColorSelected: (String) -> Unit,
+    predefinedColors: List<ColorSchemeEnum>,
+    onColorSelected: (ColorSchemeEnum) -> Unit,
     onDismissRequest: () -> Unit
 ) {
     AlertDialog(
@@ -555,23 +558,23 @@ fun ColorPickerDialog(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(predefinedColors) { colorHex ->
-                    val color = remember(colorHex) {
-                        parseColor(
-                            colorHex.toString(),
-                            Color.Gray
-                        )
-                    } // Default to gray on error
+                items(predefinedColors) { color ->
+//                    val color = remember(colorHex) {
+//                        parseColor(
+//                            colorHex.toString(),
+//                            Color.Gray
+//                        )
+//                    } // Default to gray on error
                     Box(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(color)
+                            .background(color.toColor(colorScheme))
                             .border(
-                                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                BorderStroke(1.dp, colorScheme.outline),
                                 CircleShape
                             )
-                            .clickable { onColorSelected(colorHex.toString()) } // Select color on click
+                            .clickable { onColorSelected(color) } // Select color on click
                     )
                 }
             }

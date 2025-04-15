@@ -79,6 +79,7 @@ fun AppBottomNavigationBar(
                 onClick = item.navigateAction, // 点击时执行对应的导航动作
                 icon = { Icon(item.icon, contentDescription = item.label) },
                 label = { Text(item.label) }
+
                 // 你可以根据需要添加颜色等自定义设置
                 // colors = NavigationBarItemDefaults.colors(...)
             )

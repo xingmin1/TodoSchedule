@@ -22,8 +22,6 @@ import com.example.todoschedule.domain.use_case.ordinary_schedule.UpdateOrdinary
 import com.example.todoschedule.domain.use_case.table_time_config.GetDefaultTableTimeConfigUseCase
 import com.example.todoschedule.domain.utils.CalendarUtils
 import com.example.todoschedule.ui.schedule.model.ScheduleUiState
-import com.example.todoschedule.ui.theme.ColorSchemeEnum
-import com.example.todoschedule.ui.theme.toColor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -303,11 +301,7 @@ constructor(
                 slot.copy(
                     displayTitle = slot.head ?: schedule.title,
                     displaySubtitle = schedule.location,
-                    displayColor =
-                        if (schedule.color != null)
-                            ColorSchemeEnum.Fixed(schedule.color.toColor())
-                        else
-                            AppConstants.DEFAULT_COURSE_COLOR,
+                    displayColor = schedule.color ?: AppConstants.DEFAULT_COURSE_COLOR
                 )
             }
         }
@@ -428,7 +422,7 @@ constructor(
 
     // --- 普通日程操作 ---
 
-    /** 添加普通日程 */
+    /** 添加普通日程 (旧方法，保持或整合) */
     fun addOrdinarySchedule(schedule: OrdinarySchedule) {
         viewModelScope.launch {
             val userId = currentUserIdState.value?.toInt()
@@ -437,6 +431,7 @@ constructor(
                 return@launch
             }
             try {
+                // Ensure userId is set correctly if not passed in
                 addOrdinaryScheduleUseCase(schedule.copy(userId = userId))
             } catch (e: Exception) {
                 Log.e("ScheduleViewModel", "Error adding ordinary schedule", e)

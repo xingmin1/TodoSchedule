@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.toColorInt
+import com.example.todoschedule.core.constants.AppConstants
 
 val primaryLight = Color(0xFF3E6700)
 val onPrimaryLight = Color(0xFFFFFFFF)
@@ -530,4 +531,8 @@ fun String.toColor(): Color {
 
 fun String.toColorSchemeEnum(): ColorSchemeEnum? {
     return ColorSchemeEnum.fromString(this)
+}
+
+fun ColorSchemeEnum?.toColorOrDefault(colorScheme: ColorScheme): Color {
+    return this?.toColor(colorScheme) ?: AppConstants.DEFAULT_COURSE_COLOR.toColor(colorScheme)
 }

@@ -141,7 +141,7 @@ fun AppNavigation(
                     ScheduleScreen(
                         navigationState = navigationState,
                         onNavigateToSettings = { navigationState.navigateToSettings() },
-                        paddingValues = innerPadding // 传递 padding
+                        paddingValues = innerPadding // 这里传递了 innerPadding，确保课表页面有足够的底部空间
                     )
                 }
 

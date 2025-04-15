@@ -4,6 +4,7 @@ import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.data.database.entity.OrdinaryScheduleEntity
 import com.example.todoschedule.data.model.OrdinaryScheduleWithTimeSlots
 import com.example.todoschedule.domain.model.OrdinarySchedule
+import com.example.todoschedule.ui.theme.toColorSchemeEnum
 
 fun OrdinarySchedule.toEntity(): OrdinaryScheduleEntity {
     return OrdinaryScheduleEntity(
@@ -13,7 +14,7 @@ fun OrdinarySchedule.toEntity(): OrdinaryScheduleEntity {
         description = this.description,
         location = this.location,
         category = this.category,
-        color = this.color,
+        color = this.color.toString(),
         isAllDay = this.isAllDay,
         status = this.status
     )
@@ -29,7 +30,7 @@ fun OrdinaryScheduleWithTimeSlots.filterAndToDomainModel(): OrdinarySchedule {
         description = this.schedule.description,
         location = this.schedule.location,
         category = this.schedule.category,
-        color = this.schedule.color,
+        color = this.schedule.color?.toColorSchemeEnum(),
         isAllDay = this.schedule.isAllDay,
         status = this.schedule.status,
         timeSlots = this.timeSlots.filter { it.scheduleType == ScheduleType.ORDINARY }

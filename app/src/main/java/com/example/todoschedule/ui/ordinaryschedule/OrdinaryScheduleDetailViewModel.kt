@@ -4,13 +4,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todoschedule.domain.model.OrdinarySchedule
+import com.example.todoschedule.domain.use_case.ordinary_schedule.DeleteOrdinaryScheduleUseCase
 import com.example.todoschedule.domain.use_case.ordinary_schedule.GetOrdinaryScheduleByIdUseCase
 import com.example.todoschedule.ui.navigation.AppRoutes
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 // UI 状态
@@ -20,9 +24,16 @@ sealed interface OrdinaryScheduleDetailUiState {
     data class Error(val message: String) : OrdinaryScheduleDetailUiState
 }
 
+// 事件
+sealed interface OrdinaryScheduleDetailEvent {
+    object NavigateBack : OrdinaryScheduleDetailEvent
+    data class ShowError(val message: String) : OrdinaryScheduleDetailEvent
+}
+
 @HiltViewModel
 class OrdinaryScheduleDetailViewModel @Inject constructor(
     private val getOrdinaryScheduleByIdUseCase: GetOrdinaryScheduleByIdUseCase,
+    private val deleteOrdinaryScheduleUseCase: DeleteOrdinaryScheduleUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -41,8 +52,31 @@ class OrdinaryScheduleDetailViewModel @Inject constructor(
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
-                initialValue = OrdinaryScheduleDetailUiState.Loading // 初始状态为加载中
+                initialValue = OrdinaryScheduleDetailUiState.Loading
             )
 
-    // TODO: Add delete and edit functionality
+    // 使用 SharedFlow 发送一次性事件
+    private val _eventFlow = MutableSharedFlow<OrdinaryScheduleDetailEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
+
+    // 添加删除日程的方法
+    fun deleteSchedule() {
+        viewModelScope.launch {
+            try {
+                // 从当前状态获取日程 ID，确保日程存在
+                val currentState = uiState.value
+                if (currentState is OrdinaryScheduleDetailUiState.Success) {
+                    deleteOrdinaryScheduleUseCase(currentState.schedule)
+                    // 删除成功后发送返回事件
+                    _eventFlow.emit(OrdinaryScheduleDetailEvent.NavigateBack)
+                } else {
+                    // 如果日程不存在或状态错误，发送错误事件
+                    _eventFlow.emit(OrdinaryScheduleDetailEvent.ShowError("无法删除：日程未加载或不存在"))
+                }
+            } catch (e: Exception) {
+                // 处理删除过程中的异常
+                _eventFlow.emit(OrdinaryScheduleDetailEvent.ShowError("删除日程失败: ${e.message}"))
+            }
+        }
+    }
 } 
