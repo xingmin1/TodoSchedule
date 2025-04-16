@@ -100,6 +100,21 @@ fun WebViewScreen(
         onHistoryChanged = { canGoBack = it }
     )
 
+    // 监听桌面模式变化并刷新WebView
+    LaunchedEffect(isDesktopMode) {
+        if (webView.url != null) {
+            // 更新User-Agent
+            webView.settings.userAgentString = if (isDesktopMode) {
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            } else {
+                "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+            // 刷新当前页面以应用新的User-Agent
+            webView.reload()
+            Log.d("WebViewScreen", "模式已切换为: ${if (isDesktopMode) "电脑模式" else "手机模式"}")
+        }
+    }
+
     // 帮助弹窗内容
     if (showHelpDialog) {
         AlertDialog(
