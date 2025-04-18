@@ -29,7 +29,7 @@ constructor(
 ) : CourseRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun getAllCourses(): Flow<List<Course>> {
+    override fun getCurrentUserAllCourses(): Flow<List<Course>> {
         return sessionRepository.currentUserIdFlow.flatMapLatest { userId ->
             if (userId != null && userId != -1L) {
                 globalSettingRepository.getDefaultTableIds(userId.toInt())

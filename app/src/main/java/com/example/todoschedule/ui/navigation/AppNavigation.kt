@@ -147,7 +147,10 @@ fun AppNavigation(
 
                 // --- 添加新屏幕的 Composable --- //
                 composable(AppRoutes.Task.route) {
-                    TaskScreen(paddingValues = innerPadding) // 传递 padding
+                    TaskScreen(
+                        paddingValues = innerPadding, // 传递 padding
+                        navigationState = navigationState // 传递 navigationState
+                    )
                 }
 
                 composable(AppRoutes.Study.route) {
@@ -287,8 +290,7 @@ fun AppNavigation(
                         defaultValue = -1 // Use -1 or another invalid ID to indicate 'add' mode
                     })
                 ) { backStackEntry ->
-                    val scheduleId =
-                        backStackEntry.arguments?.getInt(AppRoutes.AddEditOrdinarySchedule.ARG_SCHEDULE_ID)
+                    // val _scheduleId = backStackEntry.arguments?.getInt(AppRoutes.AddEditOrdinarySchedule.ARG_SCHEDULE_ID)
                     // AddEditOrdinaryScheduleScreen 需要适配或有自己的 Scaffold
                     AddEditOrdinaryScheduleScreen(
                         navigationState = navigationState
@@ -343,7 +345,7 @@ fun AppNavigation(
 @HiltViewModel
 class SessionViewModel @Inject constructor(
     getLoginUserIdFlowUseCase: GetLoginUserIdFlowUseCase,
-    private val sessionRepository: SessionRepository // 注入 SessionRepository
+    sessionRepository: SessionRepository // 注入 SessionRepository
 ) : ViewModel() {
     val currentUserIdFlow: StateFlow<Long?> = getLoginUserIdFlowUseCase()
         .stateIn(viewModelScope, SharingStarted.Eagerly, AppConstants.Ids.INVALID_USER_ID.toLong())

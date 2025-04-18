@@ -11,7 +11,7 @@ interface CourseRepository {
     /**
      * 获取所有课程
      */
-    fun getAllCourses(): Flow<List<Course>>
+    fun getCurrentUserAllCourses(): Flow<List<Course>>
 
     /**
      * 根据ID获取课程
