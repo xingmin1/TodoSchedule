@@ -1,7 +1,6 @@
 package com.example.todoschedule.ui.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +23,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,39 +42,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.todoschedule.core.constants.AppConstants
-import com.example.todoschedule.data.database.converter.ScheduleStatus
 import com.example.todoschedule.ui.home.model.HomeUiState
 import com.example.todoschedule.ui.navigation.NavigationState
-import com.example.todoschedule.ui.ordinaryschedule.formatTime
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DayOfWeek
-import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-
-private fun Int.padZero(): String = this.toString().padStart(2, '0')
-
-private fun Long.toDotSeparatedDateTime(): String {
-    val localDateTime = Instant
-        .fromEpochMilliseconds(this)
-        .toLocalDateTime(TimeZone.currentSystemDefault())
-
-    return buildString {
-        append(localDateTime.year).append(".")
-        append(localDateTime.monthNumber.padZero()).append(".")
-        append(localDateTime.dayOfMonth.padZero()).append(".").padStart(2)
-        append(localDateTime.hour.padZero()).append(":").padStart(2)
-        append(localDateTime.minute.padZero()).padStart(2)
-    }
-}
 
 /**
  * 首页
@@ -86,7 +68,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val coursesWithTime by viewModel.todayCoursesWithTime.collectAsState()
+    val todayCourses by viewModel.todayCourses.collectAsState()
     val todaySchedules by viewModel.todayOrdinarySchedules.collectAsState()
     val courseCount by viewModel.todayCourses.map { it.size }.collectAsState(initial = 0)
     val scheduleCount by viewModel.todayOrdinarySchedules.map { it.size }
@@ -122,46 +104,6 @@ fun HomeScreen(
                 )
 
                 is HomeUiState.Success -> {
-                    val todayCoursesUi = remember(coursesWithTime) {
-                        coursesWithTime.map { courseWithTime ->
-                            val course = courseWithTime.course
-                            val firstNode = course.nodes.firstOrNull()
-                            val timeDisplay =
-                                if (courseWithTime.startTime != null && courseWithTime.endTime != null) {
-                                    "${courseWithTime.startTime.formatTime()}-${courseWithTime.endTime.formatTime()}"
-                                } else {
-                                    "第${firstNode?.startNode ?: 1}-${(firstNode?.startNode ?: 1) + (firstNode?.step ?: 1) - 1}节"
-                                }
-
-                            HomeCourseUiModel(
-                                id = course.id,
-                                name = course.courseName,
-                                startNode = firstNode?.startNode ?: 1,
-                                endNode = (firstNode?.startNode ?: 1) + (firstNode?.step ?: 1) - 1,
-                                step = firstNode?.step ?: 1,
-                                location = firstNode?.room ?: "",
-                                color = course.color,
-                                startTime = courseWithTime.startTime,
-                                endTime = courseWithTime.endTime,
-                                timeDisplay = timeDisplay
-                            )
-                        }
-                    }
-
-                    val todaySchedulesUi = remember(todaySchedules) {
-                        todaySchedules.map { slot ->
-                            HomeScheduleUiModel(
-                                id = slot.scheduleId,
-                                title = slot.displayTitle ?: "未命名任务",
-                                description = slot.displaySubtitle,
-                                isCompleted = false,
-                                status = ScheduleStatus.TODO,
-                                startTime = slot.startTime,
-                                endTime = slot.endTime
-                            )
-                        }
-                    }
-
                     val studyStatUi = HomeStudyStatUiModel(
                         weeklyFocusTime = 12.5f,
                         progress = 0.75f,
@@ -185,10 +127,10 @@ fun HomeScreen(
                         }
                         item {
                             TodayCoursesSection(
-                                courses = todayCoursesUi,
+                                courses = todayCourses,
                                 onCourseClick = { course ->
                                     navigationState.navigateToCourseDetail(
-                                        tableId = 0,
+                                        tableId = defaultTableId,
                                         courseId = course.id
                                     )
                                 },
@@ -197,14 +139,14 @@ fun HomeScreen(
                         }
                         item {
                             PendingTasksSection(
-                                tasks = todaySchedulesUi,
+                                tasks = todaySchedules,
                                 onTaskClick = { task ->
                                     navigationState.navigateToOrdinaryScheduleDetail(task.id)
                                 },
-//                            onToggleComplete = { taskId ->
-//                                viewModel.toggleTaskCompletion(taskId)
-//                            },
-                                onViewAllClick = { navigationState.navigateToTask() }
+                                onViewAllClick = { navigationState.navigateToTask() },
+                                onToggleComplete = { task ->
+                                    viewModel.toggleComplete(task)
+                                }
                             )
                         }
                         item {
@@ -544,7 +486,7 @@ fun CourseListItem(
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "第${course.startNode}-${course.startNode + course.step - 1}节  ${course.location}",
+                        text = "第${course.startNode}-${course.endNode}节  ${course.location}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
@@ -563,8 +505,8 @@ fun CourseListItem(
 fun PendingTasksSection(
     tasks: List<HomeScheduleUiModel>,
     onTaskClick: (HomeScheduleUiModel) -> Unit,
-//    onToggleComplete: (Int) -> Unit,
-    onViewAllClick: () -> Unit
+    onViewAllClick: () -> Unit,
+    onToggleComplete: (HomeScheduleUiModel) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(16.dp)
@@ -603,7 +545,7 @@ fun PendingTasksSection(
                     TaskListItem(
                         task = task,
                         onClick = { onTaskClick(task) },
-//                        onToggleComplete = { onToggleComplete(task.id) }
+                        onToggleComplete = { onToggleComplete(task) }
                     )
                 }
             }
@@ -615,7 +557,7 @@ fun PendingTasksSection(
 fun TaskListItem(
     task: HomeScheduleUiModel,
     onClick: () -> Unit,
-//    onToggleComplete: () -> Unit
+    onToggleComplete: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -630,12 +572,18 @@ fun TaskListItem(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-//            Checkbox(
-//                checked = task.isCompleted,
-//                onCheckedChange = { onToggleComplete() },
-//                modifier = Modifier.size(20.dp)
-//            )
-//            Spacer(modifier = Modifier.width(12.dp))
+            Checkbox(
+                checked = task.isCompleted,
+                onCheckedChange = { onToggleComplete() },
+                modifier = Modifier
+                    .size(24.dp)
+                    .padding(end = 12.dp),
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.primary,
+                    uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+            Spacer(modifier = Modifier.width(12.dp))
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -647,7 +595,8 @@ fun TaskListItem(
                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     } else {
                         MaterialTheme.colorScheme.onSurface
-                    }
+                    },
+                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                 )
                 task.description?.let { description ->
                     Spacer(modifier = Modifier.height(4.dp))
@@ -658,7 +607,7 @@ fun TaskListItem(
                     )
                 }
                 Text(
-                    text = "${task.startTime.toDotSeparatedDateTime()}-${task.endTime.toDotSeparatedDateTime()}",
+                    text = task.timeDisplay,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
@@ -711,7 +660,7 @@ fun StudyStatisticsSection(
                         )
                     }
                     Text(
-                        text = studyStat.changePercentage.toString() + "小时",
+                        text = studyStat.changePercentage.toString() + "小时↑",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.tertiary
                     )
@@ -730,19 +679,19 @@ fun StudyStatisticsSection(
     }
 }
 
-@Composable
-fun Tag(text: String, color: Color) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(color.copy(alpha = 0.1f))
-            .border(1.dp, color.copy(alpha = 0.2f), RoundedCornerShape(50))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = color
-        )
-    }
-}
+//@Composable
+//fun Tag(text: String, color: Color) {
+//    Box(
+//        modifier = Modifier
+//            .clip(RoundedCornerShape(50))
+//            .background(color.copy(alpha = 0.1f))
+//            .border(1.dp, color.copy(alpha = 0.2f), RoundedCornerShape(50))
+//            .padding(horizontal = 8.dp, vertical = 4.dp)
+//    ) {
+//        Text(
+//            text = text,
+//            style = MaterialTheme.typography.labelSmall,
+//            color = color
+//        )
+//    }
+//}

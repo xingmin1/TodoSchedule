@@ -4,46 +4,53 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todoschedule.core.constants.AppConstants
-import com.example.todoschedule.domain.model.Course
+import com.example.todoschedule.data.database.converter.ScheduleStatus
 import com.example.todoschedule.domain.model.OrdinarySchedule
 import com.example.todoschedule.domain.model.Table
 import com.example.todoschedule.domain.model.TableTimeConfig
-import com.example.todoschedule.domain.model.TimeSlot
 import com.example.todoschedule.domain.repository.CourseRepository
 import com.example.todoschedule.domain.repository.GlobalSettingRepository
 import com.example.todoschedule.domain.repository.SessionRepository
 import com.example.todoschedule.domain.repository.TableRepository
 import com.example.todoschedule.domain.use_case.ordinary_schedule.GetOrdinarySchedulesUseCase
+import com.example.todoschedule.domain.use_case.ordinary_schedule.UpdateOrdinaryScheduleUseCase
 import com.example.todoschedule.domain.use_case.table_time_config.GetDefaultTableTimeConfigUseCase
 import com.example.todoschedule.domain.utils.CalendarUtils
 import com.example.todoschedule.ui.home.model.HomeUiState
+import com.example.todoschedule.ui.ordinaryschedule.formatTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import kotlinx.datetime.LocalTime
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
 import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import javax.inject.Inject
 
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel @Inject constructor(
-    private val courseRepository: CourseRepository,
     sessionRepository: SessionRepository,
+    private val courseRepository: CourseRepository,
     private val tableRepository: TableRepository,
     private val globalSettingRepository: GlobalSettingRepository,
-    getOrdinarySchedulesUseCase: GetOrdinarySchedulesUseCase,
+    private val getOrdinarySchedulesUseCase: GetOrdinarySchedulesUseCase,
+    private val updateOrdinarySchedulesUseCase: UpdateOrdinaryScheduleUseCase,
     private val getDefaultTableTimeConfigUseCase: GetDefaultTableTimeConfigUseCase
 ) : ViewModel() {
 
@@ -94,10 +101,11 @@ class HomeViewModel @Inject constructor(
         )
 
     // 获取今天的日期
-    private val todayDate = MutableStateFlow(Clock.System.todayIn(TimeZone.currentSystemDefault()))
+    private val _todayDate = MutableStateFlow(Clock.System.todayIn(TimeZone.currentSystemDefault()))
+    val todayDate = _todayDate
 
     // 获取今天的周次
-    private val todayWeek: StateFlow<Int> = currentTableState.map { table ->
+    private val _todayWeek: StateFlow<Int> = currentTableState.map { table ->
         table?.startDate?.let { startDate ->
             CalendarUtils.getCurrentWeek(startDate)
         } ?: 1
@@ -106,6 +114,7 @@ class HomeViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = 1
     )
+    val todayWeek: StateFlow<Int> = _todayWeek
 
     // 获取当前课表时间配置
     private val _currentTableTimeConfig: StateFlow<TableTimeConfig?> =
@@ -134,26 +143,49 @@ class HomeViewModel @Inject constructor(
         )
     val currentTableTimeConfig: StateFlow<TableTimeConfig?> = _currentTableTimeConfig
 
+    data class Quadruple<A, B, C, D>(
+        val first: A,
+        val second: B,
+        val third: C,
+        val fourth: D
+    )
+
     // 获取今天的课程列表
-    private val _todayCourses: StateFlow<List<Course>> = combine(
-        _defaultTableIdState,
+    private val _todayCourses: StateFlow<List<HomeCourseUiModel>> = combine(
+        defaultTableIdState,
         todayWeek,
-        todayDate
-    ) { tableId, week, date ->
-        Triple(tableId, week, date)
-    }.flatMapLatest { (tableId, week, date) ->
+        todayDate,
+        currentTableTimeConfig
+    ) { tableId, week, date, timeConfig ->
+        Quadruple(tableId, week, date, timeConfig)
+    }.flatMapLatest { (tableId, week, date, timeConfig) ->
         if (tableId <= 0) {
             flowOf(emptyList())
         } else {
             courseRepository.getCoursesByTableId(tableId).map { courses ->
                 val dayOfWeek = date.dayOfWeek.isoDayNumber // 1=Monday, 7=Sunday
-                courses.map { course ->
-                    course.copy(
-                        nodes = course.nodes.filter { node ->
-                            node.isInWeek(week) && node.day == dayOfWeek
+                courses.flatMap { course ->
+                    course.nodes.filter { node ->
+                        node.isInWeek(week) && node.day == dayOfWeek
+                    }.map { node ->
+                        val startTimeNode = timeConfig?.nodes?.find { it.node == node.startNode }
+                        val endTimeNode =
+                            timeConfig?.nodes?.find { it.node == node.startNode + node.step - 1 }
+                        val timeDisplay = if (startTimeNode != null && endTimeNode != null) {
+                            "${startTimeNode.startTime.formatTime()} - ${endTimeNode.endTime.formatTime()}"
+                        } else {
+                            "第${node.startNode} - ${node.startNode + node.step - 1}节"
                         }
-                    )
-                }.filter { it.nodes.isNotEmpty() }
+                        HomeCourseUiModel(
+                            id = course.id,
+                            name = course.courseName,
+                            startNode = node.startNode,
+                            endNode = node.startNode + node.step - 1,
+                            location = node.room ?: "",
+                            timeDisplay = timeDisplay
+                        )
+                    }
+                }.sortedBy { it.startNode } // 按开始节数排序
             }
         }
     }.stateIn(
@@ -161,77 +193,82 @@ class HomeViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
-    val todayCourses: StateFlow<List<Course>> = _todayCourses
+    val todayCourses: StateFlow<List<HomeCourseUiModel>> = _todayCourses
 
-    data class CourseWithTime(
-        val course: Course,
-        val startTime: LocalTime?,
-        val endTime: LocalTime?
-    )
-
-    // 获取带时间的课程表
-    private val _todayCoursesWithTime: StateFlow<List<CourseWithTime>> = combine(
-        todayCourses,
-        currentTableTimeConfig
-    ) { courses, timeConfig ->
-        if (timeConfig == null || timeConfig.nodes.isEmpty()) {
-            courses.map { CourseWithTime(it, null, null) }
-        } else {
-            courses.map { course ->
-                val firstNode =
-                    course.nodes.firstOrNull() ?: return@map CourseWithTime(course, null, null)
-                val timeNodesInRange = timeConfig.nodes
-                    .filter { it.node in firstNode.startNode..(firstNode.startNode + firstNode.step - 1) }
-                    .sortedBy { it.node }
-
-                CourseWithTime(
-                    course = course,
-                    startTime = timeNodesInRange.firstOrNull()?.startTime,
-                    endTime = timeNodesInRange.lastOrNull()?.endTime
-                )
-            }
-        }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
-    val todayCoursesWithTime: StateFlow<List<CourseWithTime>> = _todayCoursesWithTime
-
-    // 获取今天的普通日程列表
-    private val _todayOrdinarySchedules: StateFlow<List<TimeSlot>> = combine(
+    // 获取今日待办列表
+    private val _todayOrdinarySchedules: StateFlow<List<HomeScheduleUiModel>> = combine(
         ordinarySchedules,
         todayDate
     ) { schedules, date ->
+        // 今天
         val startOfDay =
             date.atTime(0, 0).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
         val endOfDay = date.atTime(23, 59, 59, 999).toInstant(TimeZone.currentSystemDefault())
             .toEpochMilliseconds()
 
+        // 明天
+        val tomorrow = date.plus(1, DateTimeUnit.DAY)
+        val startOfTomorrow =
+            tomorrow.atTime(0, 0).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+        val endOfTomorrow =
+            tomorrow.atTime(23, 59, 59, 999).toInstant(TimeZone.currentSystemDefault())
+                .toEpochMilliseconds()
+
         schedules.flatMap { schedule ->
-            schedule.timeSlots.filter { slot ->
-                (slot.startTime in startOfDay..endOfDay) ||
-                        (slot.endTime in startOfDay..endOfDay) ||
-                        (slot.startTime < startOfDay && slot.endTime > endOfDay)
-            }.map { slot ->
-                slot.copy(
-                    displayTitle = slot.head ?: schedule.title,
-                    displaySubtitle = schedule.location,
-                    displayColor = schedule.color ?: AppConstants.DEFAULT_COURSE_COLOR
-                )
-            }
+            schedule.timeSlots
+                .filter { slot ->
+                    (slot.startTime in startOfDay..endOfDay) ||
+                            (slot.endTime in startOfDay..endOfDay) ||
+                            (slot.startTime < startOfDay && slot.endTime > endOfDay)
+                }
+                .filter { slot ->
+                    schedule.status == ScheduleStatus.TODO || schedule.status == ScheduleStatus.IN_PROGRESS
+                }
+                .map { slot ->
+                    // 格式化输出
+                    val timeDisplay = when (slot.endTime) {
+                        in startOfDay..endOfDay -> {
+                            val time = Instant.fromEpochMilliseconds(slot.endTime)
+                                .toLocalDateTime(TimeZone.currentSystemDefault())
+                            "截止时间: 今日${
+                                time.hour.toString().padStart(2, '0')
+                            }:${time.minute.toString().padStart(2, '0')}"
+                        }
+
+                        in startOfTomorrow..endOfTomorrow -> {
+                            "截止时间: 明日"
+                        }
+
+                        else -> {
+                            val date = Instant.fromEpochMilliseconds(slot.endTime)
+                                .toLocalDateTime(TimeZone.currentSystemDefault())
+                            "截止时间: ${date.year}/${
+                                date.monthNumber.toString().padStart(2, '0')
+                            }/${date.dayOfMonth.toString().padStart(2, '0')}"
+                        }
+                    }
+
+                    HomeScheduleUiModel(
+                        id = schedule.id,
+                        title = schedule.title,
+                        description = schedule.description,
+                        status = schedule.status,
+                        timeDisplay = timeDisplay,
+                        priority = slot.priority
+                    )
+                }
         }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
-    val todayOrdinarySchedules: StateFlow<List<TimeSlot>> = _todayOrdinarySchedules
+    val todayOrdinarySchedules: StateFlow<List<HomeScheduleUiModel>> = _todayOrdinarySchedules
 
     // UI状态
     val uiState: StateFlow<HomeUiState> = combine(
         currentUserIdState,
-        _defaultTableIdState,
+        defaultTableIdState,
         currentTableState,
         todayCourses,
         todayOrdinarySchedules
@@ -272,14 +309,26 @@ class HomeViewModel @Inject constructor(
         Log.d("HomeViewModel", "ViewModel initialized")
     }
 
-    // 刷新今日数据
-    fun refreshTodayData() {
-        todayDate.value = Clock.System.todayIn(TimeZone.currentSystemDefault())
-    }
-}
+    fun toggleComplete(taskItem: HomeScheduleUiModel) {
+        viewModelScope.launch {
 
-// 扩展函数: 检查节点是否在指定周
-private fun com.example.todoschedule.domain.model.CourseNode.isInWeek(week: Int): Boolean {
-    return week in startWeek..endWeek &&
-            (weekType == 0 || (weekType == 1 && week % 2 != 0) || (weekType == 2 && week % 2 == 0))
+            try {
+                val userId = currentUserIdState.value?.toInt() ?: -1
+                if (userId == -1) return@launch
+
+                val schedules = getOrdinarySchedulesUseCase(userId).firstOrNull() ?: return@launch
+
+                val scheduleToUpdate = schedules.find { it.id == taskItem.id } ?: return@launch
+
+                val updatedSchedule = scheduleToUpdate.copy(
+                    status = ScheduleStatus.DONE
+                )
+
+                updateOrdinarySchedulesUseCase(updatedSchedule)
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error toggling task complete", e)
+            }
+        }
+    }
+
 }
