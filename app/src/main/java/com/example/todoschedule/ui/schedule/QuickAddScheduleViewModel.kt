@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
+import androidx.compose.ui.graphics.Color
 import javax.inject.Inject
 
 /**
@@ -43,6 +44,7 @@ data class QuickAddScheduleUiState(
     val selectedCategory: ScheduleCategory = ScheduleCategory.COURSE, // 选中的类别
     val showDatePicker: Boolean = false, // 是否显示日期选择器
     val showStartTimePicker: Boolean = false, // 是否显示时间选择器
+    val showEndTimePicker: Boolean = false, // 是否显示结束时间选择器
     val selectedDate: LocalDate = Clock.System.now() // 默认为当前日期
         .toLocalDateTime(TimeZone.currentSystemDefault()).date,
     val startTime: LocalTime? = null, // 开始时间
@@ -53,7 +55,10 @@ data class QuickAddScheduleUiState(
     val weekRange: String = "", // 周次范围
     val isNotify: Boolean = false, // 是否提醒
     val isRepeat: Boolean = false, // 是否重复
-    val errorMessage: String? = null // 错误信息
+    val errorMessage: String? = null, // 错误信息
+    val selectedColor: ColorSchemeEnum = ColorSchemeEnum.PRIMARY, // 选中的颜色，默认主题色
+    val notifyTime: Int = 0, // 提前提醒时间（分钟），0为准时
+    val repeatRule: String = "" // 重复规则，如"每天"、"每周"等
 )
 
 /**
@@ -100,6 +105,13 @@ class QuickAddScheduleViewModel @Inject constructor(
     }
 
     /**
+     * 显示/隐藏结束时间选择器
+     */
+    fun showEndTimePicker(show: Boolean) {
+        _uiState.update { it.copy(showEndTimePicker = show) }
+    }
+
+    /**
      * 更新选择的日期
      */
     fun onDateSelected(date: LocalDate) {
@@ -115,7 +127,7 @@ class QuickAddScheduleViewModel @Inject constructor(
      * 更新开始时间
      */
     fun onTimeSelected(time: LocalTime) {
-        _uiState.update { 
+        _uiState.update {
             it.copy(
                 startTime = time,
                 showStartTimePicker = false
@@ -180,6 +192,27 @@ class QuickAddScheduleViewModel @Inject constructor(
     }
 
     /**
+     * 选择颜色
+     */
+    fun onColorChange(color: ColorSchemeEnum) {
+        _uiState.update { it.copy(selectedColor = color) }
+    }
+
+    /**
+     * 设置提醒时间（分钟）
+     */
+    fun onNotifyTimeChange(minute: Int) {
+        _uiState.update { it.copy(notifyTime = minute) }
+    }
+
+    /**
+     * 设置重复规则
+     */
+    fun onRepeatRuleChange(rule: String) {
+        _uiState.update { it.copy(repeatRule = rule) }
+    }
+
+    /**
      * 保存日程/课程
      */
     fun saveSchedule() {
@@ -188,8 +221,8 @@ class QuickAddScheduleViewModel @Inject constructor(
                 // 验证必填字段
                 if (_uiState.value.title.isBlank()) {
                     _uiState.update { it.copy(errorMessage = "请输入标题") }
-                    return@launch
-                }
+                return@launch
+            }
 
                 if (_uiState.value.startTime == null) {
                     _uiState.update { it.copy(errorMessage = "请选择时间") }
@@ -230,7 +263,7 @@ class QuickAddScheduleViewModel @Inject constructor(
                         // 创建课程
                         val course = Course(
                             courseName = _uiState.value.title,
-                            color = ColorSchemeEnum.PRIMARY,
+                            color = _uiState.value.selectedColor,
                             room = _uiState.value.location.takeIf { it.isNotEmpty() },
                             teacher = _uiState.value.teacher.takeIf { it.isNotEmpty() },
                             credit = _uiState.value.credit.takeIf { it > 0f },
@@ -257,11 +290,11 @@ class QuickAddScheduleViewModel @Inject constructor(
                             title = _uiState.value.title,
                             description = "",
                             location = _uiState.value.location,
-                            color = ColorSchemeEnum.PRIMARY,
+                            color = _uiState.value.selectedColor,
                             isAllDay = false,
                             status = ScheduleStatus.TODO,
                             timeSlots = listOf(
-                                TimeSlot(
+                        TimeSlot(
                                     startTime = _uiState.value.selectedDate
                                         .atTime(_uiState.value.startTime!!)
                                         .toInstant(TimeZone.currentSystemDefault())
@@ -294,4 +327,4 @@ class QuickAddScheduleViewModel @Inject constructor(
             }
         }
     }
-}
+    }

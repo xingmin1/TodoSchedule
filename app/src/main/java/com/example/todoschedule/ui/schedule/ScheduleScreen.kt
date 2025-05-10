@@ -148,6 +148,9 @@ fun ScheduleScreen(
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
 
+    // --- 新增: Dialog 状态 ---
+    var showDialog by remember { mutableStateOf(false) }
+
     // --- Root layout: Box to allow FAB placement over content ---
     // 将Scaffold包裹原来的内容，并在外部添加ModalBottomSheet
     Scaffold(
@@ -231,7 +234,7 @@ fun ScheduleScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showBottomSheet = true }, // 显示 BottomSheet
+                onClick = { showDialog = true },
                 modifier = Modifier
                     .padding(16.dp)
                     .padding(bottom = paddingValues.calculateBottomPadding()),
@@ -344,6 +347,14 @@ fun ScheduleScreen(
                 onDismiss = { showBottomSheet = false }
             )
         }
+    }
+
+    // 显示添加日程/课程对话框
+    if (showDialog) {
+        QuickAddScheduleDialog(
+            onDismiss = { showDialog = false },
+            viewModel = hiltViewModel()
+        )
     }
 }
 

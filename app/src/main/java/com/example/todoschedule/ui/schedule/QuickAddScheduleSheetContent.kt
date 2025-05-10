@@ -85,9 +85,9 @@ fun QuickAddScheduleSheetContent(
                                 ScheduleCategory.REVIEW -> "复习"
                                 ScheduleCategory.OTHER -> "其他"
                             }
-                        )
-                    }
                 )
+            }
+        )
             }
         }
 
@@ -130,7 +130,7 @@ fun QuickAddScheduleSheetContent(
             ) {
                 // 日期选择
                 OutlinedButton(
-                    onClick = { viewModel.showDatePicker(true) },
+                onClick = { viewModel.showDatePicker(true) },
                     shape = RoundedCornerShape(50),
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
@@ -138,18 +138,18 @@ fun QuickAddScheduleSheetContent(
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface
                     )
-                ) {
-                    Icon(
+            ) {
+                Icon(
                         Icons.Default.CalendarMonth,
-                        contentDescription = "选择日期",
+                    contentDescription = "选择日期",
                         modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
                         text = uiState.selectedDate.formatDate(),
                         style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                )
+            }
 
                 // 时间选择
                 OutlinedButton(
@@ -161,14 +161,14 @@ fun QuickAddScheduleSheetContent(
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface
                     )
-                ) {
-                    Icon(
-                        Icons.Default.AccessTime,
-                        contentDescription = "选择时间",
+            ) {
+                Icon(
+                    Icons.Default.AccessTime,
+                    contentDescription = "选择时间",
                         modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
                         text = uiState.startTime?.formatTime() ?: "时间",
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -317,7 +317,7 @@ fun QuickAddScheduleSheetContent(
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.onTimeSelected(
-                        kotlinx.datetime.LocalTime(
+                            kotlinx.datetime.LocalTime(
                             timePickerState.hour,
                             timePickerState.minute
                         )
