@@ -119,241 +119,249 @@ fun QuickAddScheduleDialog(
             usePlatformDefaultWidth = false
         )
     ) {
-        Surface(
+        // 外层 Box 控制整体居中和底部间距
+        Box(
             modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .padding(16.dp),
-            shape = MaterialTheme.shapes.large,
-            tonalElevation = 6.dp
+                .fillMaxSize()
+                .padding(bottom = 120.dp), // 增大底部空间，使对话框悬浮更高
+            contentAlignment = Alignment.Center
         ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .verticalScroll(rememberScrollState())
-                        .padding(bottom = 64.dp) // 为底部按钮区预留空间
-                        .nestedScroll(remember { object : NestedScrollConnection {} }) // 保证 bringIntoView 可用
-                ) {
-                    // 标题
-                    Text(
-                        text = "添加日程/课程",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-
-                    // 类型选择
-                    SectionTitle("类型选择")
-                    CategorySelector(
-                        selectedCategory = uiState.selectedCategory,
-                        onCategorySelected = viewModel::onCategoryChange
-                    )
-
-                    // 颜色选择
-                    SectionTitle("颜色选择")
-                    ColorPickerSection(
-                        selectedColor = uiState.selectedColor,
-                        onColorSelected = viewModel::onColorChange
-                    )
-
-                    // 基础信息
-                    SectionTitle("基础信息")
-                    OutlinedTextField(
-                        value = uiState.title,
-                        onValueChange = viewModel::onTitleChange,
-                        label = { Text("标题") },
-                        isError = titleError != null,
-                        supportingText = { FieldError(titleError) },
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.95f)
+                    .padding(16.dp),
+                shape = MaterialTheme.shapes.large,
+                tonalElevation = 6.dp
+            ) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .bringIntoViewRequester(titleBringIntoViewRequester)
-                            .onFocusChanged { isTitleFocused.value = it.isFocused },
-                        singleLine = true
-                    )
+                            .padding(16.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 64.dp)
+                            .nestedScroll(remember { object : NestedScrollConnection {} })
+                    ) {
+                        // 标题
+                        Text(
+                            text = "添加日程/课程",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
 
-                    // 时间地点
-                    SectionTitle("时间与地点")
-                    OutlinedTextField(
-                        value = uiState.selectedDate.toString(),
-                        onValueChange = {},
-                        label = { Text("日期") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .bringIntoViewRequester(dateBringIntoViewRequester)
-                            .onFocusChanged { isDateFocused.value = it.isFocused },
-                        readOnly = true,
-                        trailingIcon = {
-                            IconButton(onClick = { viewModel.showDatePicker(true) }) {
-                                Icon(Icons.Default.CalendarToday, "选择日期")
+                        // 类型选择
+                        SectionTitle("类型选择")
+                        CategorySelector(
+                            selectedCategory = uiState.selectedCategory,
+                            onCategorySelected = viewModel::onCategoryChange
+                        )
+
+                        // 颜色选择
+                        SectionTitle("颜色选择")
+                        ColorPickerSection(
+                            selectedColor = uiState.selectedColor,
+                            onColorSelected = viewModel::onColorChange
+                        )
+
+                        // 基础信息
+                        SectionTitle("基础信息")
+                        OutlinedTextField(
+                            value = uiState.title,
+                            onValueChange = viewModel::onTitleChange,
+                            label = { Text("标题") },
+                            isError = titleError != null,
+                            supportingText = { FieldError(titleError) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .bringIntoViewRequester(titleBringIntoViewRequester)
+                                .onFocusChanged { isTitleFocused.value = it.isFocused },
+                            singleLine = true
+                        )
+
+                        // 时间地点
+                        SectionTitle("时间与地点")
+                        OutlinedTextField(
+                            value = uiState.selectedDate.toString(),
+                            onValueChange = {},
+                            label = { Text("日期") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .bringIntoViewRequester(dateBringIntoViewRequester)
+                                .onFocusChanged { isDateFocused.value = it.isFocused },
+                            readOnly = true,
+                            trailingIcon = {
+                                IconButton(onClick = { viewModel.showDatePicker(true) }) {
+                                    Icon(Icons.Default.CalendarToday, "选择日期")
+                                }
+                            }
+                        )
+                        FieldError(dateError)
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = startTime?.toString() ?: "",
+                                onValueChange = {},
+                                label = { Text("开始时间") },
+                                isError = startTimeError != null,
+                                supportingText = { FieldError(startTimeError) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .bringIntoViewRequester(startTimeBringIntoViewRequester)
+                                    .onFocusChanged { isStartTimeFocused.value = it.isFocused },
+                                readOnly = true,
+                                trailingIcon = {
+                                    IconButton(onClick = { viewModel.showStartTimePicker(true) }) {
+                                        Icon(Icons.Default.Schedule, "选择时间")
+                                    }
+                                }
+                            )
+                            OutlinedTextField(
+                                value = endTime?.toString() ?: "",
+                                onValueChange = {},
+                                label = { Text("结束时间") },
+                                isError = endTimeError != null,
+                                supportingText = { FieldError(endTimeError) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .bringIntoViewRequester(endTimeBringIntoViewRequester)
+                                    .onFocusChanged { isEndTimeFocused.value = it.isFocused },
+                                readOnly = true,
+                                trailingIcon = {
+                                    IconButton(onClick = { viewModel.showEndTimePicker(true) }) {
+                                        Icon(Icons.Default.Schedule, "选择时间")
+                                    }
+                                }
+                            )
+                        }
+
+                        OutlinedTextField(
+                            value = uiState.location,
+                            onValueChange = viewModel::onLocationChange,
+                            label = { Text("地点") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp)
+                                .bringIntoViewRequester(locationBringIntoViewRequester)
+                                .onFocusChanged { isLocationFocused.value = it.isFocused },
+                            singleLine = true
+                        )
+
+                        // 课程特有字段
+                        if (uiState.selectedCategory == ScheduleCategory.COURSE) {
+                            SectionTitle("课程信息")
+                            OutlinedTextField(
+                                value = uiState.teacher,
+                                onValueChange = viewModel::onTeacherChange,
+                                label = { Text("教师") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .bringIntoViewRequester(teacherBringIntoViewRequester)
+                                    .onFocusChanged { isTeacherFocused.value = it.isFocused },
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = uiState.credit.toString(),
+                                onValueChange = { value ->
+                                    value.toFloatOrNull()?.let { viewModel.onCreditChange(it) }
+                                },
+                                label = { Text("学分") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp)
+                                    .bringIntoViewRequester(creditBringIntoViewRequester)
+                                    .onFocusChanged { isCreditFocused.value = it.isFocused },
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = uiState.weekRange,
+                                onValueChange = viewModel::onWeekRangeChange,
+                                label = { Text("周次范围 (例如: 1-16)") },
+                                isError = weekRangeError != null,
+                                supportingText = { FieldError(weekRangeError) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp)
+                                    .bringIntoViewRequester(weekRangeBringIntoViewRequester)
+                                    .onFocusChanged { isWeekRangeFocused.value = it.isFocused },
+                                singleLine = true
+                            )
+                        }
+
+                        // 提醒和重复选项
+                        SectionTitle("提醒设置")
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = uiState.isNotify,
+                                    onCheckedChange = viewModel::onNotifyChange
+                                )
+                                Text("提醒")
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = uiState.isRepeat,
+                                    onCheckedChange = viewModel::onRepeatChange
+                                )
+                                Text("重复")
                             }
                         }
-                    )
-                    FieldError(dateError)
+                        // 提醒时间自定义
+                        NotifyTimeSection(
+                            isNotify = uiState.isNotify,
+                            notifyTime = uiState.notifyTime,
+                            onNotifyTimeChange = viewModel::onNotifyTimeChange
+                        )
+                        // 重复规则自定义
+                        RepeatRuleSection(
+                            isRepeat = uiState.isRepeat,
+                            repeatRule = uiState.repeatRule,
+                            onRepeatRuleChange = viewModel::onRepeatRuleChange
+                        )
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = startTime?.toString() ?: "",
-                            onValueChange = {},
-                            label = { Text("开始时间") },
-                            isError = startTimeError != null,
-                            supportingText = { FieldError(startTimeError) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .bringIntoViewRequester(startTimeBringIntoViewRequester)
-                                .onFocusChanged { isStartTimeFocused.value = it.isFocused },
-                            readOnly = true,
-                            trailingIcon = {
-                                IconButton(onClick = { viewModel.showStartTimePicker(true) }) {
-                                    Icon(Icons.Default.Schedule, "选择时间")
-                                }
-                            }
-                        )
-                        OutlinedTextField(
-                            value = endTime?.toString() ?: "",
-                            onValueChange = {},
-                            label = { Text("结束时间") },
-                            isError = endTimeError != null,
-                            supportingText = { FieldError(endTimeError) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .bringIntoViewRequester(endTimeBringIntoViewRequester)
-                                .onFocusChanged { isEndTimeFocused.value = it.isFocused },
-                            readOnly = true,
-                            trailingIcon = {
-                                IconButton(onClick = { viewModel.showEndTimePicker(true) }) {
-                                    Icon(Icons.Default.Schedule, "选择时间")
-                                }
-                            }
-                        )
+                        // 全局错误信息
+                        uiState.errorMessage?.let { errorMsg ->
+                            Text(
+                                text = errorMsg,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
                     }
 
-                    OutlinedTextField(
-                        value = uiState.location,
-                        onValueChange = viewModel::onLocationChange,
-                        label = { Text("地点") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp)
-                            .bringIntoViewRequester(locationBringIntoViewRequester)
-                            .onFocusChanged { isLocationFocused.value = it.isFocused },
-                        singleLine = true
-                    )
-
-                    // 课程特有字段
-                    if (uiState.selectedCategory == ScheduleCategory.COURSE) {
-                        SectionTitle("课程信息")
-                        OutlinedTextField(
-                            value = uiState.teacher,
-                            onValueChange = viewModel::onTeacherChange,
-                            label = { Text("教师") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .bringIntoViewRequester(teacherBringIntoViewRequester)
-                                .onFocusChanged { isTeacherFocused.value = it.isFocused },
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = uiState.credit.toString(),
-                            onValueChange = { value ->
-                                value.toFloatOrNull()?.let { viewModel.onCreditChange(it) }
-                            },
-                            label = { Text("学分") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp)
-                                .bringIntoViewRequester(creditBringIntoViewRequester)
-                                .onFocusChanged { isCreditFocused.value = it.isFocused },
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = uiState.weekRange,
-                            onValueChange = viewModel::onWeekRangeChange,
-                            label = { Text("周次范围 (例如: 1-16)") },
-                            isError = weekRangeError != null,
-                            supportingText = { FieldError(weekRangeError) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp)
-                                .bringIntoViewRequester(weekRangeBringIntoViewRequester)
-                                .onFocusChanged { isWeekRangeFocused.value = it.isFocused },
-                            singleLine = true
-                        )
-                    }
-
-                    // 提醒和重复选项
-                    SectionTitle("提醒设置")
+                    // 底部按钮区固定
                     Row(
                         modifier = Modifier
+                            .align(Alignment.BottomEnd)
                             .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = uiState.isNotify,
-                                onCheckedChange = viewModel::onNotifyChange
-                            )
-                            Text("提醒")
+                        TextButton(onClick = onDismiss) {
+                            Text("取消")
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = uiState.isRepeat,
-                                onCheckedChange = viewModel::onRepeatChange
-                            )
-                            Text("重复")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                viewModel.saveSchedule()
+                                if (uiState.errorMessage == null && canSave) {
+                                    onDismiss()
+                                }
+                            },
+                            enabled = canSave
+                        ) {
+                            Text("保存")
                         }
-                    }
-                    // 提醒时间自定义
-                    NotifyTimeSection(
-                        isNotify = uiState.isNotify,
-                        notifyTime = uiState.notifyTime,
-                        onNotifyTimeChange = viewModel::onNotifyTimeChange
-                    )
-                    // 重复规则自定义
-                    RepeatRuleSection(
-                        isRepeat = uiState.isRepeat,
-                        repeatRule = uiState.repeatRule,
-                        onRepeatRuleChange = viewModel::onRepeatRuleChange
-                    )
-
-                    // 全局错误信息
-                    uiState.errorMessage?.let { errorMsg ->
-                        Text(
-                            text = errorMsg,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-                }
-
-                // 底部按钮区固定
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("取消")
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            viewModel.saveSchedule()
-                            if (uiState.errorMessage == null && canSave) {
-                                onDismiss()
-                            }
-                        },
-                        enabled = canSave
-                    ) {
-                        Text("保存")
                     }
                 }
             }
