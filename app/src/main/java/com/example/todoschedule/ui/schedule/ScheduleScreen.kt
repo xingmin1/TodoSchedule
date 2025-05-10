@@ -231,20 +231,16 @@ fun ScheduleScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                // onClick = { navigationState.navigateToAddEditOrdinarySchedule(null) }, // 旧逻辑
-                onClick = { showBottomSheet = true }, // 新逻辑: 显示 BottomSheet
+                onClick = { showBottomSheet = true }, // 显示 BottomSheet
                 modifier = Modifier
-                    .padding(16.dp) // Standard FAB padding
-                    // Apply padding also from the bottom provided by Scaffold via paddingValues
-                    // This ensures FAB is above the bottom nav bar area
+                    .padding(16.dp)
                     .padding(bottom = paddingValues.calculateBottomPadding()),
-                // .align(Alignment.BottomEnd), // 在Scaffold中，FAB默认就在右下角，无需额外align
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "添加日程" // 更新描述
+                    contentDescription = "添加日程/课程"
                 )
             }
         }
@@ -339,52 +335,13 @@ fun ScheduleScreen(
     } // End Scaffold
 
     // --- ModalBottomSheet ---
-    // 当 showBottomSheet 为 true 时显示
     if (showBottomSheet) {
         ModalBottomSheet(
-            onDismissRequest = { showBottomSheet = false }, // 点击外部或向下滑动时关闭
-            sheetState = sheetState // 控制 BottomSheet 的状态
+            onDismissRequest = { showBottomSheet = false },
+            sheetState = sheetState
         ) {
-            // --- 这里是 BottomSheet 的内容 ---
             QuickAddScheduleSheetContent(
-                // onSave = { itemData ->
-                //     // 调用 ViewModel 保存
-                //     Log.d("ScheduleScreen", "Save clicked with data: $itemData") // 临时打印
-                //     viewModel.quickAddSchedule(itemData) // 旧的调用方式
-                //     showBottomSheet = false // 保存后关闭
-                // },
-                onDismiss = { showBottomSheet = false },
-                // onNavigateToDetail = { type, data ->
-                //     // 根据 type 和 data 导航到详细页面
-                //     Log.d(
-                //         "ScheduleScreen",
-                //         "Navigate to detail for type: $type, data: $data"
-                //     ) // 临时打印
-                //     when (type) {
-                //         ScheduleType.ORDINARY -> {
-                //             // TODO: 如果 data 不为 null, 传递数据到 AddEditOrdinaryScheduleScreen (可能需要修改导航参数)
-                //             navigationState.navigateToAddEditOrdinarySchedule(null)
-                //         }
-                //
-                //         ScheduleType.COURSE -> {
-                //             // TODO: 如果 data 不为 null, 预填充 AddCourseScreen (需要修改 AddCourseScreen 和导航)
-                //             // 暂时导航到添加课程，tableId 需要确定，这里用 defaultTableId
-                //             navigationState.navigateToAddCourse(
-                //                 defaultTableId ?: AppConstants.Ids.INVALID_TABLE_ID
-                //             )
-                //         }
-                //
-                //         else -> {
-                //             Log.w(
-                //                 "ScheduleScreen",
-                //                 "Navigation to detail not implemented for type: $type"
-                //             )
-                //             // TODO: 可能需要显示一个提示
-                //         }
-                //     }
-                //     showBottomSheet = false // 导航前关闭
-                // }
-                // ViewModel 会被 Hilt 自动注入，无需手动传递
+                onDismiss = { showBottomSheet = false }
             )
         }
     }
@@ -1108,7 +1065,7 @@ fun ScheduleGridWithTimeSlots(
             }
         }
 
-        // Set the size of the Layout composable itself
+        // Set the size of the La yout composable itself
         layout(layoutWidth, layoutHeight) {
             // Place the grid background first
             gridPlaceable.placeRelative(0, 0)
