@@ -289,6 +289,28 @@ fun QuickAddScheduleDialog(
                                     .onFocusChanged { isWeekRangeFocused.value = it.isFocused },
                                 singleLine = true
                             )
+                            OutlinedTextField(
+                                value = uiState.startNode?.toString() ?: "",
+                                onValueChange = { value ->
+                                    value.toIntOrNull()?.let { viewModel.onStartNodeChange(it) }
+                                },
+                                label = { Text("开始节次 (如1)") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp),
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = uiState.step?.toString() ?: "",
+                                onValueChange = { value ->
+                                    value.toIntOrNull()?.let { viewModel.onStepChange(it) }
+                                },
+                                label = { Text("节数 (如2)") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp),
+                                singleLine = true
+                            )
                         }
 
                         // 提醒和重复选项

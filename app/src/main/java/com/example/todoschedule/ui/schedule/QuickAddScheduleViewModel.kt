@@ -58,7 +58,9 @@ data class QuickAddScheduleUiState(
     val errorMessage: String? = null, // 错误信息
     val selectedColor: ColorSchemeEnum = ColorSchemeEnum.PRIMARY, // 选中的颜色，默认主题色
     val notifyTime: Int = 0, // 提前提醒时间（分钟），0为准时
-    val repeatRule: String = "" // 重复规则，如"每天"、"每周"等
+    val repeatRule: String = "", // 重复规则，如"每天"、"每周"等
+    val startNode: Int? = null, // 课程开始节次
+    val step: Int? = null, // 节数
 )
 
 /**
@@ -213,6 +215,20 @@ class QuickAddScheduleViewModel @Inject constructor(
     }
 
     /**
+     * 设置课程开始节次
+     */
+    fun onStartNodeChange(node: Int) {
+        _uiState.update { it.copy(startNode = node) }
+    }
+
+    /**
+     * 设置课程节数
+     */
+    fun onStepChange(step: Int) {
+        _uiState.update { it.copy(step = step) }
+    }
+
+    /**
      * 保存日程/课程
      */
     fun saveSchedule() {
@@ -221,8 +237,8 @@ class QuickAddScheduleViewModel @Inject constructor(
                 // 验证必填字段
                 if (_uiState.value.title.isBlank()) {
                     _uiState.update { it.copy(errorMessage = "请输入标题") }
-                return@launch
-            }
+                    return@launch
+                }
 
                 if (_uiState.value.startTime == null) {
                     _uiState.update { it.copy(errorMessage = "请选择时间") }
@@ -261,6 +277,8 @@ class QuickAddScheduleViewModel @Inject constructor(
                         }
 
                         // 创建课程
+                        val startNode = _uiState.value.startNode ?: 1
+                        val step = _uiState.value.step ?: 2
                         val course = Course(
                             courseName = _uiState.value.title,
                             color = _uiState.value.selectedColor,
@@ -270,8 +288,8 @@ class QuickAddScheduleViewModel @Inject constructor(
                             nodes = listOf(
                                 CourseNode(
                                     day = _uiState.value.selectedDate.dayOfWeek.isoDayNumber,
-                                    startNode = _uiState.value.startTime!!.hour * 2 + 1,
-                                    step = 2,
+                                    startNode = startNode,
+                                    step = step,
                                     startWeek = startWeek,
                                     endWeek = endWeek,
                                     weekType = 0, // 默认每周
