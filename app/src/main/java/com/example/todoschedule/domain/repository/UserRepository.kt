@@ -2,6 +2,7 @@ package com.example.todoschedule.domain.repository
 
 import com.example.todoschedule.domain.model.User
 import kotlinx.coroutines.flow.Flow
+import java.io.File
 
 /** 用户仓库接口 */
 interface UserRepository {
@@ -9,7 +10,7 @@ interface UserRepository {
     fun getAllUsers(): Flow<List<User>>
 
     /** 获取指定ID的用户 */
-    suspend fun getUserById(userId: Int): User?
+    suspend fun getUserById(id: Int): User?
 
     /** 添加用户 */
     suspend fun addUser(user: User): Long
@@ -25,4 +26,8 @@ interface UserRepository {
 
     /** 初始化用户数据 如果没有用户，则创建一个默认用户 */
     suspend fun initDefaultUserIfNeeded(): Int
+
+    suspend fun deleteUser(user: User)
+
+    fun getInternalFilesDir(): File
 }

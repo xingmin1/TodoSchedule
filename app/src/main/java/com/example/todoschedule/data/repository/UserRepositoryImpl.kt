@@ -1,5 +1,6 @@
 package com.example.todoschedule.data.repository
 
+import android.content.Context
 import android.util.Log
 import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.dao.UserDao
@@ -7,12 +8,17 @@ import com.example.todoschedule.data.mapper.toUser
 import com.example.todoschedule.data.mapper.toUserEntity
 import com.example.todoschedule.domain.model.User
 import com.example.todoschedule.domain.repository.UserRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.io.File
 import javax.inject.Inject
 
 /** 用户仓库实现类 */
-class UserRepositoryImpl @Inject constructor(private val userDao: UserDao) : UserRepository {
+class UserRepositoryImpl @Inject constructor(
+    private val userDao: UserDao,
+    @ApplicationContext private val context: Context
+) : UserRepository {
 
     override fun getAllUsers(): Flow<List<User>> {
         return userDao.getAllUsers().map { userEntities -> userEntities.map { it.toUser() } }
@@ -49,6 +55,14 @@ class UserRepositoryImpl @Inject constructor(private val userDao: UserDao) : Use
 
     override suspend fun updateUser(user: User) {
         userDao.updateUser(user.toUserEntity())
+    }
+
+    override suspend fun deleteUser(user: User) {
+        userDao.deleteUser(user.id)
+    }
+
+    override fun getInternalFilesDir(): File {
+        return context.filesDir
     }
 
     override suspend fun initDefaultUserIfNeeded(): Int {
