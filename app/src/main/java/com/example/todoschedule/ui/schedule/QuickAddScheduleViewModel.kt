@@ -20,8 +20,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.*
-import androidx.compose.ui.graphics.Color
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
 
 /**
@@ -33,7 +39,7 @@ enum class ScheduleCategory {
     EXAM, // 考试
     ONLINE_CLASS, // 网课
     REVIEW, // 复习
-    OTHER // 其他
+    ORDiNARY // 普通日程
 }
 
 /**
@@ -61,6 +67,7 @@ data class QuickAddScheduleUiState(
     val repeatRule: String = "", // 重复规则，如"每天"、"每周"等
     val startNode: Int? = null, // 课程开始节次
     val step: Int? = null, // 节数
+    val detail: String = "" // 详情，仅普通日程用
 )
 
 /**
@@ -117,7 +124,7 @@ class QuickAddScheduleViewModel @Inject constructor(
      * 更新选择的日期
      */
     fun onDateSelected(date: LocalDate) {
-        _uiState.update { 
+        _uiState.update {
             it.copy(
                 selectedDate = date,
                 showDatePicker = false
@@ -229,6 +236,13 @@ class QuickAddScheduleViewModel @Inject constructor(
     }
 
     /**
+     * 更新普通日程详情
+     */
+    fun onDetailChange(detail: String) {
+        _uiState.update { it.copy(detail = detail) }
+    }
+
+    /**
      * 保存日程/课程
      */
     fun saveSchedule() {
@@ -301,27 +315,30 @@ class QuickAddScheduleViewModel @Inject constructor(
 
                         addCourseUseCase(course, defaultTableId)
                     }
+
                     else -> {
                         // 创建普通日程
                         val schedule = OrdinarySchedule(
                             userId = defaultTableId,
                             title = _uiState.value.title,
-                            description = "",
+                            description = _uiState.value.detail,
                             location = _uiState.value.location,
                             color = _uiState.value.selectedColor,
                             isAllDay = false,
                             status = ScheduleStatus.TODO,
                             timeSlots = listOf(
-                        TimeSlot(
+                                TimeSlot(
                                     startTime = _uiState.value.selectedDate
                                         .atTime(_uiState.value.startTime!!)
                                         .toInstant(TimeZone.currentSystemDefault())
                                         .toEpochMilliseconds(),
                                     endTime = _uiState.value.selectedDate
-                                        .atTime(_uiState.value.endTime ?: LocalTime(
-                                            hour = (_uiState.value.startTime!!.hour + 1) % 24,
-                                            minute = _uiState.value.startTime!!.minute
-                                        ))
+                                        .atTime(
+                                            _uiState.value.endTime ?: LocalTime(
+                                                hour = (_uiState.value.startTime!!.hour) % 24,
+                                                minute = _uiState.value.startTime!!.minute
+                                            )
+                                        )
                                         .toInstant(TimeZone.currentSystemDefault())
                                         .toEpochMilliseconds(),
                                     scheduleType = when (_uiState.value.selectedCategory) {
@@ -345,4 +362,4 @@ class QuickAddScheduleViewModel @Inject constructor(
             }
         }
     }
-    }
+}

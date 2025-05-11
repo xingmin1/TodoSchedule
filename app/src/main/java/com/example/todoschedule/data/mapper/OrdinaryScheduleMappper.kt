@@ -14,7 +14,7 @@ fun OrdinarySchedule.toEntity(): OrdinaryScheduleEntity {
         description = this.description,
         location = this.location,
         category = this.category,
-        color = this.color.toString(),
+        color = this.color?.toString(),
         isAllDay = this.isAllDay,
         status = this.status
     )

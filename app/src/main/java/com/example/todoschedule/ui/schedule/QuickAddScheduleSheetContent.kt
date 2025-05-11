@@ -1,18 +1,51 @@
 package com.example.todoschedule.ui.schedule
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -71,7 +104,7 @@ fun QuickAddScheduleSheetContent(
             ScheduleCategory.values().forEachIndexed { index, category ->
                 Tab(
                     selected = selectedTabIndex == index,
-                    onClick = { 
+                    onClick = {
                         selectedTabIndex = index
                         viewModel.onCategoryChange(category)
                     },
@@ -83,11 +116,11 @@ fun QuickAddScheduleSheetContent(
                                 ScheduleCategory.EXAM -> "考试"
                                 ScheduleCategory.ONLINE_CLASS -> "网课"
                                 ScheduleCategory.REVIEW -> "复习"
-                                ScheduleCategory.OTHER -> "其他"
+                                ScheduleCategory.ORDiNARY -> "普通日程"
                             }
+                        )
+                    }
                 )
-            }
-        )
             }
         }
 
@@ -101,7 +134,7 @@ fun QuickAddScheduleSheetContent(
                 value = uiState.title,
                 onValueChange = viewModel::onTitleChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { 
+                placeholder = {
                     Text(
                         when (uiState.selectedCategory) {
                             ScheduleCategory.COURSE -> "输入课程名称"
@@ -109,7 +142,7 @@ fun QuickAddScheduleSheetContent(
                             ScheduleCategory.EXAM -> "输入考试科目"
                             ScheduleCategory.ONLINE_CLASS -> "输入网课名称"
                             ScheduleCategory.REVIEW -> "输入复习内容"
-                            ScheduleCategory.OTHER -> "记些重要的事情吧~"
+                            ScheduleCategory.ORDiNARY -> "记些重要的事情吧~"
                         }
                     )
                 },
@@ -130,7 +163,7 @@ fun QuickAddScheduleSheetContent(
             ) {
                 // 日期选择
                 OutlinedButton(
-                onClick = { viewModel.showDatePicker(true) },
+                    onClick = { viewModel.showDatePicker(true) },
                     shape = RoundedCornerShape(50),
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
@@ -148,8 +181,8 @@ fun QuickAddScheduleSheetContent(
                 Text(
                         text = uiState.selectedDate.formatDate(),
                         style = MaterialTheme.typography.bodyMedium
-                )
-            }
+                    )
+                }
 
                 // 时间选择
                 OutlinedButton(
@@ -195,7 +228,7 @@ fun QuickAddScheduleSheetContent(
                     )
                     OutlinedTextField(
                         value = if (uiState.credit > 0) uiState.credit.toString() else "",
-                        onValueChange = { 
+                        onValueChange = {
                             viewModel.onCreditChange(it.toFloatOrNull() ?: 0f)
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -213,6 +246,7 @@ fun QuickAddScheduleSheetContent(
                         singleLine = true
                     )
                 }
+
                 ScheduleCategory.HOMEWORK, ScheduleCategory.EXAM -> {
                     // 作业和考试特有字段
                     OutlinedTextField(
@@ -223,9 +257,10 @@ fun QuickAddScheduleSheetContent(
                         singleLine = true
                     )
                 }
+
                 else -> {
                     // 其他类型的通用字段
-                    if (uiState.selectedCategory != ScheduleCategory.OTHER) {
+                    if (uiState.selectedCategory != ScheduleCategory.ORDiNARY) {
                         OutlinedTextField(
                             value = uiState.location,
                             onValueChange = viewModel::onLocationChange,
@@ -267,7 +302,7 @@ fun QuickAddScheduleSheetContent(
 
         // 保存按钮
         FilledTonalButton(
-            onClick = { 
+            onClick = {
                 viewModel.saveSchedule()
                 if (uiState.errorMessage == null) {
                     onDismiss()
