@@ -158,7 +158,15 @@ fun AppNavigation(
                 }
 
                 composable(AppRoutes.Profile.route) {
-                    ProfileScreen(paddingValues = innerPadding) // 传递 padding
+                    ProfileScreen(
+                        paddingValues = innerPadding,
+                        onLogoutSuccess = {
+                            navController.navigate(AppRoutes.Login.route) {
+                                popUpTo(AppRoutes.Home.route) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                        ) // 传递 padding
                 }
 
                 // --- 其他现有屏幕 --- //

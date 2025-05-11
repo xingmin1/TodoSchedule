@@ -1,3 +1,28 @@
 <resources>
     <string name="app_name">TodoSchedule</string>
+    <string name="profile_title">个人资料</string>
+    <string name="navigate_back">返回</string>
+    <string name="profile_load_error">加载失败: %s</string>
+    <string name="profile_no_user_info">未找到用户信息。</string>
+    <string name="profile_avatar_desc">用户头像</string>
+    <string name="profile_edit_avatar_desc">编辑头像</string>
+    <string name="profile_username_not_set">未设置用户名</string>
+    <string name="profile_edit_username_desc">编辑用户名</string>
+    <string name="profile_label_user_id">用户ID</string>
+    <string name="profile_label_email">邮箱</string>
+    <string name="profile_not_set">未设置</string>
+    <string name="profile_label_phone">手机号码</string>
+    <string name="profile_label_created_at">注册时间</string>
+    <string name="profile_label_last_opened">上次打开</string>
+    <string name="profile_edit_field_desc">编辑 %s</string>
+    <string name="profile_logout_button">退出登录</string>
+    
+    <!-- Strings for EditTextFieldDialog -->
+    <string name="profile_edit_username_title">编辑用户名</string>
+    <string name="profile_edit_email_title">编辑邮箱</string>
+    <string name="profile_edit_phone_title">编辑手机号</string>
+    <string name="profile_edit_avatar_title">编辑头像链接</string>
+    <string name="profile_edit_enter_new_value">输入新内容</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
 </resources>
