@@ -2,6 +2,8 @@ package com.example.todoschedule.ui.schedule
 
 import android.annotation.SuppressLint
 import android.util.Log
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +40,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -45,6 +50,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -110,6 +116,11 @@ private const val GRID_START_HOUR = 0 // 从 0 点开始
 private const val GRID_END_HOUR = 24 // 到 24 点结束 (显示 0:00 到 23:00 的标签)
 
 /**
+ * 月历显示模式
+ */
+enum class MonthCalendarMode { FULL, MEDIUM, MINI }
+
+/**
  * 课程表屏幕 Composable 函数。
  *
  * 负责展示周视图的课程表界面，包括顶部应用栏（周数切换、设置入口）、
@@ -143,6 +154,7 @@ fun ScheduleScreen(
     val weekDates by viewModel.weekDates.collectAsState() // 当前周的所有日期 (LocalDate列表)
     val displayableTimeSlots by viewModel.displayableTimeSlots.collectAsState() // 需要在课表上显示的时间槽 (课程/日程) 列表
     val defaultTableId by viewModel.defaultTableIdState.collectAsState() // 当前使用的课表 ID
+    val viewMode by viewModel.viewMode.collectAsState() // 监听视图模式
 
     // --- 新增: BottomSheet 状态 ---
     val sheetState = rememberModalBottomSheetState()
@@ -150,6 +162,9 @@ fun ScheduleScreen(
 
     // --- 新增: Dialog 状态 ---
     var showDialog by remember { mutableStateOf(false) }
+
+    // --- 新增: 更多菜单状态 ---
+    var showMoreMenu by remember { mutableStateOf(false) }
 
     // --- Root layout: Box to allow FAB placement over content ---
     // 将Scaffold包裹原来的内容，并在外部添加ModalBottomSheet
@@ -222,12 +237,43 @@ fun ScheduleScreen(
                             // tint = MaterialTheme.colorScheme.onPrimaryContainer // Adjust tint
                         )
                     }
-                    IconButton(onClick = { /* TODO: 更多选项 */ }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "更多",
-                            // tint = MaterialTheme.colorScheme.onPrimaryContainer // Adjust tint
-                        )
+                    // --- 新增: 更多菜单 ---
+                    Box {
+                        IconButton(onClick = { showMoreMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "更多",
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("周视图") },
+                                onClick = {
+                                    viewModel.setViewMode(ScheduleViewMode.WEEK)
+                                    showMoreMenu = false
+                                },
+                                enabled = viewMode != ScheduleViewMode.WEEK
+                            )
+                            DropdownMenuItem(
+                                text = { Text("月视图") },
+                                onClick = {
+                                    viewModel.setViewMode(ScheduleViewMode.MONTH)
+                                    showMoreMenu = false
+                                },
+                                enabled = viewMode != ScheduleViewMode.MONTH
+                            )
+                            DropdownMenuItem(
+                                text = { Text("日视图") },
+                                onClick = {
+                                    viewModel.setViewMode(ScheduleViewMode.DAY)
+                                    showMoreMenu = false
+                                },
+                                enabled = viewMode != ScheduleViewMode.DAY
+                            )
+                        }
                     }
                 }
             }
@@ -270,68 +316,83 @@ fun ScheduleScreen(
                     .weight(1f) // 占据剩余空间
                     .fillMaxWidth()
             ) {
-                when (uiState) {
-                    is ScheduleUiState.Loading -> LoadingScreen()
-                    is ScheduleUiState.Success -> {
-                        ScheduleContent(
-                            currentWeek = currentWeek,
-                            timeSlotsForCurrentWeek = displayableTimeSlots,
-                            onWeekChange = viewModel::updateCurrentWeek,
-                            onTimeSlotClick = {
-                                // 复用之前的点击逻辑
-                                Log.d(
-                                    "ScheduleScreen",
-                                    "Clicked on TimeSlot: Type=${it.scheduleType}, ScheduleID=${it.scheduleId}, Head='${it.head}'"
-                                )
-                                when (it.scheduleType) {
-                                    ScheduleType.COURSE -> {
-                                        val currentTableId = defaultTableId
-                                        if (currentTableId != null && currentTableId != AppConstants.Ids.INVALID_TABLE_ID) {
-                                            Log.i(
-                                                "ScheduleScreen",
-                                                "Navigating to Course Detail: tableId=$currentTableId, courseId=${it.scheduleId}"
-                                            )
-                                            navigationState.navigateToCourseDetail(
-                                                tableId = currentTableId,
-                                                courseId = it.scheduleId
-                                            )
-                                        } else {
-                                            Log.w(
-                                                "ScheduleScreen",
-                                                "Cannot navigate to course detail, defaultTableId is invalid or null."
-                                            )
+                // --- 新增: 根据视图模式切换内容 ---
+                when (viewMode) {
+                    ScheduleViewMode.WEEK -> {
+                        when (uiState) {
+                            is ScheduleUiState.Loading -> LoadingScreen()
+                            is ScheduleUiState.Success -> {
+                                ScheduleContent(
+                                    currentWeek = currentWeek,
+                                    timeSlotsForCurrentWeek = displayableTimeSlots,
+                                    onWeekChange = viewModel::updateCurrentWeek,
+                                    onTimeSlotClick = {
+                                        // 复用之前的点击逻辑
+                                        Log.d(
+                                            "ScheduleScreen",
+                                            "Clicked on TimeSlot: Type=${it.scheduleType}, ScheduleID=${it.scheduleId}, Head='${it.head}'"
+                                        )
+                                        when (it.scheduleType) {
+                                            ScheduleType.COURSE -> {
+                                                val currentTableId = defaultTableId
+                                                if (currentTableId != null && currentTableId != AppConstants.Ids.INVALID_TABLE_ID) {
+                                                    Log.i(
+                                                        "ScheduleScreen",
+                                                        "Navigating to Course Detail: tableId=$currentTableId, courseId=${it.scheduleId}"
+                                                    )
+                                                    navigationState.navigateToCourseDetail(
+                                                        tableId = currentTableId,
+                                                        courseId = it.scheduleId
+                                                    )
+                                                } else {
+                                                    Log.w(
+                                                        "ScheduleScreen",
+                                                        "Cannot navigate to course detail, defaultTableId is invalid or null."
+                                                    )
+                                                }
+                                            }
+
+                                            ScheduleType.ORDINARY -> {
+                                                Log.i(
+                                                    "ScheduleScreen",
+                                                    "Navigating to Ordinary Schedule Detail for scheduleId=${it.scheduleId}"
+                                                )
+                                                navigationState.navigateToOrdinaryScheduleDetail(it.scheduleId)
+                                            }
+
+                                            else -> {
+                                                Log.w(
+                                                    "ScheduleScreen",
+                                                    "Navigation not implemented for ScheduleType: ${it.scheduleType}"
+                                                )
+                                            }
                                         }
                                     }
-
-                                    ScheduleType.ORDINARY -> {
-                                        Log.i(
-                                            "ScheduleScreen",
-                                            "Navigating to Ordinary Schedule Detail for scheduleId=${it.scheduleId}"
-                                        )
-                                        navigationState.navigateToOrdinaryScheduleDetail(it.scheduleId)
-                                    }
-
-                                    else -> {
-                                        Log.w(
-                                            "ScheduleScreen",
-                                            "Navigation not implemented for ScheduleType: ${it.scheduleType}"
-                                        )
-                                    }
-                                }
+                                )
                             }
-                        )
-                    }
 
-                    is ScheduleUiState.Error -> ErrorScreen((uiState as ScheduleUiState.Error).message)
-                    is ScheduleUiState.Empty -> EmptyScheduleScreen()
-                    is ScheduleUiState.NoTableSelected -> NoTableSelectedScreen(
-                        navigationState = navigationState,
-                        onNavigateToImport = {
-                            navigationState.navigateSchoolSelectorScreen(
-                                AppConstants.Ids.INVALID_TABLE_ID
+                            is ScheduleUiState.Error -> ErrorScreen((uiState as ScheduleUiState.Error).message)
+                            is ScheduleUiState.Empty -> EmptyScheduleScreen()
+                            is ScheduleUiState.NoTableSelected -> NoTableSelectedScreen(
+                                navigationState = navigationState,
+                                onNavigateToImport = {
+                                    navigationState.navigateSchoolSelectorScreen(
+                                        AppConstants.Ids.INVALID_TABLE_ID
+                                    )
+                                }
                             )
                         }
-                    )
+                    }
+
+                    ScheduleViewMode.MONTH -> {
+                        // --- 占位：月视图 ---
+                        MonthScheduleContent(viewModel, paddingValues)
+                    }
+
+                    ScheduleViewMode.DAY -> {
+                        // --- 占位：日视图 ---
+                        DayScheduleContent()
+                    }
                 }
             } // End Content 'when' Box
         } // End Main Content Column
@@ -1086,6 +1147,223 @@ fun ScheduleGridWithTimeSlots(
                 placeable.placeRelative(coords.x, coords.y)
             }
         }
+    }
+}
+
+private fun isLeapYear(year: Int): Boolean {
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+}
+
+/**
+ * 月视图 Composable：顶部大号年月、星期标题行、支持大/中/小月历切换
+ */
+@OptIn(
+    ExperimentalFoundationApi::class,
+    ExperimentalAnimationApi::class,
+    ExperimentalStdlibApi::class
+)
+@Composable
+fun MonthScheduleContent(
+    viewModel: ScheduleViewModel = hiltViewModel(),
+    paddingValues: PaddingValues = PaddingValues(0.dp)
+) {
+    // --- 状态管理 ---
+    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    var selectedDate by remember { mutableStateOf(today) }
+    // 当前月第一天
+    val firstDayOfMonth = LocalDate(today.year, today.month, 1)
+    val daysInMonth = firstDayOfMonth.month.length(isLeapYear(firstDayOfMonth.year))
+    val firstDayOfWeek = firstDayOfMonth.dayOfWeek.isoDayNumber // 1=Mon, 7=Sun
+    val leadingEmptyDays = (firstDayOfWeek - 1).coerceAtLeast(0)
+    val totalGridCount = 42 // 6行7列
+    // 生成本月所有日期
+    val monthDates = List(daysInMonth) { i -> LocalDate(today.year, today.month, i + 1) }
+    // 计算上月补齐天数
+    val prevMonth = if (today.monthNumber == 1) LocalDate(today.year - 1, 12, 1) else LocalDate(
+        today.year,
+        today.monthNumber - 1,
+        1
+    )
+    val prevMonthDays = prevMonth.month.length(isLeapYear(prevMonth.year))
+    val prevMonthDates = List(leadingEmptyDays) { i ->
+        LocalDate(
+            prevMonth.year,
+            prevMonth.month,
+            prevMonthDays - leadingEmptyDays + i + 1
+        )
+    }
+    // 计算下月补齐天数
+    val trailingEmptyDays = totalGridCount - leadingEmptyDays - daysInMonth
+    val nextMonth = if (today.monthNumber == 12) LocalDate(today.year + 1, 1, 1) else LocalDate(
+        today.year,
+        today.monthNumber + 1,
+        1
+    )
+    val nextMonthDates =
+        List(trailingEmptyDays) { i -> LocalDate(nextMonth.year, nextMonth.month, i + 1) }
+    // 组合成完整的42天网格
+    val calendarGrid = prevMonthDates + monthDates + nextMonthDates
+    // 获取日程数据
+    val timeSlots by viewModel.displayableTimeSlots.collectAsState()
+    // 按日期分组
+    val daySlotMap = remember(timeSlots) {
+        timeSlots.groupBy {
+            Instant.fromEpochMilliseconds(it.startTime)
+                .toLocalDateTime(TimeZone.currentSystemDefault()).date
+        }
+    }
+    // --- UI部分 ---
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = paddingValues.calculateBottomPadding())
+    ) {
+        // --- 星期标签 ---
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            listOf("一", "二", "三", "四", "五", "六", "日").forEach { w ->
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = w,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
+        // --- 日期格子网格 ---
+        Column(Modifier.fillMaxWidth()) {
+            for (row in 0 until 6) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    for (col in 0 until 7) {
+                        val index = row * 7 + col
+                        val date = calendarGrid.getOrNull(index)
+                        if (date == null) {
+                            Box(Modifier.weight(1f))
+                        } else {
+                            val isThisMonth = date.month == today.month && date.year == today.year
+                            val isToday = date == today
+                            val isSelected = date == selectedDate
+                            val hasEvent = (daySlotMap[date]?.isNotEmpty() == true)
+                            // 动画高亮
+                            val bgColor by animateColorAsState(
+                                targetValue = when {
+                                    isSelected -> MaterialTheme.colorScheme.primary
+                                    isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.13f)
+                                    else -> Color.Transparent
+                                }, label = "date-bg"
+                            )
+                            val textColor = when {
+                                isSelected -> MaterialTheme.colorScheme.onPrimary
+                                isThisMonth -> MaterialTheme.colorScheme.onSurface
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = bgColor,
+                                tonalElevation = if (isSelected) 3.dp else 0.dp,
+                                modifier = Modifier
+                                    .padding(2.dp)
+                                    .aspectRatio(1f)
+                                    .weight(1f)
+                                    .clickable { selectedDate = date }
+                            ) {
+                                Column(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .padding(top = 4.dp, bottom = 2.dp),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    // 日期数字
+                                    Text(
+                                        text = date.dayOfMonth.toString(),
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = textColor
+                                    )
+                                    // 事件小圆点
+                                    if (hasEvent) {
+                                        Spacer(Modifier.height(2.dp))
+                                        Box(
+                                            Modifier
+                                                .size(6.dp)
+                                                .background(
+                                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                                    shape = CircleShape
+                                                )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // --- 下方展示选中日期的日程列表 ---
+        Spacer(Modifier.height(12.dp))
+        Surface(
+            Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .padding(horizontal = 24.dp, vertical = 4.dp),
+            shape = RoundedCornerShape(20.dp),
+            tonalElevation = 4.dp
+        ) {
+            val slots = daySlotMap[selectedDate] ?: emptyList()
+            Column(Modifier.padding(20.dp)) {
+                Text(
+                    "${selectedDate.year}年${selectedDate.monthNumber}月${selectedDate.dayOfMonth}日 日程安排",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                )
+                Spacer(Modifier.height(6.dp))
+                if (slots.isEmpty()) {
+                    Text("暂无日程安排", style = MaterialTheme.typography.bodyLarge)
+                } else {
+                    slots.forEach { slot ->
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            tonalElevation = 1.dp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text(
+                                    slot.displayTitle ?: "无标题",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                if (!slot.displaySubtitle.isNullOrBlank()) {
+                                    Text(
+                                        slot.displaySubtitle!!,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 占位：日视图 Composable
+ */
+@Composable
+fun DayScheduleContent() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("日视图开发中...", style = MaterialTheme.typography.titleLarge)
     }
 }
 

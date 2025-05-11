@@ -46,6 +46,7 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import javax.inject.Inject
+import kotlinx.coroutines.flow.asStateFlow
 
 /** 课程表视图模型 */
 @HiltViewModel
@@ -325,6 +326,10 @@ constructor(
         initialValue = emptyList()
     )
 
+    // 课表视图模式状态，默认周视图
+    private val _viewMode = MutableStateFlow(ScheduleViewMode.WEEK)
+    val viewMode = _viewMode.asStateFlow()
+
     init {
         Log.d("ScheduleViewModel", "ViewModel initialized")
 
@@ -600,6 +605,13 @@ constructor(
             "convertCourseNodesToTimeSlots END: resultSlotsCount=${resultSlots.size}"
         )
         return resultSlots
+    }
+
+    /** 切换课表视图模式 */
+    fun setViewMode(mode: ScheduleViewMode) {
+        if (_viewMode.value != mode) {
+            _viewMode.value = mode
+        }
     }
 }
 
