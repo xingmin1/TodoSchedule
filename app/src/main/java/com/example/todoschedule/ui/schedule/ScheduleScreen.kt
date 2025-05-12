@@ -9,6 +9,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.with
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -204,11 +209,11 @@ fun ScheduleScreen(
                         // color = MaterialTheme.colorScheme.onPrimaryContainer // Adjust color if needed
                     )
                     if (viewMode != ScheduleViewMode.MONTH) {
-                        Text(
-                            text = "第${currentWeek}周 ${currentDate.dayOfWeek.getChineseWeekName()}",
-                            style = MaterialTheme.typography.bodyMedium // Adjust style as needed
-                            // color = MaterialTheme.colorScheme.onPrimaryContainer // Adjust color if needed
-                        )
+                    Text(
+                        text = "第${currentWeek}周 ${currentDate.dayOfWeek.getChineseWeekName()}",
+                        style = MaterialTheme.typography.bodyMedium // Adjust style as needed
+                        // color = MaterialTheme.colorScheme.onPrimaryContainer // Adjust color if needed
+                    )
                     }
                 }
 
@@ -1308,27 +1313,27 @@ fun MonthSchedulePage(
         ) {
             val scrollState = rememberScrollState()
             Column(
-                Modifier
-                    .fillMaxWidth()
+                                Modifier
+                                    .fillMaxWidth()
                     .verticalScroll(scrollState)
-            ) {
+                            ) {
                 for (row in 0 until 6) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        for (col in 0 until 7) {
-                            val index = row * 7 + col
-                            val date = calendarGrid.getOrNull(index)
-                            if (date == null) {
-                                Box(Modifier.weight(1f))
-                            } else {
+                                for (col in 0 until 7) {
+                                    val index = row * 7 + col
+                                    val date = calendarGrid.getOrNull(index)
+                                    if (date == null) {
+                                        Box(Modifier.weight(1f))
+                                    } else {
                                 val isThisMonth = date.monthNumber == month && date.year == year
-                                val isToday = date == today
-                                val isSelected = date == selectedDate
+                                        val isToday = date == today
+                                        val isSelected = date == selectedDate
                                 val hasEvent = (daySlotMap[date]?.isNotEmpty() == true)
                                 val bgColor by animateColorAsState(
                                     targetValue = when {
                                         isSelected -> MaterialTheme.colorScheme.primary
                                         isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.13f)
-                                        else -> Color.Transparent
+                                                else -> Color.Transparent
                                     }, label = "date-bg"
                                 )
                                 val textColor = when {
@@ -1341,13 +1346,13 @@ fun MonthSchedulePage(
                                     shape = RoundedCornerShape(if (isLargeMode) 16.dp else 12.dp),
                                     color = bgColor,
                                     tonalElevation = if (isSelected) 3.dp else 0.dp,
-                                    modifier = Modifier
-                                        .padding(2.dp)
+                                            modifier = Modifier
+                                                .padding(2.dp)
                                         .height(cellHeight)
-                                        .weight(1f)
-                                        .clickable { selectedDate = date }
-                                ) {
-                                    Column(
+                                                .weight(1f)
+                                                .clickable { selectedDate = date }
+                                        ) {
+                                            Column(
                                         Modifier
                                             .fillMaxSize()
                                             .padding(
@@ -1355,10 +1360,10 @@ fun MonthSchedulePage(
                                                 bottom = 2.dp
                                             ),
                                         verticalArrangement = Arrangement.Top,
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Text(
-                                            text = date.dayOfMonth.toString(),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                                ) {
+                                                    Text(
+                                                        text = date.dayOfMonth.toString(),
                                             style = if (isLargeMode) MaterialTheme.typography.titleMedium.copy(
                                                 fontWeight = FontWeight.Bold
                                             ) else MaterialTheme.typography.titleMedium.copy(
@@ -1368,7 +1373,7 @@ fun MonthSchedulePage(
                                         )
                                         if (isLargeMode) {
                                             val slots = (daySlotMap[date] ?: emptyList()).sortedBy { it.startTime }
-                                            if (slots.isNotEmpty()) {
+                                                    if (slots.isNotEmpty()) {
                                                 Spacer(Modifier.height(2.dp))
                                                 Column(
                                                     Modifier.fillMaxWidth(),
@@ -1418,25 +1423,25 @@ fun MonthSchedulePage(
                                                             }
                                                         }
                                                     } else if (slots.size > 2) {
-                                                        Surface(
-                                                            shape = RoundedCornerShape(8.dp),
-                                                            color = MaterialTheme.colorScheme.secondaryContainer,
-                                                            tonalElevation = 1.dp,
-                                                            modifier = Modifier
+                                                            Surface(
+                                                                shape = RoundedCornerShape(8.dp),
+                                                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                                                tonalElevation = 1.dp,
+                                                                modifier = Modifier
                                                                 .padding(vertical = 2.dp)
-                                                                .height(20.dp)
-                                                        ) {
-                                                            Text(
+                                                                    .height(20.dp)
+                                                            ) {
+                                                                Text(
                                                                 text = slots[0].displayTitle?.take(6) ?: "",
-                                                                style = MaterialTheme.typography.labelSmall,
-                                                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                                maxLines = 1,
-                                                                modifier = Modifier.padding(
-                                                                    horizontal = 6.dp,
-                                                                    vertical = 2.dp
+                                                                    style = MaterialTheme.typography.labelSmall,
+                                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                                    maxLines = 1,
+                                                                    modifier = Modifier.padding(
+                                                                        horizontal = 6.dp,
+                                                                        vertical = 2.dp
+                                                                    )
                                                                 )
-                                                            )
-                                                        }
+                                                            }
                                                         Surface(
                                                             shape = RoundedCornerShape(8.dp),
                                                             color = MaterialTheme.colorScheme.primary,
@@ -1461,83 +1466,89 @@ fun MonthSchedulePage(
                                                     }
                                                 }
                                             }
-                                        } else {
-                                            if (hasEvent) {
+                                } else {
+                                                if (hasEvent) {
                                                 Spacer(Modifier.height(2.dp))
-                                                Box(
-                                                    Modifier
-                                                        .size(6.dp)
-                                                        .background(
-                                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
-                                                            shape = CircleShape
-                                                        )
-                                                )
+                                                    Box(
+                                                        Modifier
+                                                            .size(6.dp)
+                                                            .background(
+                                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                                                shape = CircleShape
+                                                            )
+                                                    )
+                                                }
                                             }
+                                    }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                }
                 if (!isLargeMode) {
-                    Spacer(Modifier.height(0.dp))
-                    Surface(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 0.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        tonalElevation = 4.dp
+                    AnimatedVisibility(
+                        visible = !isLargeMode,
+                        enter = slideInVertically(initialOffsetY = { fullHeight -> fullHeight }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { fullHeight -> fullHeight }) + fadeOut()
                     ) {
-                        val slots = (daySlotMap[selectedDate] ?: emptyList()).sortedBy { it.startTime }
-                        Column(Modifier.padding(20.dp)) {
-                            Text(
-                                "${selectedDate.year}年${selectedDate.monthNumber}月${selectedDate.dayOfMonth}日 日程安排",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                            )
-                            Spacer(Modifier.height(6.dp))
-                            if (slots.isEmpty()) {
-                                Text("暂无日程安排", style = MaterialTheme.typography.bodyLarge)
-                            } else {
-                                slots.forEach { slot ->
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = MaterialTheme.colorScheme.secondaryContainer,
-                                        tonalElevation = 1.dp,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp)
-                                            .clickable {
-                                                when (slot.scheduleType) {
-                                                    ScheduleType.COURSE -> {
-                                                        val currentTableId = defaultTableId
-                                                        if (currentTableId != null && currentTableId != AppConstants.Ids.INVALID_TABLE_ID) {
-                                                            navigationState.navigateToCourseDetail(
-                                                                tableId = currentTableId,
-                                                                courseId = slot.scheduleId
+                        Spacer(Modifier.height(0.dp))
+                Surface(
+                    Modifier
+                        .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 0.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    tonalElevation = 4.dp
+                ) {
+                            val slots = (daySlotMap[selectedDate] ?: emptyList()).sortedBy { it.startTime }
+                    Column(Modifier.padding(20.dp)) {
+                        Text(
+                                    "${selectedDate.year}年${selectedDate.monthNumber}月${selectedDate.dayOfMonth}日 日程安排",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        if (slots.isEmpty()) {
+                            Text("暂无日程安排", style = MaterialTheme.typography.bodyLarge)
+                        } else {
+                            slots.forEach { slot ->
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    tonalElevation = 1.dp,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                                .clickable {
+                                                    when (slot.scheduleType) {
+                                                        ScheduleType.COURSE -> {
+                                                            val currentTableId = defaultTableId
+                                                            if (currentTableId != null && currentTableId != AppConstants.Ids.INVALID_TABLE_ID) {
+                                                                navigationState.navigateToCourseDetail(
+                                                                    tableId = currentTableId,
+                                                                    courseId = slot.scheduleId
+                                                                )
+                                                            }
+                                                        }
+                                                        ScheduleType.ORDINARY -> {
+                                                            navigationState.navigateToOrdinaryScheduleDetail(
+                                                                slot.scheduleId
                                                             )
                                                         }
+                                                        else -> {}
                                                     }
-                                                    ScheduleType.ORDINARY -> {
-                                                        navigationState.navigateToOrdinaryScheduleDetail(
-                                                            slot.scheduleId
-                                                        )
-                                                    }
-                                                    else -> {}
                                                 }
-                                            }
-                                    ) {
-                                        Column(Modifier.padding(12.dp)) {
+                                        ) {
+                                            Column(Modifier.padding(12.dp)) {
+                                        Text(
+                                            slot.displayTitle ?: "无标题",
+                                                    style = MaterialTheme.typography.titleMedium
+                                        )
+                                        if (!slot.displaySubtitle.isNullOrBlank()) {
                                             Text(
-                                                slot.displayTitle ?: "无标题",
-                                                style = MaterialTheme.typography.titleMedium
+                                                slot.displaySubtitle!!,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
-                                            if (!slot.displaySubtitle.isNullOrBlank()) {
-                                                Text(
-                                                    slot.displaySubtitle!!,
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
+                                                }
                                             }
                                         }
                                     }
