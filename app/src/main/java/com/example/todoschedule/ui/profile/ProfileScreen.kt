@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -65,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.todoschedule.R
 import com.example.todoschedule.domain.model.User
+import com.example.todoschedule.ui.navigation.NavigationState
 import com.example.todoschedule.ui.profile.model.EditField
 import com.example.todoschedule.ui.profile.model.ProfileEvent
 import com.example.todoschedule.ui.profile.model.ProfileUiState
@@ -92,7 +94,8 @@ val previewUser = User(
 fun ProfileScreen(
     paddingValues: PaddingValues,
     viewModel: ProfileViewModel = hiltViewModel(),
-    onLogoutSuccess: () -> Unit
+    onLogoutSuccess: () -> Unit,
+    navigationState: NavigationState
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -179,6 +182,35 @@ fun ProfileScreen(
                     user = uiState.user!!,
                     onEditField = { field -> viewModel.handleEvent(ProfileEvent.StartEditField(field)) }
                 )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Settings Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { navigationState.navigateToSettings() },
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Settings,
+                            contentDescription = stringResource(id = R.string.settings_title), // Assume R.string.settings_title exists or will be added
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = stringResource(id = R.string.settings_title), // Assume R.string.settings_title exists or will be added
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(32.dp))
                 LogoutButton(
                     onLogout = { viewModel.handleEvent(ProfileEvent.Logout) },
