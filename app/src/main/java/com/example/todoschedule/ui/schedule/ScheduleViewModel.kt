@@ -27,9 +27,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
@@ -46,7 +48,6 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import javax.inject.Inject
-import kotlinx.coroutines.flow.asStateFlow
 
 /** 课程表视图模型 */
 @HiltViewModel
@@ -329,6 +330,114 @@ constructor(
     // 课表视图模式状态，默认周视图
     private val _viewMode = MutableStateFlow(ScheduleViewMode.WEEK)
     val viewMode = _viewMode.asStateFlow()
+
+    // --- 新增：获取整个月的 TimeSlot ---
+    private val monthSlotsCache = mutableMapOf<Pair<Int, Int>, MutableStateFlow<List<TimeSlot>>>()
+    fun getDisplayableTimeSlotsForMonth(year: Int, month: Int): StateFlow<List<TimeSlot>> {
+        val key = year to month
+        val state = monthSlotsCache.getOrPut(key) { MutableStateFlow(emptyList()) }
+        val tableId = defaultTableIdState.value
+        if (tableId > 0) {
+            viewModelScope.launch {
+                val monthStart = LocalDate(year, month, 1).atTime(0, 0)
+                    .toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+                val nextMonth =
+                    if (month == 12) LocalDate(year + 1, 1, 1) else LocalDate(year, month + 1, 1)
+                val monthEnd = nextMonth.atTime(0, 0).toInstant(TimeZone.currentSystemDefault())
+                    .toEpochMilliseconds()
+                // 获取所有课程（Flow<List<Course>> -> List<Course>）
+                val allCourses = courseRepository.getCoursesByTableId(tableId).first()
+                val table = currentTableState.value
+                val config = currentTableTimeConfig.value
+                val userId = currentUserIdState.value?.toInt() ?: 0
+                val courseSlots = if (table != null && config != null) {
+                    allCourses.flatMap { course ->
+                        course.nodes.filter { node ->
+                            // 只要节点在本月有一天在范围内即可
+                            (node.startWeek..node.endWeek).any { week ->
+                                // 计算该周的日期
+                                val tableStartDate = table.startDate
+                                val firstDayOfWeekTableStarts =
+                                    tableStartDate.dayOfWeek.isoDayNumber
+                                val firstMondayOfTable =
+                                    tableStartDate.minus(DatePeriod(days = firstDayOfWeekTableStarts - 1))
+                                val weekStartLocalDate =
+                                    firstMondayOfTable.plus(DatePeriod(days = (week - 1) * 7))
+                                val nodeDate =
+                                    weekStartLocalDate.plus(DatePeriod(days = node.day - 1))
+                                val nodeMillis = nodeDate.atTime(config.nodes.first().startTime)
+                                    .toInstant(TimeZone.currentSystemDefault())
+                                    .toEpochMilliseconds()
+                                nodeMillis in monthStart until monthEnd
+                            }
+                        }.flatMap { node ->
+                            val nodeSlots = mutableListOf<TimeSlot>()
+                            val timeConfigMap =
+                                config.nodes.associate { it.node to (it.startTime to it.endTime) }
+                            val tableStartDate = table.startDate
+                            val firstDayOfWeekTableStarts = tableStartDate.dayOfWeek.isoDayNumber
+                            val firstMondayOfTable =
+                                tableStartDate.minus(DatePeriod(days = firstDayOfWeekTableStarts - 1))
+                            for (week in node.startWeek..node.endWeek) {
+                                if (node.weekType == 1 && week % 2 == 0) continue
+                                if (node.weekType == 2 && week % 2 != 0) continue
+                                val weekStartLocalDate =
+                                    firstMondayOfTable.plus(DatePeriod(days = (week - 1) * 7))
+                                val nodeDate =
+                                    weekStartLocalDate.plus(DatePeriod(days = node.day - 1))
+                                val startNodeNum = node.startNode
+                                val endNodeNum = node.startNode + node.step - 1
+                                val nodeStartTimeInfo = timeConfigMap[startNodeNum]
+                                val nodeEndTimeInfo = timeConfigMap[endNodeNum]
+                                if (nodeStartTimeInfo != null && nodeEndTimeInfo != null) {
+                                    val nodeStartDateTime = nodeDate.atTime(nodeStartTimeInfo.first)
+                                    val nodeEndDateTime = nodeDate.atTime(nodeEndTimeInfo.second)
+                                    val startMillis =
+                                        nodeStartDateTime.toInstant(TimeZone.currentSystemDefault())
+                                            .toEpochMilliseconds()
+                                    val endMillis =
+                                        nodeEndDateTime.toInstant(TimeZone.currentSystemDefault())
+                                            .toEpochMilliseconds()
+                                    if (startMillis < monthEnd && endMillis > monthStart) {
+                                        nodeSlots.add(
+                                            TimeSlot(
+                                                userId = userId,
+                                                startTime = startMillis,
+                                                endTime = endMillis,
+                                                scheduleType = ScheduleType.COURSE,
+                                                scheduleId = course.id,
+                                                isRepeated = true,
+                                                displayTitle = course.courseName,
+                                                displaySubtitle = node.room,
+                                                displayColor = course.color,
+                                                head = course.courseName,
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                            nodeSlots
+                        }
+                    }
+                } else emptyList()
+                // 修复：为普通日程的 TimeSlot 设置 display 字段，保证月视图正确显示
+                val ordinary = ordinarySchedules.value.flatMap { schedule ->
+                    schedule.timeSlots.map { slot ->
+                        slot.copy(
+                            displayTitle = slot.head ?: schedule.title,
+                            displaySubtitle = schedule.location,
+                            displayColor = schedule.color ?: AppConstants.DEFAULT_COURSE_COLOR
+                        )
+                    }
+                }
+                val allSlots = (ordinary + courseSlots).filter { slot ->
+                    slot.startTime < monthEnd && slot.endTime > monthStart
+                }
+                state.value = allSlots
+            }
+        }
+        return state
+    }
 
     init {
         Log.d("ScheduleViewModel", "ViewModel initialized")
