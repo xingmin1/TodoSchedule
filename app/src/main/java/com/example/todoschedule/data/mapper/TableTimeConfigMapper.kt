@@ -1,5 +1,6 @@
 package com.example.todoschedule.data.mapper
 
+import com.example.todoschedule.data.database.entity.TableTimeConfigEntity
 import com.example.todoschedule.data.database.entity.TableTimeConfigNodeDetaileEntity
 import com.example.todoschedule.data.model.TableTimeConfigWithNodes
 import com.example.todoschedule.domain.model.TableTimeConfig
@@ -31,4 +32,28 @@ fun TableTimeConfigWithNodes.toDomainModel(): TableTimeConfig {
     )
 }
 
-// 可以根据需要添加从 Domain Model 到 Entity 的反向映射 
+// 可以根据需要添加从 Domain Model 到 Entity 的反向映射
+
+/**
+ * 将 TableTimeConfigNode (Domain) 转换为 TableTimeConfigNodeDetaileEntity (Data)。
+ */
+fun TableTimeConfig.toTableTimeConfigWithNodes(): TableTimeConfigWithNodes {
+    return TableTimeConfigWithNodes(
+        config = TableTimeConfigEntity(
+            id = this.id,
+            tableId = this.tableId,
+            name = this.name,
+            isDefault = this.isDefault
+        ),
+        nodes = this.nodes.map { node ->
+            TableTimeConfigNodeDetaileEntity(
+                id = node.id,
+                name = node.name,
+                startTime = node.startTime,
+                endTime = node.endTime,
+                node = node.node,
+                tableTimeConfigId = this.id
+            )
+        }
+    )
+}

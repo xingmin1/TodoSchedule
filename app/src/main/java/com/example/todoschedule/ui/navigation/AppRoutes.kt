@@ -132,6 +132,11 @@ sealed class AppRoutes(val route: String) {
         fun createRoute(tableId: Int) = "single_table_settings/$tableId"
         const val ARG_TABLE_ID = "tableId"
     }
+    object TimeNodesSettings : AppRoutes("time_nodes_settings/{tableId}/{configId}") {
+        fun createRoute(tableId: Int, configId: Int) = "time_nodes_settings/$tableId/$configId"
+        const val ARG_TABLE_ID = "tableId"
+        const val ARG_CONFIG_ID = "configId"
+    }
     // Add other settings sub-screens here if they become dedicated screens
     // object AppearanceSettings : AppRoutes("appearance_settings")
     // object GeneralSettings : AppRoutes("general_settings")

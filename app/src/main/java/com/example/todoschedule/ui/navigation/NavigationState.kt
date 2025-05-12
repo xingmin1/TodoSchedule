@@ -1,7 +1,9 @@
 package com.example.todoschedule.ui.navigation
 
+import android.util.Log
 import androidx.navigation.NavController
 import com.example.todoschedule.core.constants.AppConstants
+import java.net.URLEncoder
 
 /**
  * 应用导航状态
@@ -99,6 +101,16 @@ class NavigationState(
     }
 
     /**
+     * 导航到登录页面
+     */
+    fun navigateToLogin() {
+        navController.navigate(AppRoutes.Login.route) {
+            popUpTo(AppRoutes.Home.route) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
+
+    /**
      * 导航到添加课程页面
      */
     fun navigateToAddCourse(tableId: Int = AppConstants.Ids.INVALID_TABLE_ID) {
@@ -144,8 +156,7 @@ class NavigationState(
      * 导航到添加/编辑普通日程页面
      */
     fun navigateToAddEditOrdinarySchedule(scheduleId: Int? = null) {
-        val route = AppRoutes.AddEditOrdinarySchedule.createRoute(scheduleId)
-        navController.navigate(route)
+        navController.navigate(AppRoutes.AddEditOrdinarySchedule.createRoute(scheduleId))
     }
 
     /**
@@ -160,5 +171,22 @@ class NavigationState(
      */
     fun navigateToCreateEditTable(tableId: Int? = null) {
         navController.navigate(AppRoutes.CreateEditTable.createRoute(tableId))
+    }
+
+    // Settings Sub-Screen Navigation
+    fun navigateToTableManagement() {
+        navController.navigate(AppRoutes.TableManagement.route)
+    }
+
+    fun navigateToDefaultDisplaySettings() {
+        navController.navigate(AppRoutes.DefaultDisplaySettings.route)
+    }
+
+    fun navigateToSingleTableSettings(tableId: Int) {
+        navController.navigate(AppRoutes.SingleTableSettings.createRoute(tableId))
+    }
+
+    fun navigateToTimeNodesSettings(tableId: Int, configId: Int) {
+        navController.navigate(AppRoutes.TimeNodesSettings.createRoute(tableId, configId))
     }
 }

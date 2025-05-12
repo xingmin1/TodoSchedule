@@ -37,6 +37,8 @@ import com.example.todoschedule.ui.settings.DefaultDisplaySettingsScreenPlacehol
 import com.example.todoschedule.ui.settings.SettingsScreen
 import com.example.todoschedule.ui.settings.SingleTableSettingsScreen
 import com.example.todoschedule.ui.settings.TableManagementScreen
+import com.example.todoschedule.ui.settings.TimeNodesSettingsScreen
+import com.example.todoschedule.ui.settings.TimeNodesSettingsViewModel
 import com.example.todoschedule.ui.study.StudyScreen
 import com.example.todoschedule.ui.table.CreateEditTableScreen
 import com.example.todoschedule.ui.task.TaskScreen
@@ -366,7 +368,7 @@ fun AppNavigation(
                     route = AppRoutes.SingleTableSettings.route,
                     arguments = listOf(
                         navArgument(AppRoutes.SingleTableSettings.ARG_TABLE_ID) { 
-                            type = NavType.StringType 
+                            type = NavType.StringType // TODO: Should this be IntType?
                         }
                     )
                 ) {
@@ -374,6 +376,20 @@ fun AppNavigation(
                         navigationState = navigationState
                     )
                 }
+                
+                // 添加 TimeNodesSettingsScreen 路由
+                composable(
+                    route = AppRoutes.TimeNodesSettings.route,
+                    arguments = listOf(
+                        navArgument(TimeNodesSettingsViewModel.ARG_TABLE_ID) { type = NavType.IntType },
+                        navArgument(TimeNodesSettingsViewModel.ARG_CONFIG_ID) { type = NavType.IntType }
+                    )
+                ) {
+                    TimeNodesSettingsScreen(
+                        navigationState = navigationState
+                    )
+                }
+
             } // End NavHost
         } // End Scaffold content lambda
     } // End TodoScheduleTheme
