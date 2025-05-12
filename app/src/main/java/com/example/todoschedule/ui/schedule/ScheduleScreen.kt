@@ -2,8 +2,13 @@ package com.example.todoschedule.ui.schedule
 
 import android.annotation.SuppressLint
 import android.util.Log
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.with
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -392,12 +397,12 @@ fun ScheduleScreen(
 
                     ScheduleViewMode.MONTH -> {
                         // --- 优化：传递 currentYearMonth 和回调 ---
-                        MonthScheduleContent(
+                        MonthSchedulePager(
                             navigationState = navigationState,
                             defaultTableId = defaultTableId,
                             viewModel = viewModel,
                             paddingValues = paddingValues,
-                            currentYearMonth = currentYearMonth,
+                            initialYearMonth = currentYearMonth,
                             onYearMonthChange = { currentYearMonth = it }
                         )
                     }
@@ -1176,38 +1181,63 @@ private fun isLeapYear(year: Int): Boolean {
     ExperimentalStdlibApi::class
 )
 @Composable
-fun MonthScheduleContent(
+fun MonthSchedulePager(
     navigationState: NavigationState,
     defaultTableId: Int?,
-    viewModel: ScheduleViewModel = hiltViewModel(),
-    paddingValues: PaddingValues = PaddingValues(0.dp),
-    currentYearMonth: YearMonth,
+    viewModel: ScheduleViewModel,
+    paddingValues: PaddingValues,
+    initialYearMonth: YearMonth,
     onYearMonthChange: (YearMonth) -> Unit
 ) {
-    // --- 状态管理 ---
+    val pagerState = rememberPagerState(
+        initialPage = 500,
+        pageCount = { 1000 }
+    )
+    val baseYearMonth = remember { initialYearMonth }
+    val currentPage = pagerState.currentPage
+    val currentYearMonth = remember(currentPage) {
+        baseYearMonth.plusMonths((currentPage - 500).toLong())
+    }
+    // 统一管理大/小格子模式
+    var isLargeMode by remember { mutableStateOf(false) }
+    LaunchedEffect(currentYearMonth) {
+        onYearMonthChange(currentYearMonth)
+    }
+    HorizontalPager(
+        state = pagerState,
+        modifier = Modifier.fillMaxSize()
+    ) { page ->
+        val yearMonth = baseYearMonth.plusMonths((page - 500).toLong())
+        MonthSchedulePage(
+            navigationState = navigationState,
+            defaultTableId = defaultTableId,
+            viewModel = viewModel,
+            yearMonth = yearMonth,
+            isLargeMode = isLargeMode,
+            onLargeModeChange = { isLargeMode = it }
+        )
+    }
+}
+
+@Composable
+fun MonthSchedulePage(
+    navigationState: NavigationState,
+    defaultTableId: Int?,
+    viewModel: ScheduleViewModel,
+    yearMonth: YearMonth,
+    isLargeMode: Boolean,
+    onLargeModeChange: (Boolean) -> Unit
+) {
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     var selectedDate by remember { mutableStateOf(today) }
-    // 新增：日历显示模式（小格/大格）
-    var isLargeMode by remember { mutableStateOf(false) }
-    // 新增：当前显示的年月，支持左右滑动切换
-    var currentYearMonthState by remember { mutableStateOf(currentYearMonth) }
-    // --- 新增：同步外部 currentYearMonth 状态 ---
-    LaunchedEffect(currentYearMonthState) {
-        if (currentYearMonthState != currentYearMonth) {
-            onYearMonthChange(currentYearMonthState)
-        }
-    }
-    val year = currentYearMonthState.year
-    val month = currentYearMonthState.monthValue
-    // 当前月第一天
+    val year = yearMonth.year
+    val month = yearMonth.monthValue
     val firstDayOfMonth = LocalDate(year, month, 1)
     val daysInMonth = firstDayOfMonth.month.length(isLeapYear(firstDayOfMonth.year))
-    val firstDayOfWeek = firstDayOfMonth.dayOfWeek.isoDayNumber // 1=Mon, 7=Sun
+    val firstDayOfWeek = firstDayOfMonth.dayOfWeek.isoDayNumber
     val leadingEmptyDays = (firstDayOfWeek - 1).coerceAtLeast(0)
-    val totalGridCount = 42 // 6行7列
-    // 生成本月所有日期
+    val totalGridCount = 42
     val monthDates = List(daysInMonth) { i -> LocalDate(year, month, i + 1) }
-    // 计算上月补齐天数
     val prevMonth = if (month == 1) LocalDate(year - 1, 12, 1) else LocalDate(year, month - 1, 1)
     val prevMonthDays = prevMonth.month.length(isLeapYear(prevMonth.year))
     val prevMonthDates = List(leadingEmptyDays) { i ->
@@ -1217,16 +1247,11 @@ fun MonthScheduleContent(
             prevMonthDays - leadingEmptyDays + i + 1
         )
     }
-    // 计算下月补齐天数
     val trailingEmptyDays = totalGridCount - leadingEmptyDays - daysInMonth
     val nextMonth = if (month == 12) LocalDate(year + 1, 1, 1) else LocalDate(year, month + 1, 1)
-    val nextMonthDates =
-        List(trailingEmptyDays) { i -> LocalDate(nextMonth.year, nextMonth.month, i + 1) }
-    // 组合成完整的42天网格
+    val nextMonthDates = List(trailingEmptyDays) { i -> LocalDate(nextMonth.year, nextMonth.month, i + 1) }
     val calendarGrid = prevMonthDates + monthDates + nextMonthDates
-    // 获取整个月的日程数据
     val monthTimeSlots by viewModel.getDisplayableTimeSlotsForMonth(year, month).collectAsState()
-    // 按日期分组
     val daySlotMap = remember(monthTimeSlots) {
         monthTimeSlots.groupBy {
             Instant.fromEpochMilliseconds(it.startTime)
@@ -1235,13 +1260,9 @@ fun MonthScheduleContent(
     }
     val density = LocalDensity.current
     val switchThresholdPx = with(density) { 100.dp.toPx() }
-    val switchMonthThresholdPx = with(density) { 100.dp.toPx() }
-    // --- UI部分 ---
     Column(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
-        // --- 星期标签 ---
         Row(
             Modifier
                 .fillMaxWidth()
@@ -1258,47 +1279,26 @@ fun MonthScheduleContent(
                 }
             }
         }
-        // --- 日历网格和日程列表合并为同一滚动区域 ---
         Box(
             Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .pointerInput(isLargeMode, currentYearMonthState) {
+                .pointerInput(isLargeMode) {
                     awaitPointerEventScope {
                         while (true) {
-                            val down =
-                                awaitPointerEvent().changes.firstOrNull { it.pressed } ?: continue
-                            val startX = down.position.x
+                            val down = awaitPointerEvent().changes.firstOrNull { it.pressed } ?: continue
                             val startY = down.position.y
                             var drag = down
                             var consumed = false
                             while (drag.pressed) {
                                 val event = awaitPointerEvent()
                                 val change = event.changes.firstOrNull { it.pressed } ?: break
-                                val dx = change.position.x - startX
                                 val dy = change.position.y - startY
-                                if (!consumed) {
-                                    if (kotlin.math.abs(dx) > kotlin.math.abs(dy) && kotlin.math.abs(
-                                            dx
-                                        ) > switchMonthThresholdPx
-                                    ) {
-                                        // 水平滑动切换月份
-                                        currentYearMonthState =
-                                            if (dx < 0) currentYearMonthState.plusMonths(1) else currentYearMonthState.minusMonths(
-                                                1
-                                            )
-                                        consumed = true
-                                        break
-                                    } else if (kotlin.math.abs(dy) > kotlin.math.abs(dx) && kotlin.math.abs(
-                                            dy
-                                        ) > switchThresholdPx
-                                    ) {
-                                        // 垂直滑动切换模式
-                                        if (dy > 0 && !isLargeMode) isLargeMode = true
-                                        else if (dy < 0 && isLargeMode) isLargeMode = false
-                                        consumed = true
-                                        break
-                                    }
+                                if (!consumed && kotlin.math.abs(dy) > switchThresholdPx) {
+                                    if (dy > 0 && !isLargeMode) onLargeModeChange(true)
+                                    else if (dy < 0 && isLargeMode) onLargeModeChange(false)
+                                    consumed = true
+                                    break
                                 }
                                 drag = change
                             }
@@ -1308,29 +1308,27 @@ fun MonthScheduleContent(
         ) {
             val scrollState = rememberScrollState()
             Column(
-                                Modifier
-                                    .fillMaxWidth()
+                Modifier
+                    .fillMaxWidth()
                     .verticalScroll(scrollState)
-                            ) {
-                // --- 日历网格 ---
+            ) {
                 for (row in 0 until 6) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                for (col in 0 until 7) {
-                                    val index = row * 7 + col
-                                    val date = calendarGrid.getOrNull(index)
-                                    if (date == null) {
-                                        Box(Modifier.weight(1f))
-                                    } else {
+                        for (col in 0 until 7) {
+                            val index = row * 7 + col
+                            val date = calendarGrid.getOrNull(index)
+                            if (date == null) {
+                                Box(Modifier.weight(1f))
+                            } else {
                                 val isThisMonth = date.monthNumber == month && date.year == year
-                                        val isToday = date == today
-                                        val isSelected = date == selectedDate
+                                val isToday = date == today
+                                val isSelected = date == selectedDate
                                 val hasEvent = (daySlotMap[date]?.isNotEmpty() == true)
-                                // 动画高亮
                                 val bgColor by animateColorAsState(
                                     targetValue = when {
                                         isSelected -> MaterialTheme.colorScheme.primary
                                         isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.13f)
-                                                else -> Color.Transparent
+                                        else -> Color.Transparent
                                     }, label = "date-bg"
                                 )
                                 val textColor = when {
@@ -1338,19 +1336,18 @@ fun MonthScheduleContent(
                                     isThisMonth -> MaterialTheme.colorScheme.onSurface
                                     else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                 }
-                                // --- 两种模式下格子高度不同 ---
                                 val cellHeight = if (isLargeMode) 100.dp else 44.dp
                                 Surface(
                                     shape = RoundedCornerShape(if (isLargeMode) 16.dp else 12.dp),
                                     color = bgColor,
                                     tonalElevation = if (isSelected) 3.dp else 0.dp,
-                                            modifier = Modifier
-                                                .padding(2.dp)
+                                    modifier = Modifier
+                                        .padding(2.dp)
                                         .height(cellHeight)
-                                                .weight(1f)
-                                                .clickable { selectedDate = date }
-                                        ) {
-                                            Column(
+                                        .weight(1f)
+                                        .clickable { selectedDate = date }
+                                ) {
+                                    Column(
                                         Modifier
                                             .fillMaxSize()
                                             .padding(
@@ -1358,11 +1355,10 @@ fun MonthScheduleContent(
                                                 bottom = 2.dp
                                             ),
                                         verticalArrangement = Arrangement.Top,
-                                                horizontalAlignment = Alignment.CenterHorizontally
-                                            ) {
-                                                // 日期数字
-                                                    Text(
-                                                        text = date.dayOfMonth.toString(),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = date.dayOfMonth.toString(),
                                             style = if (isLargeMode) MaterialTheme.typography.titleMedium.copy(
                                                 fontWeight = FontWeight.Bold
                                             ) else MaterialTheme.typography.titleMedium.copy(
@@ -1370,30 +1366,26 @@ fun MonthScheduleContent(
                                             ),
                                             color = textColor
                                         )
-                                        // --- 大格子模式下显示日程标签 ---
                                         if (isLargeMode) {
-                                            val slots = daySlotMap[date] ?: emptyList()
-                                                    if (slots.isNotEmpty()) {
+                                            val slots = (daySlotMap[date] ?: emptyList()).sortedBy { it.startTime }
+                                            if (slots.isNotEmpty()) {
                                                 Spacer(Modifier.height(2.dp))
                                                 Column(
                                                     Modifier.fillMaxWidth(),
                                                     verticalArrangement = Arrangement.Center,
                                                     horizontalAlignment = Alignment.CenterHorizontally
                                                 ) {
-                                                    when {
-                                                        slots.size == 1 -> {
+                                                    if (slots.size == 1) {
                                                         Surface(
                                                             shape = RoundedCornerShape(8.dp),
                                                             color = MaterialTheme.colorScheme.secondaryContainer,
                                                             tonalElevation = 1.dp,
                                                             modifier = Modifier
-                                                                    .padding(vertical = 2.dp)
+                                                                .padding(vertical = 2.dp)
                                                                 .height(20.dp)
                                                         ) {
                                                             Text(
-                                                                    text = slots[0].displayTitle?.take(
-                                                                        6
-                                                                    ) ?: "",
+                                                                text = slots[0].displayTitle?.take(6) ?: "",
                                                                 style = MaterialTheme.typography.labelSmall,
                                                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                                                                 maxLines = 1,
@@ -1403,36 +1395,8 @@ fun MonthScheduleContent(
                                                                 )
                                                             )
                                                         }
-                                                        }
-
-                                                        slots.size == 2 -> {
-                                                            for (i in 0..1) {
-                                                            Surface(
-                                                                shape = RoundedCornerShape(8.dp),
-                                                                    color = MaterialTheme.colorScheme.secondaryContainer,
-                                                                tonalElevation = 1.dp,
-                                                                modifier = Modifier
-                                                                        .padding(vertical = 2.dp)
-                                                                    .height(20.dp)
-                                                            ) {
-                                                                Text(
-                                                                        text = slots[i].displayTitle?.take(
-                                                                            6
-                                                                        ) ?: "",
-                                                                        style = MaterialTheme.typography.labelSmall,
-                                                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                                    maxLines = 1,
-                                                                    modifier = Modifier.padding(
-                                                                        horizontal = 6.dp,
-                                                                        vertical = 2.dp
-                                                                    )
-                                                                )
-                                                            }
-                                                            }
-                                                        }
-
-                                                        slots.size > 2 -> {
-                                                            // 只显示第一个和+N
+                                                    } else if (slots.size == 2) {
+                                                        for (i in 0..1) {
                                                             Surface(
                                                                 shape = RoundedCornerShape(8.dp),
                                                                 color = MaterialTheme.colorScheme.secondaryContainer,
@@ -1442,9 +1406,7 @@ fun MonthScheduleContent(
                                                                     .height(20.dp)
                                                             ) {
                                                                 Text(
-                                                                    text = slots[0].displayTitle?.take(
-                                                                        6
-                                                                    ) ?: "",
+                                                                    text = slots[i].displayTitle?.take(6) ?: "",
                                                                     style = MaterialTheme.typography.labelSmall,
                                                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                                                                     maxLines = 1,
@@ -1454,81 +1416,98 @@ fun MonthScheduleContent(
                                                                     )
                                                                 )
                                                             }
-                                                            Surface(
-                                                                shape = RoundedCornerShape(8.dp),
-                                                                color = MaterialTheme.colorScheme.primary,
-                                                                tonalElevation = 1.dp,
-                                                                modifier = Modifier
-                                                                    .padding(vertical = 2.dp)
-                                                                    .height(20.dp)
-                                                            ) {
-                                                                Text(
-                                                                    text = "+${slots.size - 1}",
-                                                                    style = MaterialTheme.typography.labelSmall.copy(
-                                                                        fontWeight = FontWeight.Bold
-                                                                    ),
-                                                                    color = MaterialTheme.colorScheme.onPrimary,
-                                                                    maxLines = 1,
-                                                                    modifier = Modifier.padding(
-                                                                        horizontal = 6.dp,
-                                                                        vertical = 2.dp
-                                                                    )
+                                                        }
+                                                    } else if (slots.size > 2) {
+                                                        Surface(
+                                                            shape = RoundedCornerShape(8.dp),
+                                                            color = MaterialTheme.colorScheme.secondaryContainer,
+                                                            tonalElevation = 1.dp,
+                                                            modifier = Modifier
+                                                                .padding(vertical = 2.dp)
+                                                                .height(20.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = slots[0].displayTitle?.take(6) ?: "",
+                                                                style = MaterialTheme.typography.labelSmall,
+                                                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                                maxLines = 1,
+                                                                modifier = Modifier.padding(
+                                                                    horizontal = 6.dp,
+                                                                    vertical = 2.dp
                                                                 )
+                                                            )
+                                                        }
+                                                        Surface(
+                                                            shape = RoundedCornerShape(8.dp),
+                                                            color = MaterialTheme.colorScheme.primary,
+                                                            tonalElevation = 1.dp,
+                                                            modifier = Modifier
+                                                                .padding(vertical = 2.dp)
+                                                                .height(20.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = "+${slots.size - 1}",
+                                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                                    fontWeight = FontWeight.Bold
+                                                                ),
+                                                                color = MaterialTheme.colorScheme.onPrimary,
+                                                                maxLines = 1,
+                                                                modifier = Modifier.padding(
+                                                                    horizontal = 6.dp,
+                                                                    vertical = 2.dp
+                                                                )
+                                                            )
                                                         }
                                                     }
                                                 }
                                             }
-                                        }
-                                } else {
-                                            // 小格子模式只显示小圆点
-                                                if (hasEvent) {
+                                        } else {
+                                            if (hasEvent) {
                                                 Spacer(Modifier.height(2.dp))
-                                                    Box(
-                                                        Modifier
-                                                            .size(6.dp)
-                                                            .background(
-                                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
-                                                                shape = CircleShape
-                                                            )
-                                                    )
-                                                }
+                                                Box(
+                                                    Modifier
+                                                        .size(6.dp)
+                                                        .background(
+                                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                                            shape = CircleShape
+                                                        )
+                                                )
                                             }
-                                    }
                                         }
                                     }
                                 }
                             }
                         }
-                // --- 小格子模式下，日程列表紧接网格 ---
+                    }
+                }
                 if (!isLargeMode) {
-                    Spacer(Modifier.height(0.dp)) // 顶部无空白
-                Surface(
-                    Modifier
-                        .fillMaxWidth()
+                    Spacer(Modifier.height(0.dp))
+                    Surface(
+                        Modifier
+                            .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 0.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    tonalElevation = 4.dp
-                ) {
-                        val slots = daySlotMap[selectedDate] ?: emptyList()
-                    Column(Modifier.padding(20.dp)) {
-                        Text(
+                        shape = RoundedCornerShape(20.dp),
+                        tonalElevation = 4.dp
+                    ) {
+                        val slots = (daySlotMap[selectedDate] ?: emptyList()).sortedBy { it.startTime }
+                        Column(Modifier.padding(20.dp)) {
+                            Text(
                                 "${selectedDate.year}年${selectedDate.monthNumber}月${selectedDate.dayOfMonth}日 日程安排",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        if (slots.isEmpty()) {
-                            Text("暂无日程安排", style = MaterialTheme.typography.bodyLarge)
-                        } else {
-                            slots.forEach { slot ->
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.secondaryContainer,
-                                    tonalElevation = 1.dp,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            if (slots.isEmpty()) {
+                                Text("暂无日程安排", style = MaterialTheme.typography.bodyLarge)
+                            } else {
+                                slots.forEach { slot ->
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        tonalElevation = 1.dp,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
                                             .clickable {
-                                                // 点击跳转到详情页面
                                                 when (slot.scheduleType) {
                                                     ScheduleType.COURSE -> {
                                                         val currentTableId = defaultTableId
@@ -1539,28 +1518,26 @@ fun MonthScheduleContent(
                                                             )
                                                         }
                                                     }
-
                                                     ScheduleType.ORDINARY -> {
                                                         navigationState.navigateToOrdinaryScheduleDetail(
                                                             slot.scheduleId
                                                         )
                                                     }
-
                                                     else -> {}
                                                 }
                                             }
                                     ) {
                                         Column(Modifier.padding(12.dp)) {
-                                        Text(
-                                            slot.displayTitle ?: "无标题",
-                                                style = MaterialTheme.typography.titleMedium
-                                        )
-                                        if (!slot.displaySubtitle.isNullOrBlank()) {
                                             Text(
-                                                slot.displaySubtitle!!,
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                slot.displayTitle ?: "无标题",
+                                                style = MaterialTheme.typography.titleMedium
                                             )
+                                            if (!slot.displaySubtitle.isNullOrBlank()) {
+                                                Text(
+                                                    slot.displaySubtitle!!,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
                                             }
                                         }
                                     }
