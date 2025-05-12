@@ -511,10 +511,11 @@ constructor(
 
     /** 更新当前周 */
     fun updateCurrentWeek(week: Int) {
-        if (week > 0 && week != _currentWeek.value) {
-            Log.d("ScheduleViewModel", "Updating current week to $week")
-            _currentWeek.value = week
-            // 不再需要手动更新 weekDates
+        viewModelScope.launch {
+            if (week > 0 && week != _currentWeek.value) {
+                Log.d("ScheduleViewModel", "Updating current week to $week")
+                _currentWeek.emit(week)
+            }
         }
     }
 
@@ -556,8 +557,8 @@ constructor(
                         Log.w("ScheduleViewModel", "默认周次超出范围，已调整为: $safeWeekNumber")
                     }
 
-                    // 更新UI状态
-                    updateCurrentWeek(safeWeekNumber)
+                    // 更新UI状态 - 使用emit确保状态同步更新
+                    _currentWeek.emit(safeWeekNumber)
                     Log.d("ScheduleViewModel", "使用默认周次更新完成: $safeWeekNumber")
                     return@launch
                 }
@@ -568,32 +569,13 @@ constructor(
                 Log.d("ScheduleViewModel", "课表起始日期: $currentStartDate")
 
                 val currentWeekNumber = CalendarUtils.getCurrentWeek(currentStartDate)
-                Log.d("ScheduleViewModel", "根据课表起始日期计算得到当前周次: $currentWeekNumber")
-
-                // 检查边界条件并确保周次在有效范围内
-                val safeWeekNumber = currentWeekNumber.coerceIn(1, CalendarUtils.MAX_WEEKS)
-                if (safeWeekNumber != currentWeekNumber) {
-                    Log.w("ScheduleViewModel", "计算得到的周次超出范围，已调整为: $safeWeekNumber")
-                }
-
-                // 更新UI状态
-                updateCurrentWeek(safeWeekNumber)
-                Log.d("ScheduleViewModel", "成功更新当前周次: $safeWeekNumber")
+                
+                // 使用emit而非直接赋值，确保状态同步更新
+                _currentWeek.emit(currentWeekNumber)
+                Log.d("ScheduleViewModel", "当前周次更新为: $currentWeekNumber")
+                
             } catch (e: Exception) {
-                // 记录错误并尝试恢复
-                Log.e("ScheduleViewModel", "回到当前周操作失败", e)
-
-                try {
-                    // 恢复策略1：尝试直接使用系统日期计算
-                    val fallbackWeek = CalendarUtils.getCurrentWeek()
-                    val safeWeek = fallbackWeek.coerceIn(1, CalendarUtils.MAX_WEEKS)
-                    Log.w("ScheduleViewModel", "使用备用方法计算当前周次: $safeWeek")
-                    updateCurrentWeek(safeWeek)
-                } catch (fallbackEx: Exception) {
-                    // 恢复策略2：如果备用策略也失败，则使用第一周
-                    Log.e("ScheduleViewModel", "备用方法也失败，使用第一周作为默认值", fallbackEx)
-                    updateCurrentWeek(1)
-                }
+                Log.e("ScheduleViewModel", "goToCurrentWeek 出错", e)
             }
         }
     }
@@ -787,8 +769,12 @@ constructor(
         }
     }
 
+    /** 更新日视图当前日期 */
     fun updateCurrentDayDate(date: LocalDate) {
-        _currentDayDate.value = date
+        viewModelScope.launch {
+            Log.d("ScheduleViewModel", "更新日视图当前日期: $date")
+            _currentDayDate.emit(date)
+        }
     }
 }
 

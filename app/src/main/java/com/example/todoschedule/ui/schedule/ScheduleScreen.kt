@@ -279,7 +279,7 @@ fun ScheduleScreen(
                                             "计算得到当前周次: $currentWeekNumber, 课表起始日期: $startDate"
                                         )
 
-                                        // 直接调用ViewModel的方法，让它处理状态更新和滚动
+                                        // 直接调用ViewModel的方法，让它处理状态更新
                                         viewModel.goToCurrentWeek()
                                         Log.d("ScheduleScreen", "成功调用goToCurrentWeek()方法")
                                     } else {
@@ -694,46 +694,19 @@ fun ScheduleContent(
     // 2. ViewModel 更新 currentWeek -> Pager 滚动到对应页面
     LaunchedEffect(currentWeek) {
         try {
-        if (currentWeek - 1 != pagerState.currentPage) {
+            if (currentWeek - 1 != pagerState.currentPage) {
                 Log.d(
                     "ScheduleContent",
                     "ViewModel 更新 currentWeek: $currentWeek, 当前页面: ${pagerState.currentPage}"
                 )
                 val targetPage = currentWeek - 1
-                val currentPage = pagerState.currentPage
-                val distance = abs(targetPage - currentPage)
-
-                Log.d("ScheduleContent", "计算跳转距离: $distance 周")
-
-                if (distance > 3) {
-                    // 距离较大时直接跳转，避免动画问题
-                    Log.d("ScheduleContent", "检测到大距离跳转 ($distance 周), 使用直接跳转")
-                    try {
-                        // 使用withContext(Dispatchers.Main)确保在主线程上执行UI操作
-                        withContext(Dispatchers.Main) {
-                            pagerState.scrollToPage(targetPage)
-                        }
-                        Log.d("ScheduleContent", "直接跳转到第 $targetPage 页成功")
-            } catch (e: Exception) {
-                        Log.e("ScheduleContent", "直接跳转失败，尝试备用方案", e)
-                        // 如果scrollToPage失败，尝试animateScrollToPage作为备用方案
-                        pagerState.animateScrollToPage(targetPage)
-                    }
-                } else {
-                    // 距离较小时使用动画
-                    Log.d("ScheduleContent", "检测到小距离跳转 ($distance 周), 使用动画滚动")
-                    pagerState.animateScrollToPage(targetPage)
-                }
+                
+                // 修复：使用无动画直接跳转，避免闪烁问题
+                pagerState.scrollToPage(targetPage)
+                Log.d("ScheduleContent", "直接跳转到第 $targetPage 页完成")
             }
         } catch (e: Exception) {
-            Log.e("ScheduleContent", "滚动过程中发生错误", e)
-            // 如果任何滚动操作失败，尝试立即跳转
-            try {
-                Log.d("ScheduleContent", "尝试最后的直接跳转恢复方案")
-                    pagerState.scrollToPage(currentWeek - 1)
-                } catch (scrollError: Exception) {
-                Log.e("ScheduleContent", "最终恢复方案也失败", scrollError)
-            }
+            Log.e("ScheduleContent", "跳转过程中发生错误", e)
         }
     }
 
@@ -1751,9 +1724,10 @@ fun MonthSchedulePager(
             ).toEpochMonth() - baseYearMonth.toEpochMonth()
             // 计算目标页码
             val targetPage = 500 + monthsDiff.toInt()
-            // 如果目标页码在有效范围内且与当前页不同，则滚动到目标页
+            // 如果目标页码在有效范围内且与当前页不同，则直接跳转到目标页
             if (targetPage in 0 until 1000 && targetPage != pagerState.currentPage) {
-                pagerState.animateScrollToPage(targetPage)
+                Log.d("MonthSchedulePager", "使用无动画直接跳转到月份：${initialYearMonth.year}年${initialYearMonth.monthValue}月")
+                pagerState.scrollToPage(targetPage)
             }
         }
     }
@@ -2168,15 +2142,14 @@ fun DayScheduleContent(
                 // 计算目标页码
                 val targetPage = initialPage + daysDiff
 
-                // 如果目标页码在有效范围内且与当前页不同，则滚动到目标页
+                // 如果目标页码在有效范围内且与当前页不同，则直接跳转到目标页
                 if (targetPage in 0 until pageCount && targetPage != pagerState.currentPage) {
-                    // 使用协程上下文中的launch，避免在LaunchedEffect中直接调用挂起函数
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(targetPage)
-                    }
+                    Log.d("DayScheduleContent", "使用无动画直接跳转到日期：$targetDate")
+                    // 使用无动画直接跳转
+                    pagerState.scrollToPage(targetPage)
                 }
             } catch (e: Exception) {
-                Log.e("DayScheduleContent", "Error scrolling to target date", e)
+                Log.e("DayScheduleContent", "跳转到目标日期失败", e)
             }
         }
     }
