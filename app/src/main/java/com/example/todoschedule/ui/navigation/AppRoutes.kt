@@ -124,4 +124,11 @@ sealed class AppRoutes(val route: String) {
 
         const val ARG_TABLE_ID = "tableId" // Argument name
     }
+
+    // Settings Sub-Screens
+    object TableManagement : AppRoutes("table_management")
+    object DefaultDisplaySettings : AppRoutes("default_display_settings")
+    // Add other settings sub-screens here if they become dedicated screens
+    // object AppearanceSettings : AppRoutes("appearance_settings")
+    // object GeneralSettings : AppRoutes("general_settings")
 }

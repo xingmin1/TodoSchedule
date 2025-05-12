@@ -33,7 +33,9 @@ import com.example.todoschedule.ui.ordinaryschedule.AddEditOrdinaryScheduleScree
 import com.example.todoschedule.ui.ordinaryschedule.OrdinaryScheduleDetailScreen
 import com.example.todoschedule.ui.profile.ProfileScreen
 import com.example.todoschedule.ui.schedule.ScheduleScreen
+import com.example.todoschedule.ui.settings.DefaultDisplaySettingsScreenPlaceholder
 import com.example.todoschedule.ui.settings.SettingsScreen
+import com.example.todoschedule.ui.settings.TableManagementScreenPlaceholder
 import com.example.todoschedule.ui.study.StudyScreen
 import com.example.todoschedule.ui.table.CreateEditTableScreen
 import com.example.todoschedule.ui.task.TaskScreen
@@ -165,21 +167,21 @@ fun AppNavigation(
                                 popUpTo(AppRoutes.Home.route) { inclusive = true }
                                 launchSingleTop = true
                             }
-                        }
+                        },
+                        navigationState = navigationState // Pass navigationState
                         ) // 传递 padding
                 }
 
                 // --- 其他现有屏幕 --- //
                 composable(AppRoutes.Settings.route) {
-                    // SettingsScreen 可能也需要处理 padding，如果它不使用自己的 Scaffold
                     SettingsScreen(
-                        onNavigateBack = { navigationState.navigateBack() },
                         onLogout = {
                             navController.navigate(AppRoutes.Login.route) {
                                 popUpTo(AppRoutes.Home.route) { inclusive = true }
                                 launchSingleTop = true
                             }
-                        }
+                        },
+                        navigationState = navigationState // Added
                     )
                 }
 
@@ -343,6 +345,19 @@ fun AppNavigation(
                             // 或许导航回 Schedule 并强制刷新？
                             // navController.navigate(AppRoutes.Schedule.route) { popUpTo(AppRoutes.Schedule.route){ inclusive = true } }
                         }
+                    )
+                }
+
+                // Settings Sub-Screens (Placeholders)
+                composable(AppRoutes.TableManagement.route) {
+                    TableManagementScreenPlaceholder(
+                        onNavigateBack = { navigationState.navigateBack() }
+                    )
+                }
+
+                composable(AppRoutes.DefaultDisplaySettings.route) {
+                    DefaultDisplaySettingsScreenPlaceholder(
+                        onNavigateBack = { navigationState.navigateBack() }
                     )
                 }
             } // End NavHost
