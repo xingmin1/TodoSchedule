@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -47,6 +48,7 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
 
 /** 课程表视图模型 */
@@ -91,7 +93,7 @@ constructor(
     val defaultTableIdState: StateFlow<Int> = _defaultTableIdState
 
     // 当前课表状态
-    private val currentTableState: StateFlow<Table?> =
+    private val _currentTableState: StateFlow<Table?> =
         _defaultTableIdState.flatMapLatest { tableId ->
             if (tableId != AppConstants.Ids.INVALID_TABLE_ID) {
                 tableRepository.getTableById(tableId)
@@ -104,10 +106,13 @@ constructor(
             initialValue = null
         )
 
+    // 将课表状态公开以供UI使用
+    val currentTableState: StateFlow<Table?> = _currentTableState
+
     // 当前周的日期列表 - 改为响应式 Flow
     val weekDates: StateFlow<List<LocalDate>> = combine(
         _currentWeek,
-        currentTableState.map { it?.startDate } // 只关心 startDate
+        _currentTableState.map { it?.startDate } // 只关心 startDate
     ) { week, startDate ->
         Log.d("ScheduleViewModel", "Calculating week dates for week $week, startDate $startDate")
         CalendarUtils.getWeekDates(week, startDate) // 直接调用工具类计算
@@ -160,7 +165,7 @@ constructor(
     // --- 新增: 组合用户相关的课表数据 ---
     private val userTableDataFlow = combine(
         currentUserIdState.filterNotNull(),
-        currentTableState.filterNotNull(),
+        _currentTableState.filterNotNull(),
         currentTableTimeConfig.filterNotNull()
     ) { userId, table, config ->
         // 可选：添加校验，确保 table.userId 与当前 userId 一致
@@ -179,7 +184,7 @@ constructor(
     val uiState: StateFlow<ScheduleUiState> = combine(
         currentUserIdState,
         _defaultTableIdState,
-        currentTableState,
+        _currentTableState,
         currentTableTimeConfig
     ) { userId, tableId, table, tableTimeConfig ->
         Log.d(
@@ -330,6 +335,9 @@ constructor(
     // 课表视图模式状态，默认周视图
     private val _viewMode = MutableStateFlow(ScheduleViewMode.WEEK)
     val viewMode = _viewMode.asStateFlow()
+
+    private val _currentDayDate = MutableStateFlow<LocalDate?>(null)
+    val currentDayDate = _currentDayDate.asStateFlow()
 
     // --- 新增：获取整个月的 TimeSlot ---
     private val monthSlotsCache = mutableMapOf<Pair<Int, Int>, MutableStateFlow<List<TimeSlot>>>()
@@ -528,10 +536,66 @@ constructor(
 
     /** 回到当前周 */
     fun goToCurrentWeek() {
-        val currentStartDate = currentTableState.value?.startDate
-        val currentWeekNumber = CalendarUtils.getCurrentWeek(currentStartDate)
-        Log.d("ScheduleViewModel", "Going back to current week: $currentWeekNumber")
-        updateCurrentWeek(currentWeekNumber)
+        viewModelScope.launch {
+            try {
+                Log.d("ScheduleViewModel", "开始执行goToCurrentWeek()操作")
+
+                // 先获取课表起始日期
+                val currentStartDate = currentTableState.value?.startDate
+                if (currentStartDate == null) {
+                    Log.w("ScheduleViewModel", "课表起始日期为空，尝试使用系统默认值")
+
+                    // 获取默认周次并强制更新
+                    val defaultCurrentWeekNumber = CalendarUtils.getCurrentWeek()
+                    Log.d("ScheduleViewModel", "默认计算得到当前周次: $defaultCurrentWeekNumber")
+
+                    // 确保周次在有效范围内
+                    val safeWeekNumber =
+                        defaultCurrentWeekNumber.coerceIn(1, CalendarUtils.MAX_WEEKS)
+                    if (safeWeekNumber != defaultCurrentWeekNumber) {
+                        Log.w("ScheduleViewModel", "默认周次超出范围，已调整为: $safeWeekNumber")
+                    }
+
+                    // 更新UI状态
+                    updateCurrentWeek(safeWeekNumber)
+                    Log.d("ScheduleViewModel", "使用默认周次更新完成: $safeWeekNumber")
+                    return@launch
+                }
+
+                // 计算当前周次
+                val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+                Log.d("ScheduleViewModel", "当前日期: $today")
+                Log.d("ScheduleViewModel", "课表起始日期: $currentStartDate")
+
+                val currentWeekNumber = CalendarUtils.getCurrentWeek(currentStartDate)
+                Log.d("ScheduleViewModel", "根据课表起始日期计算得到当前周次: $currentWeekNumber")
+
+                // 检查边界条件并确保周次在有效范围内
+                val safeWeekNumber = currentWeekNumber.coerceIn(1, CalendarUtils.MAX_WEEKS)
+                if (safeWeekNumber != currentWeekNumber) {
+                    Log.w("ScheduleViewModel", "计算得到的周次超出范围，已调整为: $safeWeekNumber")
+                }
+
+                // 更新UI状态
+                updateCurrentWeek(safeWeekNumber)
+                Log.d("ScheduleViewModel", "成功更新当前周次: $safeWeekNumber")
+            } catch (e: Exception) {
+                // 记录错误并尝试恢复
+                Log.e("ScheduleViewModel", "回到当前周操作失败", e)
+
+                try {
+                    // 恢复策略1：尝试直接使用系统日期计算
+                    val fallbackWeek = CalendarUtils.getCurrentWeek()
+                    val safeWeek = fallbackWeek.coerceIn(1, CalendarUtils.MAX_WEEKS)
+                    Log.w("ScheduleViewModel", "使用备用方法计算当前周次: $safeWeek")
+                    updateCurrentWeek(safeWeek)
+                } catch (fallbackEx: Exception) {
+                    // 恢复策略2：如果备用策略也失败，则使用第一周
+                    Log.e("ScheduleViewModel", "备用方法也失败，使用第一周作为默认值", fallbackEx)
+                    updateCurrentWeek(1)
+                }
+            }
+        }
     }
 
     // --- 普通日程操作 ---
@@ -721,6 +785,10 @@ constructor(
         if (_viewMode.value != mode) {
             _viewMode.value = mode
         }
+    }
+
+    fun updateCurrentDayDate(date: LocalDate) {
+        _currentDayDate.value = date
     }
 }
 
