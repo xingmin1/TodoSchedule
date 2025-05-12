@@ -1,5 +1,6 @@
 package com.example.todoschedule.ui.settings
 
+import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -121,13 +122,16 @@ fun SettingsScreen(
                     onCheckedChange = viewModel::updateDarkTheme
                 )
 
-                SettingsSwitchItem(
-                    icon = Icons.Default.Palette,
-                    title = "Material You",
-                    subtitle = "使用系统动态颜色",
-                    checked = materialYou,
-                    onCheckedChange = viewModel::updateMaterialYou
-                )
+                // 仅在 Android 12+ (API 31+) 上显示 Material You 选项
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    SettingsSwitchItem(
+                        icon = Icons.Default.Palette,
+                        title = "Material You",
+                        subtitle = "使用系统动态颜色 (Android 12+)",
+                        checked = materialYou,
+                        onCheckedChange = viewModel::updateMaterialYou
+                    )
+                }
             }
 
             SettingsCategory(title = "日历") {
