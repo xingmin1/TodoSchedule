@@ -1370,6 +1370,9 @@ private fun calculateWeekViewEventPositionsEnhanced(
 ): List<Pair<TimeSlot, WeekViewSlotInfo>> {
     if (events.isEmpty()) return emptyList()
     
+    // 设置最小时间段为20分钟（用于计算重叠）
+    val minDurationMinutes = 20
+    
     // 转换事件为带有日期和时间信息的对象
     val eventWithTimes = events.map { event ->
         val start = Instant.fromEpochMilliseconds(event.startTime)
@@ -1379,7 +1382,19 @@ private fun calculateWeekViewEventPositionsEnhanced(
             
         val dayOfWeek = start.dayOfWeek.isoDayNumber
         val startMinutes = (start.hour - gridStartHour) * 60 + start.minute
-        val endMinutes = (end.hour - gridStartHour) * 60 + end.minute
+        
+        // 计算原始的结束分钟数
+        val originalEndMinutes = (end.hour - gridStartHour) * 60 + end.minute
+        
+        // 应用最小持续时间规则：时间点日程和短于minDurationMinutes的日程都以minDurationMinutes计算重叠
+        val durationMinutes = originalEndMinutes - startMinutes
+        val endMinutes = if (durationMinutes < minDurationMinutes) {
+            startMinutes + minDurationMinutes
+        } else {
+            originalEndMinutes
+        }
+        
+        Log.d("WeekSchedule", "事件 ${event.displayTitle} - 原始持续时间: ${durationMinutes}分钟, 用于计算重叠的持续时间: ${endMinutes - startMinutes}分钟")
         
         Triple(event, dayOfWeek, WeekViewSlotInfo(dayOfWeek, startMinutes, endMinutes))
     }
@@ -1579,6 +1594,10 @@ fun ScheduleGridWithTimeSlots(
         val itemVerticalPadding = 2.dp   // 1.dp vertical padding on top/bottom *inside* the card
         val itemHorizontalPaddingPx = with(density) { itemHorizontalPadding.toPx() }
         val itemVerticalPaddingPx = with(density) { itemVerticalPadding.toPx() }
+        
+        // 计算20分钟对应的像素高度（最小高度）
+        val minDurationMinutes = 20
+        val minHeightPx = (minDurationMinutes / 60.0f * hourHeightPx).toFloat()
 
         timeSlotMeasurables.forEachIndexed { index, measurable ->
             val (timeSlot, slotInfo) = processedSlots[index]
@@ -1588,9 +1607,16 @@ fun ScheduleGridWithTimeSlots(
 
             // Height (Calculate full slot height first)
             val durationMinutes = slotInfo.endMinutes - slotInfo.startMinutes
-            val fullSlotHeightPx = (durationMinutes / 60.0 * hourHeightPx).toFloat()
+            
+            // 时间点或短于20分钟的事件使用最小高度
+            val fullSlotHeightPx = if (durationMinutes <= minDurationMinutes) {
+                minHeightPx
+            } else {
+                (durationMinutes / 60.0 * hourHeightPx).toFloat()
+            }
+            
             // Actual measurable height = full height - internal padding
-            val itemHeightPx = (fullSlotHeightPx - itemVerticalPaddingPx).coerceAtLeast(1f)
+            val itemHeightPx = (fullSlotHeightPx - itemVerticalPaddingPx).coerceAtLeast(minHeightPx)
 
             // 计算水平位置和宽度（考虑重叠）
             val hasOverlap = slotInfo.maxColumns > 1
@@ -2496,7 +2522,7 @@ fun DayTimeline(
 /**
  * 事件在时间轴上的位置信息
  */
-private data class EventSlotInfo(
+data class EventSlotInfo(
     val startMinutes: Int,
     val endMinutes: Int,
     val column: Int = 0,
@@ -2509,13 +2535,16 @@ private data class EventSlotInfo(
  * 使用贪心算法进行列分配，优先填充已有列位置，减少总列数
  */
 @OptIn(ExperimentalStdlibApi::class)
-private fun calculateEventPositions(
+fun calculateEventPositions(
     events: List<TimeSlot>,
     date: LocalDate
 ): List<Pair<TimeSlot, EventSlotInfo>> {
     if (events.isEmpty()) return emptyList()
     
     Log.d("DaySchedule", "计算${events.size}个事件的位置")
+    
+    // 设置最小时间段为20分钟（用于计算重叠）
+    val minDurationMinutes = 20
 
     // 按开始时间排序
     val sortedEvents = events.sortedBy { it.startTime }
@@ -2529,9 +2558,19 @@ private fun calculateEventPositions(
 
         val gridStartHour = GRID_START_HOUR
         val startMinutes = (start.hour - gridStartHour) * 60 + start.minute
-        val endMinutes = (end.hour - gridStartHour) * 60 + end.minute
+        
+        // 计算原始的结束分钟数
+        val originalEndMinutes = (end.hour - gridStartHour) * 60 + end.minute
+        
+        // 应用最小持续时间规则：时间点日程和短于minDurationMinutes的日程都以minDurationMinutes计算重叠
+        val durationMinutes = originalEndMinutes - startMinutes
+        val endMinutes = if (durationMinutes < minDurationMinutes) {
+            startMinutes + minDurationMinutes
+        } else {
+            originalEndMinutes
+        }
 
-        Log.d("DaySchedule", "事件 ${event.displayTitle} - 开始:${start.hour}:${start.minute}, 结束:${end.hour}:${end.minute}")
+        Log.d("DaySchedule", "事件 ${event.displayTitle} - 原始持续时间: ${durationMinutes}分钟, 用于计算重叠的持续时间: ${endMinutes - startMinutes}分钟")
 
         event to EventSlotInfo(startMinutes, endMinutes)
     }.toMutableList()
@@ -2628,7 +2667,7 @@ private fun calculateEventPositions(
         }
         
         // 最后确认该组的所有事件使用相同的maxColumns值
-        val finalMaxColumns = sortedIndices.maxOf { result[it].second.maxColumns }
+        val finalMaxColumns = columnEndTimes.size
         for (eventIndex in group) {
             val (event, slotInfo) = result[eventIndex]
             result[eventIndex] = event to slotInfo.copy(maxColumns = finalMaxColumns)
@@ -2643,7 +2682,7 @@ private fun calculateEventPositions(
 /**
  * 检查两个时间段是否重叠
  */
-private fun isOverlapping(a: EventSlotInfo, b: EventSlotInfo): Boolean {
+fun isOverlapping(a: EventSlotInfo, b: EventSlotInfo): Boolean {
     // 添加1分钟的缓冲区，避免时间刚好接壤的事件被判定为重叠
     val buffer = 1 // 1分钟缓冲区
     return a.startMinutes < (b.endMinutes - buffer) && (a.endMinutes - buffer) > b.startMinutes
