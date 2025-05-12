@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.EditCalendar
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
@@ -106,8 +107,8 @@ fun SettingsScreen(
                     onClick = { navigationState.navController.navigate(AppRoutes.TableManagement.route) }
                 )
                 SettingsClickableItem(
-                    icon = Icons.Filled.Visibility,
-                    title = "默认显示课表设置",
+                    icon = Icons.Default.EditCalendar,
+                    title = "默认显示课表",
                     subtitle = "选择在日程主页默认显示的课表",
                     onClick = { navigationState.navController.navigate(AppRoutes.DefaultDisplaySettings.route) }
                 )

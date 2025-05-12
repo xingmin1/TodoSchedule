@@ -271,7 +271,7 @@ fun SingleTableSettingsScreen(
                                         TimeConfigItem(
                                             config = config,
                                             onItemClick = {
-                                                navigationState.navigateToTimeNodesSettings(uiState.table!!.id, config.id)
+                                                navigationState.navigateToTimeNodesSettings(config.id.toInt())
                                             },
                                             onEditClick = {
                                                 viewModel.showEditTimeConfigNameDialog(config.id, config.name)
