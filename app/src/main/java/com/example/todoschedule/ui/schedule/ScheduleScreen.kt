@@ -121,7 +121,7 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.random.Random
 import androidx.compose.ui.platform.LocalConfiguration
-import kotlin.collections.ArrayDeque
+import java.util.*
 
 // 用于格式化时间的 Formatter (移到顶层)
 private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
@@ -1164,6 +1164,357 @@ private fun DayOfWeek.getChineseWeekName(): String {
 }
 
 /**
+ * 处理时间槽点击事件，根据类型导航到对应详情页
+ */
+private fun handleTimeSlotClick(
+    timeSlot: TimeSlot,
+    navigationState: NavigationState,
+    defaultTableId: Int?
+) {
+    Log.d(
+        "DaySchedule",
+        "点击日程: Type=${timeSlot.scheduleType}, ID=${timeSlot.scheduleId}, 标题='${timeSlot.displayTitle}'"
+    )
+    
+    when (timeSlot.scheduleType) {
+        ScheduleType.COURSE -> {
+            if (defaultTableId != null && defaultTableId != AppConstants.Ids.INVALID_TABLE_ID) {
+                Log.i(
+                    "DaySchedule",
+                    "导航到课程详情: tableId=$defaultTableId, courseId=${timeSlot.scheduleId}"
+                )
+                navigationState.navigateToCourseDetail(
+                    tableId = defaultTableId,
+                    courseId = timeSlot.scheduleId
+                )
+            } else {
+                Log.w(
+                    "DaySchedule",
+                    "无法导航到课程详情，默认课表ID无效或为空"
+                )
+            }
+        }
+        
+        ScheduleType.ORDINARY -> {
+            Log.i(
+                "DaySchedule",
+                "导航到普通日程详情: scheduleId=${timeSlot.scheduleId}"
+            )
+            navigationState.navigateToOrdinaryScheduleDetail(timeSlot.scheduleId)
+        }
+        
+        else -> {
+            Log.w(
+                "DaySchedule",
+                "未实现该日程类型的导航: ${timeSlot.scheduleType}"
+            )
+        }
+    }
+}
+
+/**
+ * 周视图位置信息数据类，包含位置和尺寸信息
+ */
+private data class WeekViewSlotInfo(
+    val dayOfWeek: Int, // ISO周几 (1-7, 周一到周日)
+    val startMinutes: Int, // 距离网格开始的分钟数
+    val endMinutes: Int, // 距离网格开始的结束分钟数
+    val column: Int = 0, // 在同一天内的列索引
+    val maxColumns: Int = 1 // 同一天内的最大列数
+)
+
+/**
+ * 计算周视图事件的位置，处理同一天内重叠的事件
+ * 参考日视图的重叠处理方式
+ */
+@OptIn(ExperimentalStdlibApi::class)
+private fun calculateWeekViewEventPositions(
+    events: List<TimeSlot>,
+    gridStartHour: Int
+): List<Pair<TimeSlot, WeekViewSlotInfo>> {
+    if (events.isEmpty()) return emptyList()
+    
+    // 1. 转换事件为带有时间信息的对象
+    val eventWithTimes = events.map { event ->
+        val start = Instant.fromEpochMilliseconds(event.startTime)
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+        val end = Instant.fromEpochMilliseconds(event.endTime)
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            
+        val dayOfWeek = start.dayOfWeek.isoDayNumber
+        val startMinutes = (start.hour - gridStartHour) * 60 + start.minute
+        val endMinutes = (end.hour - gridStartHour) * 60 + end.minute
+        
+        Triple(event, dayOfWeek, WeekViewSlotInfo(dayOfWeek, startMinutes, endMinutes))
+    }
+    
+    // 2. 按天分组
+    val eventsByDay = eventWithTimes.groupBy { it.second }
+    
+    // 3. 处理每天内部的重叠事件
+    val result = mutableListOf<Pair<TimeSlot, WeekViewSlotInfo>>()
+    
+    eventsByDay.forEach { (day, dayEvents) ->
+        // 如果该天只有一个事件，不需要处理重叠
+        if (dayEvents.size == 1) {
+            val (event, _, slotInfo) = dayEvents[0]
+            result.add(event to slotInfo)
+            return@forEach
+        }
+        
+        // 处理重叠：找出同一天内时间上重叠的事件
+        val sortedDayEvents = dayEvents.sortedBy { it.third.startMinutes }
+        
+        // 构建重叠矩阵
+        val overlapMatrix = Array(sortedDayEvents.size) { BooleanArray(sortedDayEvents.size) { false } }
+        
+        for (i in sortedDayEvents.indices) {
+            for (j in i + 1 until sortedDayEvents.size) {
+                val a = sortedDayEvents[i].third
+                val b = sortedDayEvents[j].third
+                
+                // 检查是否重叠 (与日视图使用相同的判断逻辑)
+                val buffer = 1 // 1分钟缓冲区
+                if (a.startMinutes < (b.endMinutes - buffer) && (a.endMinutes - buffer) > b.startMinutes) {
+                    overlapMatrix[i][j] = true
+                    overlapMatrix[j][i] = true
+                    Log.d("WeekSchedule", "同一天内事件重叠: Day=$day, 事件${i}和事件${j}")
+                }
+            }
+        }
+        
+        // 构建重叠组 (连通分量)
+        val visited = BooleanArray(sortedDayEvents.size) { false }
+        val overlapGroups = mutableListOf<List<Int>>()
+        
+        for (i in sortedDayEvents.indices) {
+            if (!visited[i]) {
+                val group = mutableListOf<Int>()
+                val queue = LinkedList<Int>()
+                queue.add(i)
+                visited[i] = true
+                
+                while (queue.isNotEmpty()) {
+                    val current = queue.remove()
+                    group.add(current)
+                    
+                    for (j in sortedDayEvents.indices) {
+                        if (!visited[j] && overlapMatrix[current][j]) {
+                            queue.add(j)
+                            visited[j] = true
+                        }
+                    }
+                }
+                
+                overlapGroups.add(group)
+                Log.d("WeekSchedule", "找到重叠组: 天=$day, 组大小=${group.size}")
+            }
+        }
+        
+        // 为每个重叠组进行列分配
+        overlapGroups.forEach { group ->
+            // 简单情况：组内只有一个事件
+            if (group.size == 1) {
+                val idx = group[0]
+                val (event, _, slotInfo) = sortedDayEvents[idx]
+                result.add(event to slotInfo)
+                return@forEach
+            }
+            
+            // 为组内事件分配列
+            val columnEndTimes = mutableListOf<Int>()
+            
+            group.forEach { idx ->
+                val (event, _, slotInfo) = sortedDayEvents[idx]
+                
+                // 寻找可用列
+                var assignedColumn = -1
+                
+                for (col in columnEndTimes.indices) {
+                    if (slotInfo.startMinutes >= columnEndTimes[col]) {
+                        assignedColumn = col
+                        break
+                    }
+                }
+                
+                // 如果没有找到可用列，创建新列
+                if (assignedColumn == -1) {
+                    assignedColumn = columnEndTimes.size
+                    columnEndTimes.add(slotInfo.endMinutes)
+                } else {
+                    // 更新列结束时间
+                    columnEndTimes[assignedColumn] = slotInfo.endMinutes
+                }
+                
+                // 更新位置信息
+                val updatedSlotInfo = slotInfo.copy(
+                    column = assignedColumn,
+                    maxColumns = columnEndTimes.size
+                )
+                
+                result.add(event to updatedSlotInfo)
+            }
+        }
+    }
+    
+    return result
+}
+
+/**
+ * 增强版：计算周视图事件的位置，提供更优的重叠事件处理
+ * 使用优化的算法确保重叠事件分配到合适的列，并且显示效果更佳
+ */
+private fun calculateWeekViewEventPositionsEnhanced(
+    events: List<TimeSlot>,
+    gridStartHour: Int
+): List<Pair<TimeSlot, WeekViewSlotInfo>> {
+    if (events.isEmpty()) return emptyList()
+    
+    // 转换事件为带有日期和时间信息的对象
+    val eventWithTimes = events.map { event ->
+        val start = Instant.fromEpochMilliseconds(event.startTime)
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+        val end = Instant.fromEpochMilliseconds(event.endTime)
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            
+        val dayOfWeek = start.dayOfWeek.isoDayNumber
+        val startMinutes = (start.hour - gridStartHour) * 60 + start.minute
+        val endMinutes = (end.hour - gridStartHour) * 60 + end.minute
+        
+        Triple(event, dayOfWeek, WeekViewSlotInfo(dayOfWeek, startMinutes, endMinutes))
+    }
+    
+    // 按天分组
+    val eventsByDay = eventWithTimes.groupBy { it.second }
+    
+    // 处理结果列表
+    val result = mutableListOf<Pair<TimeSlot, WeekViewSlotInfo>>()
+    
+    // 处理每天的事件
+    eventsByDay.forEach { (day, dayEvents) ->
+        // 只有一个事件时不需要处理重叠
+        if (dayEvents.size == 1) {
+            val (event, _, slotInfo) = dayEvents[0]
+            result.add(event to slotInfo.copy(column = 0, maxColumns = 1))
+            return@forEach
+        }
+        
+        // 按开始时间排序
+        val sortedEvents = dayEvents.sortedBy { it.third.startMinutes }
+        
+        // 构建重叠矩阵
+        val size = sortedEvents.size
+        val overlapMatrix = Array(size) { BooleanArray(size) { false } }
+        
+        for (i in 0 until size) {
+            for (j in i+1 until size) {
+                val a = sortedEvents[i].third
+                val b = sortedEvents[j].third
+                
+                // 检查是否重叠（添加1分钟缓冲区）
+                val buffer = 1
+                if (a.startMinutes < (b.endMinutes - buffer) && (a.endMinutes - buffer) > b.startMinutes) {
+                    overlapMatrix[i][j] = true
+                    overlapMatrix[j][i] = true
+                }
+            }
+        }
+        
+        // 找出重叠组（连通分量）
+        val visited = BooleanArray(size) { false }
+        val overlapGroups = mutableListOf<List<Int>>()
+        
+        for (i in 0 until size) {
+            if (!visited[i]) {
+                val group = mutableListOf<Int>()
+                val queue = LinkedList<Int>()
+                queue.add(i)
+                visited[i] = true
+                
+                while (queue.isNotEmpty()) {
+                    val current = queue.remove()
+                    group.add(current)
+                    
+                    for (j in 0 until size) {
+                        if (!visited[j] && overlapMatrix[current][j]) {
+                            queue.add(j)
+                            visited[j] = true
+                        }
+                    }
+                }
+                
+                overlapGroups.add(group)
+            }
+        }
+        
+        // 处理每个重叠组
+        for (group in overlapGroups) {
+            // 单个事件直接处理
+            if (group.size == 1) {
+                val idx = group[0]
+                val (event, _, slotInfo) = sortedEvents[idx]
+                result.add(event to slotInfo.copy(column = 0, maxColumns = 1))
+                continue
+            }
+            
+            // 按开始时间排序重叠组中的事件
+            val groupEventIndices = group.sortedBy { sortedEvents[it].third.startMinutes }
+            
+            // 记录每列的结束时间
+            val columnEndTimes = mutableListOf<Int>()
+            // 记录每个事件被分配的列
+            val eventToColumn = mutableMapOf<Int, Int>()
+            
+            // 为每个事件分配列
+            for (idx in groupEventIndices) {
+                val (_, _, slotInfo) = sortedEvents[idx]
+                
+                // 尝试找到一个可用的列
+                var column = -1
+                for (c in columnEndTimes.indices) {
+                    if (slotInfo.startMinutes >= columnEndTimes[c]) {
+                        column = c
+                        break
+                    }
+                }
+                
+                // 如果没找到可用列，创建新列
+                if (column == -1) {
+                    column = columnEndTimes.size
+                    columnEndTimes.add(slotInfo.endMinutes)
+                } else {
+                    // 更新列的结束时间
+                    columnEndTimes[column] = slotInfo.endMinutes
+                }
+                
+                // 记录事件的列位置
+                eventToColumn[idx] = column
+            }
+            
+            // 确定最大列数
+            val maxColumns = columnEndTimes.size
+            
+            // 为组内每个事件生成最终位置信息
+            for (idx in group) {
+                val (event, _, slotInfo) = sortedEvents[idx]
+                val column = eventToColumn[idx] ?: 0
+                
+                // 创建更新的位置信息
+                val updatedSlotInfo = slotInfo.copy(
+                    column = column,
+                    maxColumns = maxColumns
+                )
+                
+                // 添加到结果
+                result.add(event to updatedSlotInfo)
+            }
+        }
+    }
+    
+    return result
+}
+
+/**
  * 新的课表内容区域，使用 HorizontalPager 实现周切换。
  */
 @Composable
@@ -1179,6 +1530,9 @@ fun ScheduleGridWithTimeSlots(
 ) {
     val density = LocalDensity.current
 
+    // 处理同一天内事件的重叠情况 - 使用增强版算法
+    val processedSlots = calculateWeekViewEventPositionsEnhanced(timeSlots, gridStartHour)
+
     Layout(
         modifier = modifier.height(totalGridHeight), // Apply fixed height
         content = {
@@ -1192,7 +1546,7 @@ fun ScheduleGridWithTimeSlots(
             )
 
             // 2. TimeSlot Items (Order matters!)
-            timeSlots.forEach { timeSlot ->
+            processedSlots.forEach { (timeSlot, slotInfo) ->
                 TimeSlotItem(
                     timeSlot = timeSlot,
                     // Pass only necessary data, size/position handled by Layout
@@ -1205,7 +1559,7 @@ fun ScheduleGridWithTimeSlots(
         val timeSlotMeasurables = measurables.drop(1)
 
         require(gridMeasurable != null) { "WeekGrid must be the first child of ScheduleGridWithTimeSlots" }
-        require(timeSlotMeasurables.size == timeSlots.size) { "Number of TimeSlotItems does not match number of timeSlots" }
+        require(timeSlotMeasurables.size == processedSlots.size) { "Number of TimeSlotItems does not match number of processed slots" }
 
         val layoutWidth = constraints.maxWidth
         val layoutHeight = with(density) { totalGridHeight.toPx() }.roundToInt()
@@ -1226,36 +1580,70 @@ fun ScheduleGridWithTimeSlots(
         val itemHorizontalPaddingPx = with(density) { itemHorizontalPadding.toPx() }
         val itemVerticalPaddingPx = with(density) { itemVerticalPadding.toPx() }
 
-
         timeSlotMeasurables.forEachIndexed { index, measurable ->
-            val timeSlot = timeSlots[index]
-
-            // --- Calculate Position and Size in Pixels --- 
-            val startInstant = Instant.fromEpochMilliseconds(timeSlot.startTime)
-            val endInstant = Instant.fromEpochMilliseconds(timeSlot.endTime)
-            val startTimeLocal = startInstant.toLocalDateTime(TimeZone.currentSystemDefault())
-            val endTimeLocal = endInstant.toLocalDateTime(TimeZone.currentSystemDefault())
-            val dayOfWeek = startTimeLocal.dayOfWeek.isoDayNumber // 1=Mon, 7=Sun
+            val (timeSlot, slotInfo) = processedSlots[index]
 
             // Y Offset (Top edge of the slot)
-            val startMinutesPastGridStart =
-                (startTimeLocal.hour - gridStartHour) * 60 + startTimeLocal.minute
-            val yOffsetPx = (startMinutesPastGridStart / 60.0 * hourHeightPx).toFloat()
+            val yOffsetPx = (slotInfo.startMinutes / 60.0 * hourHeightPx).toFloat()
 
             // Height (Calculate full slot height first)
-            val durationMillis = max(1 * 1000 * 20 * 60, timeSlot.endTime - timeSlot.startTime)
-            val durationMinutes = durationMillis / (1000.0 * 60.0)
+            val durationMinutes = slotInfo.endMinutes - slotInfo.startMinutes
             val fullSlotHeightPx = (durationMinutes / 60.0 * hourHeightPx).toFloat()
             // Actual measurable height = full height - internal padding
             val itemHeightPx = (fullSlotHeightPx - itemVerticalPaddingPx).coerceAtLeast(1f)
 
-            // X Offset (Left edge of the slot)
-            val xOffsetPx = ((dayOfWeek - 1) * dayWidthPx).toFloat()
-
-            // Width (Calculate full slot width first)
-            val fullSlotWidthPx = dayWidthPx
-            // Actual measurable width = full width - internal padding
-            val itemWidthPx = (fullSlotWidthPx - itemHorizontalPaddingPx).coerceAtLeast(1f)
+            // 计算水平位置和宽度（考虑重叠）
+            val hasOverlap = slotInfo.maxColumns > 1
+            val dayOfWeek = slotInfo.dayOfWeek
+            
+            // 计算x偏移和宽度
+            val baseXOffset = ((dayOfWeek - 1) * dayWidthPx).toFloat()
+            
+            // 计算实际宽度和偏移
+            val (itemWidthPx, xOffsetPx) = if (hasOverlap) {
+                // 重叠事件使用更合理的宽度和间距
+                val gapPx = 1f // 增大列间距，改善视觉效果
+                val marginPx = 1f // 增大边距，避免贴边
+                
+                // 记录调试信息
+                Log.d("WeekSchedule", "重叠项目布局: 列=${slotInfo.column}/${slotInfo.maxColumns}, 事件='${timeSlot.displayTitle}'")
+                
+                // 可用宽度 = 日宽度 - 两侧边距 - 列间隙宽度总和
+                val availableWidth = dayWidthPx - (2 * marginPx) - (gapPx * (slotInfo.maxColumns - 1))
+                
+                // 确保每列宽度合理
+                val columnWidth = (availableWidth / slotInfo.maxColumns).coerceAtLeast(20f) // 确保最小宽度
+                
+                // 计算该事件的水平偏移
+                val columnOffset = marginPx + (columnWidth + gapPx) * slotInfo.column
+                
+                // 最终宽度和偏移
+                val width = (columnWidth - itemHorizontalPaddingPx).coerceAtLeast(15f) // 确保最小宽度
+                val offset = baseXOffset + columnOffset
+                
+                // 确保不超出日宽度
+                val maxRightEdge = dayWidthPx - marginPx
+                val rightEdge = offset + width + itemHorizontalPaddingPx
+                val finalOffset = if (rightEdge > maxRightEdge) {
+                    // 如果超出右边界，适当左移
+                    offset - (rightEdge - maxRightEdge)
+                } else offset
+                
+                Pair(width, finalOffset.coerceAtLeast(baseXOffset + marginPx)) // 确保不会偏移到前一天
+            } else {
+                // 无重叠时使用接近全宽 (但留出更多边距)
+                val margin = 4f // 增大边距，提升美观度
+                val width = (dayWidthPx - (2 * margin) - itemHorizontalPaddingPx).coerceAtLeast(20f)
+                val offset = baseXOffset + margin
+                
+                Pair(width, offset)
+            }
+            
+            // 添加详细日志，帮助调试
+            if (hasOverlap) {
+                Log.d("WeekSchedule", "重叠项目详细 - ID: ${timeSlot.id}, 标题: '${timeSlot.displayTitle}', " +
+                        "列: ${slotInfo.column}/${slotInfo.maxColumns}, 宽度: ${itemWidthPx}px, 偏移: ${xOffsetPx - baseXOffset}px")
+            }
 
             // Validate before measuring
             if (itemHeightPx <= 0 || itemWidthPx <= 0 || yOffsetPx < 0 || xOffsetPx < 0 || yOffsetPx + itemHeightPx > layoutHeight + hourHeightPx /* Allow some overflow? */) {
@@ -1277,7 +1665,6 @@ fun ScheduleGridWithTimeSlots(
                     val placeX = (xOffsetPx + itemHorizontalPaddingPx / 2).roundToInt()
                     val placeY = (yOffsetPx + itemVerticalPaddingPx / 2).roundToInt()
 
-
                     placeablesWithCoords.add(placeable to IntOffset(placeX, placeY))
                 } catch (e: Exception) {
                     Log.e("ScheduleGridWithTimeSlots", "Error measuring TimeSlot ${timeSlot.id}", e)
@@ -1285,7 +1672,7 @@ fun ScheduleGridWithTimeSlots(
             }
         }
 
-        // Set the size of the La yout composable itself
+        // Set the size of the Layout composable itself
         layout(layoutWidth, layoutHeight) {
             // Place the grid background first
             gridPlaceable.placeRelative(0, 0)
@@ -2102,55 +2489,6 @@ fun DayTimeline(
                     }
                 }
             }
-        }
-    }
-}
-
-/**
- * 处理时间槽点击事件，根据类型导航到对应详情页
- */
-private fun handleTimeSlotClick(
-    timeSlot: TimeSlot,
-    navigationState: NavigationState,
-    defaultTableId: Int?
-) {
-    Log.d(
-        "DaySchedule",
-        "点击日程: Type=${timeSlot.scheduleType}, ID=${timeSlot.scheduleId}, 标题='${timeSlot.displayTitle}'"
-    )
-    
-    when (timeSlot.scheduleType) {
-        ScheduleType.COURSE -> {
-            if (defaultTableId != null && defaultTableId != AppConstants.Ids.INVALID_TABLE_ID) {
-                Log.i(
-                    "DaySchedule",
-                    "导航到课程详情: tableId=$defaultTableId, courseId=${timeSlot.scheduleId}"
-                )
-                navigationState.navigateToCourseDetail(
-                    tableId = defaultTableId,
-                    courseId = timeSlot.scheduleId
-                )
-            } else {
-                Log.w(
-                    "DaySchedule",
-                    "无法导航到课程详情，默认课表ID无效或为空"
-                )
-            }
-        }
-        
-        ScheduleType.ORDINARY -> {
-            Log.i(
-                "DaySchedule",
-                "导航到普通日程详情: scheduleId=${timeSlot.scheduleId}"
-            )
-            navigationState.navigateToOrdinaryScheduleDetail(timeSlot.scheduleId)
-        }
-        
-        else -> {
-            Log.w(
-                "DaySchedule",
-                "未实现该日程类型的导航: ${timeSlot.scheduleType}"
-            )
         }
     }
 }
