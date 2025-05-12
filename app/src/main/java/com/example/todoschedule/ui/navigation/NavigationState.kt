@@ -186,7 +186,7 @@ class NavigationState(
         navController.navigate(AppRoutes.SingleTableSettings.createRoute(tableId))
     }
 
-    fun navigateToTimeNodesSettings(tableId: Int, configId: Int) {
-        navController.navigate(AppRoutes.TimeNodesSettings.createRoute(tableId, configId))
+    fun navigateToTimeNodesSettings(configId: Int) {
+        navController.navigate(AppRoutes.TimeNodesSettings.createRoute(configId))
     }
 }

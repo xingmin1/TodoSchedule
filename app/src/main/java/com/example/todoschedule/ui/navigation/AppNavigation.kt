@@ -33,7 +33,7 @@ import com.example.todoschedule.ui.ordinaryschedule.AddEditOrdinaryScheduleScree
 import com.example.todoschedule.ui.ordinaryschedule.OrdinaryScheduleDetailScreen
 import com.example.todoschedule.ui.profile.ProfileScreen
 import com.example.todoschedule.ui.schedule.ScheduleScreen
-import com.example.todoschedule.ui.settings.DefaultDisplaySettingsScreenPlaceholder
+import com.example.todoschedule.ui.settings.DefaultDisplaySettingsScreen
 import com.example.todoschedule.ui.settings.SettingsScreen
 import com.example.todoschedule.ui.settings.SingleTableSettingsScreen
 import com.example.todoschedule.ui.settings.TableManagementScreen
@@ -359,8 +359,8 @@ fun AppNavigation(
                 }
                 
                 composable(AppRoutes.DefaultDisplaySettings.route) {
-                    DefaultDisplaySettingsScreenPlaceholder(
-                        onNavigateBack =  { navigationState.navigateBack()}
+                    DefaultDisplaySettingsScreen(
+                        navigationState = navigationState
                     )
                 }
                 
@@ -380,10 +380,7 @@ fun AppNavigation(
                 // 添加 TimeNodesSettingsScreen 路由
                 composable(
                     route = AppRoutes.TimeNodesSettings.route,
-                    arguments = listOf(
-                        navArgument(TimeNodesSettingsViewModel.ARG_TABLE_ID) { type = NavType.IntType },
-                        navArgument(TimeNodesSettingsViewModel.ARG_CONFIG_ID) { type = NavType.IntType }
-                    )
+                    arguments = listOf(navArgument("configId") { type = NavType.IntType })
                 ) {
                     TimeNodesSettingsScreen(
                         navigationState = navigationState
