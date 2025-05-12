@@ -149,13 +149,15 @@ fun ScheduleScreen(
     val dividerColor = MaterialTheme.colorScheme.outlineVariant // 分割线颜色
 
     // --- 状态收集 --- //
-    // 从 ViewModel 收集各种界面状态
     val uiState by viewModel.uiState.collectAsState() // 整体界面状态 (加载中, 成功, 错误等)
     val currentWeek by viewModel.currentWeek.collectAsState() // 当前显示的周数
     val weekDates by viewModel.weekDates.collectAsState() // 当前周的所有日期 (LocalDate列表)
     val displayableTimeSlots by viewModel.displayableTimeSlots.collectAsState() // 需要在课表上显示的时间槽 (课程/日程) 列表
     val defaultTableId by viewModel.defaultTableIdState.collectAsState() // 当前使用的课表 ID
     val viewMode by viewModel.viewMode.collectAsState() // 监听视图模式
+
+    // --- 新增: 月视图当前年月状态 ---
+    var currentYearMonth by remember { mutableStateOf(YearMonth.now()) }
 
     // --- 新增: BottomSheet 状态 ---
     val sheetState = rememberModalBottomSheetState()
@@ -185,27 +187,30 @@ fun ScheduleScreen(
                 val currentDate = Clock.System.now()
                     .toLocalDateTime(TimeZone.currentSystemDefault())
                     .date
-                val formattedDate = "${currentDate.year}/${
-                    currentDate.monthNumber.toString().padStart(2, '0')
-                }/${currentDate.dayOfMonth.toString().padStart(2, '0')}"
+                // --- 优化：根据视图模式动态显示日期 ---
+                val formattedDate = when (viewMode) {
+                    ScheduleViewMode.MONTH -> "${currentYearMonth.year}/${currentYearMonth.monthValue.toString().padStart(2, '0')}"
+                    else -> "${currentDate.year}/${currentDate.monthNumber.toString().padStart(2, '0')}/${currentDate.dayOfMonth.toString().padStart(2, '0')}"
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = formattedDate,
                         style = MaterialTheme.typography.titleLarge // Adjust style as needed
                         // color = MaterialTheme.colorScheme.onPrimaryContainer // Adjust color if needed
                     )
-                    Text(
-                        text = "第${currentWeek}周 ${currentDate.dayOfWeek.getChineseWeekName()}",
-                        style = MaterialTheme.typography.bodyMedium // Adjust style as needed
-                        // color = MaterialTheme.colorScheme.onPrimaryContainer // Adjust color if needed
-                    )
+                    if (viewMode != ScheduleViewMode.MONTH) {
+                        Text(
+                            text = "第${currentWeek}周 ${currentDate.dayOfWeek.getChineseWeekName()}",
+                            style = MaterialTheme.typography.bodyMedium // Adjust style as needed
+                            // color = MaterialTheme.colorScheme.onPrimaryContainer // Adjust color if needed
+                        )
+                    }
                 }
 
                 // Actions part
                 Row(
                     horizontalArrangement = Arrangement
                         .Absolute.Right,
-//                        .spacedBy(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     // modifier = Modifier.padding(end = 16.dp) // Padding handled by outer Row
                 ) {
@@ -386,12 +391,14 @@ fun ScheduleScreen(
                     }
 
                     ScheduleViewMode.MONTH -> {
-                        // --- 占位：月视图 ---
+                        // --- 优化：传递 currentYearMonth 和回调 ---
                         MonthScheduleContent(
                             navigationState = navigationState,
                             defaultTableId = defaultTableId,
                             viewModel = viewModel,
-                            paddingValues = paddingValues
+                            paddingValues = paddingValues,
+                            currentYearMonth = currentYearMonth,
+                            onYearMonthChange = { currentYearMonth = it }
                         )
                     }
 
@@ -1173,7 +1180,9 @@ fun MonthScheduleContent(
     navigationState: NavigationState,
     defaultTableId: Int?,
     viewModel: ScheduleViewModel = hiltViewModel(),
-    paddingValues: PaddingValues = PaddingValues(0.dp)
+    paddingValues: PaddingValues = PaddingValues(0.dp),
+    currentYearMonth: YearMonth,
+    onYearMonthChange: (YearMonth) -> Unit
 ) {
     // --- 状态管理 ---
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
@@ -1181,9 +1190,15 @@ fun MonthScheduleContent(
     // 新增：日历显示模式（小格/大格）
     var isLargeMode by remember { mutableStateOf(false) }
     // 新增：当前显示的年月，支持左右滑动切换
-    var currentYearMonth by remember { mutableStateOf(YearMonth.of(today.year, today.monthNumber)) }
-    val year = currentYearMonth.year
-    val month = currentYearMonth.monthValue
+    var currentYearMonthState by remember { mutableStateOf(currentYearMonth) }
+    // --- 新增：同步外部 currentYearMonth 状态 ---
+    LaunchedEffect(currentYearMonthState) {
+        if (currentYearMonthState != currentYearMonth) {
+            onYearMonthChange(currentYearMonthState)
+        }
+    }
+    val year = currentYearMonthState.year
+    val month = currentYearMonthState.monthValue
     // 当前月第一天
     val firstDayOfMonth = LocalDate(year, month, 1)
     val daysInMonth = firstDayOfMonth.month.length(isLeapYear(firstDayOfMonth.year))
@@ -1248,7 +1263,7 @@ fun MonthScheduleContent(
             Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .pointerInput(isLargeMode, currentYearMonth) {
+                .pointerInput(isLargeMode, currentYearMonthState) {
                     awaitPointerEventScope {
                         while (true) {
                             val down =
@@ -1268,8 +1283,8 @@ fun MonthScheduleContent(
                                         ) > switchMonthThresholdPx
                                     ) {
                                         // 水平滑动切换月份
-                                        currentYearMonth =
-                                            if (dx < 0) currentYearMonth.plusMonths(1) else currentYearMonth.minusMonths(
+                                        currentYearMonthState =
+                                            if (dx < 0) currentYearMonthState.plusMonths(1) else currentYearMonthState.minusMonths(
                                                 1
                                             )
                                         consumed = true
