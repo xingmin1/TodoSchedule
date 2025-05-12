@@ -35,7 +35,8 @@ import com.example.todoschedule.ui.profile.ProfileScreen
 import com.example.todoschedule.ui.schedule.ScheduleScreen
 import com.example.todoschedule.ui.settings.DefaultDisplaySettingsScreenPlaceholder
 import com.example.todoschedule.ui.settings.SettingsScreen
-import com.example.todoschedule.ui.settings.TableManagementScreenPlaceholder
+import com.example.todoschedule.ui.settings.SingleTableSettingsScreen
+import com.example.todoschedule.ui.settings.TableManagementScreen
 import com.example.todoschedule.ui.study.StudyScreen
 import com.example.todoschedule.ui.table.CreateEditTableScreen
 import com.example.todoschedule.ui.task.TaskScreen
@@ -348,16 +349,29 @@ fun AppNavigation(
                     )
                 }
 
-                // Settings Sub-Screens (Placeholders)
+                // Settings Sub-Screens
                 composable(AppRoutes.TableManagement.route) {
-                    TableManagementScreenPlaceholder(
-                        onNavigateBack = { navigationState.navigateBack() }
+                    TableManagementScreen(
+                        navigationState = navigationState
                     )
                 }
-
+                
                 composable(AppRoutes.DefaultDisplaySettings.route) {
                     DefaultDisplaySettingsScreenPlaceholder(
-                        onNavigateBack = { navigationState.navigateBack() }
+                        onNavigateBack =  { navigationState.navigateBack()}
+                    )
+                }
+                
+                composable(
+                    route = AppRoutes.SingleTableSettings.route,
+                    arguments = listOf(
+                        navArgument(AppRoutes.SingleTableSettings.ARG_TABLE_ID) { 
+                            type = NavType.StringType 
+                        }
+                    )
+                ) {
+                    SingleTableSettingsScreen(
+                        navigationState = navigationState
                     )
                 }
             } // End NavHost
