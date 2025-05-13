@@ -201,7 +201,8 @@ fun OrdinaryScheduleDetailScreen(
                 is OrdinaryScheduleDetailUiState.Success -> {
                     ScheduleDetailsContent(
                         schedule = state.schedule,
-                        statusColor = statusColor
+                        statusColor = statusColor,
+                        onTimeSlotToggleCompleted = viewModel::toggleTimeSlotCompleted
                     )
                 }
 
@@ -308,7 +309,8 @@ private fun ErrorContent(message: String, modifier: Modifier = Modifier) {
 @Composable
 private fun ScheduleDetailsContent(
     schedule: OrdinarySchedule,
-    statusColor: Color
+    statusColor: Color,
+    onTimeSlotToggleCompleted: (Int) -> Unit
 ) {
     val dateTimeFormatter = remember {
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
@@ -382,7 +384,8 @@ private fun ScheduleDetailsContent(
             item {
                 TimeSlotsSectionCard(
                     timeSlots = schedule.timeSlots,
-                    dateTimeFormatter = dateTimeFormatter
+                    dateTimeFormatter = dateTimeFormatter,
+                    onTimeSlotToggleCompleted = onTimeSlotToggleCompleted
                 )
             }
         }
@@ -624,7 +627,8 @@ private fun DetailsCard(schedule: OrdinarySchedule) {
 @Composable
 private fun TimeSlotsSectionCard(
     timeSlots: List<TimeSlot>,
-    dateTimeFormatter: DateTimeFormatter
+    dateTimeFormatter: DateTimeFormatter,
+    onTimeSlotToggleCompleted: (Int) -> Unit
 ) {
     var expanded by remember { mutableStateOf(true) }
 
@@ -676,7 +680,8 @@ private fun TimeSlotsSectionCard(
                     timeSlots.forEachIndexed { index, timeSlot ->
                         TimeSlotItem(
                             timeSlot = timeSlot,
-                            dateTimeFormatter = dateTimeFormatter
+                            dateTimeFormatter = dateTimeFormatter,
+                            onToggleCompleted = { onTimeSlotToggleCompleted(index) }
                         )
 
                         // 分隔线（除了最后一项）
@@ -696,7 +701,8 @@ private fun TimeSlotsSectionCard(
 @Composable
 private fun TimeSlotItem(
     timeSlot: TimeSlot,
-    dateTimeFormatter: DateTimeFormatter
+    dateTimeFormatter: DateTimeFormatter,
+    onToggleCompleted: () -> Unit
 ) {
     val startInstant = Instant.ofEpochMilli(timeSlot.startTime)
     val endInstant = Instant.ofEpochMilli(timeSlot.endTime)
@@ -718,7 +724,8 @@ private fun TimeSlotItem(
             // 完成状态指示
             Box(
                 modifier = Modifier
-                    .size(24.dp),
+                    .size(24.dp)
+                    .clickable { onToggleCompleted() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
