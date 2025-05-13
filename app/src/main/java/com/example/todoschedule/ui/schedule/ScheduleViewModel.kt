@@ -10,6 +10,7 @@ import com.example.todoschedule.domain.model.OrdinarySchedule
 import com.example.todoschedule.domain.model.Table
 import com.example.todoschedule.domain.model.TableTimeConfig
 import com.example.todoschedule.domain.model.TimeSlot
+import com.example.todoschedule.domain.model.findTableForDate
 import com.example.todoschedule.domain.repository.CourseRepository
 import com.example.todoschedule.domain.repository.GlobalSettingRepository
 import com.example.todoschedule.domain.repository.SessionRepository
@@ -447,6 +448,44 @@ constructor(
         return state
     }
 
+    // --- 多课表支持相关状态 ---
+    // 保存所有课表列表
+    private val _allTables = MutableStateFlow<List<Table>>(emptyList())
+    val allTables: StateFlow<List<Table>> = _allTables
+
+    // 当前日期（用于自动切换课表）
+    private val _currentDate = MutableStateFlow(
+        Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    )
+    val currentDate: StateFlow<LocalDate> = _currentDate
+
+    // 当前日期对应的课表
+    private val _currentTable = MutableStateFlow<Table?>(null)
+    val currentTable: StateFlow<Table?> = _currentTable
+
+    /**
+     * 根据日期切换当前课表
+     * @param date 目标日期
+     */
+    fun updateCurrentDate(date: LocalDate) {
+        _currentDate.value = date
+        val table = findTableForDate(date, _allTables.value)
+        _currentTable.value = table
+        // 可在此处根据table加载对应数据
+    }
+
+    /**
+     * 加载所有课表，并根据当前日期切换课表
+     */
+    fun loadAllTables() {
+        viewModelScope.launch {
+            tableRepository.getAllTables().collect { tables ->
+                _allTables.value = tables
+                updateCurrentDate(_currentDate.value)
+            }
+        }
+    }
+
     init {
         Log.d("ScheduleViewModel", "ViewModel initialized")
 
@@ -471,6 +510,15 @@ constructor(
 
         // 检查并确保默认时间配置存在
         ensureDefaultTimeConfigExists()
+
+        // 初始化时加载所有课表
+        loadAllTables()
+        // 监听课表列表变化，自动切换课表
+        viewModelScope.launch {
+            _allTables.collect { tables ->
+                updateCurrentDate(_currentDate.value)
+            }
+        }
     }
 
     // 检查并确保默认时间配置存在的函数
@@ -569,11 +617,11 @@ constructor(
                 Log.d("ScheduleViewModel", "课表起始日期: $currentStartDate")
 
                 val currentWeekNumber = CalendarUtils.getCurrentWeek(currentStartDate)
-                
+
                 // 使用emit而非直接赋值，确保状态同步更新
                 _currentWeek.emit(currentWeekNumber)
                 Log.d("ScheduleViewModel", "当前周次更新为: $currentWeekNumber")
-                
+
             } catch (e: Exception) {
                 Log.e("ScheduleViewModel", "goToCurrentWeek 出错", e)
             }
