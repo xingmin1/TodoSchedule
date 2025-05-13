@@ -567,22 +567,6 @@ constructor(
         }
     }
 
-    /** 上一周 */
-    fun previousWeek() {
-        val newWeek = _currentWeek.value - 1
-        if (newWeek > 0) {
-            updateCurrentWeek(newWeek)
-        }
-    }
-
-    /** 下一周 */
-    fun nextWeek() {
-        val newWeek = _currentWeek.value + 1
-        if (newWeek <= CalendarUtils.MAX_WEEKS) { // 假设 CalendarUtils 有 MAX_WEEKS 常量
-            updateCurrentWeek(newWeek)
-        }
-    }
-
     /** 回到当前周 */
     fun goToCurrentWeek() {
         viewModelScope.launch {
@@ -629,61 +613,6 @@ constructor(
     }
 
     // --- 普通日程操作 ---
-
-    /** 添加普通日程 (旧方法，保持或整合) */
-    fun addOrdinarySchedule(schedule: OrdinarySchedule) {
-        viewModelScope.launch {
-            val userId = currentUserIdState.value?.toInt()
-            if (userId == null) {
-                Log.e("ScheduleViewModel", "Cannot add schedule: User not logged in")
-                return@launch
-            }
-            try {
-                // Ensure userId is set correctly if not passed in
-                addOrdinaryScheduleUseCase(schedule.copy(userId = userId))
-            } catch (e: Exception) {
-                Log.e("ScheduleViewModel", "Error adding ordinary schedule", e)
-            }
-        }
-    }
-
-    /** 更新普通日程 */
-    fun updateOrdinarySchedule(schedule: OrdinarySchedule) {
-        viewModelScope.launch {
-            val userId = currentUserIdState.value?.toInt()
-            if (userId == null || schedule.userId != userId) {
-                Log.e(
-                    "ScheduleViewModel",
-                    "Cannot update schedule: User not logged in or ID mismatch"
-                )
-                return@launch
-            }
-            try {
-                updateOrdinaryScheduleUseCase(schedule)
-            } catch (e: Exception) {
-                Log.e("ScheduleViewModel", "Error updating ordinary schedule", e)
-            }
-        }
-    }
-
-    /** 删除普通日程 */
-    fun deleteOrdinarySchedule(schedule: OrdinarySchedule) {
-        viewModelScope.launch {
-            val userId = currentUserIdState.value?.toInt()
-            if (userId == null || schedule.userId != userId) {
-                Log.e(
-                    "ScheduleViewModel",
-                    "Cannot delete schedule: User not logged in or ID mismatch"
-                )
-                return@launch
-            }
-            try {
-                deleteOrdinaryScheduleUseCase(schedule)
-            } catch (e: Exception) {
-                Log.e("ScheduleViewModel", "Error deleting ordinary schedule", e)
-            }
-        }
-    }
 
     // --- 辅助函数 ---
     /**

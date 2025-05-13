@@ -23,7 +23,7 @@ class TodoScheduleApplication : Application() {
     // 开发模式设置
     companion object {
         // 开发模式开关：是否每次启动都清空数据库（仅在开发阶段设为true）
-        private const val CLEAR_DATABASE_ON_START = false // 默认关闭清空数据库，避免数据丢失
+        private const val CLEAR_DATABASE_ON_START = false  // 默认关闭清空数据库，避免数据丢失
     }
 
     override fun onCreate() {
