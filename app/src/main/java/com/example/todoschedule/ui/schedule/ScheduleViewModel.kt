@@ -28,6 +28,7 @@ import com.example.todoschedule.domain.utils.CalendarUtils
 import com.example.todoschedule.ui.schedule.model.ScheduleUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -36,14 +37,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMap
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.zip
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
@@ -374,170 +373,189 @@ constructor(
         initialValue = (0..6).map { getThisMonday().plus(DatePeriod(days = it)) }
     )
 
+    /**
+     * 辅助函数：为指定课表的所有课程节点生成 TimeSlot 列表 (覆盖所有周)。
+     */
+    private fun generateAllTimeSlotsForCourseNodes(
+        userId: Int,
+        courses: List<Course>,
+        tableTimeConfig: TableTimeConfig,
+        table: Table
+    ): List<TimeSlot> {
+        val timeConfigMap =
+            tableTimeConfig.nodes.associate { it.node to (it.startTime to it.endTime) }
+        if (timeConfigMap.isEmpty()) {
+            Log.w(
+                "ScheduleViewModel",
+                "generateAllTimeSlotsForCourseNodes: TimeConfigMap is empty for table ${table.id}"
+            )
+            return emptyList()
+        }
+
+        val tableStartDate = table.startDate
+        val firstDayOfWeekTableStarts = tableStartDate.dayOfWeek.isoDayNumber
+        val firstMondayOfTable =
+            tableStartDate.minus(DatePeriod(days = firstDayOfWeekTableStarts - 1))
+
+        return courses.flatMap { course ->
+            course.nodes.flatMap { node ->
+                (node.startWeek..node.endWeek).mapNotNull { week ->
+                    // 检查周类型是否匹配
+                    val isValidWeekType = when (node.weekType) {
+                        AppConstants.WeekTypes.ALL -> true
+                        AppConstants.WeekTypes.ODD -> week % 2 != 0 // 单周
+                        AppConstants.WeekTypes.EVEN -> week % 2 == 0 // 双周
+                        else -> false
+                    }
+                    if (!isValidWeekType) {
+                        return@mapNotNull null
+                    }
+
+                    val weekStartLocalDate =
+                        firstMondayOfTable.plus(DatePeriod(days = (week - 1) * 7))
+                    val nodeDate = weekStartLocalDate.plus(DatePeriod(days = node.day - 1))
+
+                    val startNodeNum = node.startNode
+                    val endNodeNum = node.startNode + node.step - 1
+
+                    val nodeStartTimeInfo = timeConfigMap[startNodeNum]
+                    val nodeEndTimeInfo = timeConfigMap[endNodeNum]
+
+                    if (nodeStartTimeInfo != null && nodeEndTimeInfo != null) {
+                        val nodeStartDateTime = nodeDate.atTime(nodeStartTimeInfo.first)
+                        val nodeEndDateTime = nodeDate.atTime(nodeEndTimeInfo.second)
+                        val startMillis =
+                            nodeStartDateTime.toInstant(TimeZone.currentSystemDefault())
+                                .toEpochMilliseconds()
+                        val endMillis =
+                            nodeEndDateTime.toInstant(TimeZone.currentSystemDefault())
+                                .toEpochMilliseconds()
+
+                        TimeSlot(
+                            userId = userId,
+                            startTime = startMillis,
+                            endTime = endMillis,
+                            scheduleType = ScheduleType.COURSE,
+                            scheduleId = course.id,
+                            isRepeated = true, // 课程通常是重复的
+                            displayTitle = course.courseName,
+                            displaySubtitle = node.room,
+                            displayColor = course.color,
+                            head = course.courseName
+                        )
+                    } else {
+                        Log.w(
+                            "ScheduleViewModel",
+                            "generateAllTimeSlotsForCourseNodes: Time config not found for node $startNodeNum or $endNodeNum in table ${table.id}, config ${tableTimeConfig.id}"
+                        )
+                        null
+                    }
+                }
+            }
+        }
+    }
+
     // 所有日程（课程+普通日程），便于任意日期范围筛选
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     val allTimeSlots: StateFlow<List<TimeSlot>> = combine(
-        ordinarySchedules,
-        courseRepository.getCurrentUserAllCourses().zip(
-            currentTablesState,
-            transform = { a, b -> Pair(a, b) }
-        ).zip(currentTablesTimeConfig) { (a, b), c ->
-            Triple(a, b, c)
-        }.map { (courses, tables, configs) ->
-            tables.filterNotNull().map tableMap@{ table ->
-                val courses = courseRepository.getCoursesByTableId(table.id).firstOrNull()
-                val config = tableTimeConfigRepository.getDefaultTimeConfig(table.id).firstOrNull()
-                courses?.flatMap coursesMap@{ course ->
-                    val table = tableRepository.getTableById(course.).firstOrNull()
-                    if (config != null) {
-                        course.nodes.flatMap { node ->
-                            // 生成所有节点对应的TimeSlot（不按周过滤）
-                            val timeConfigMap =
-                                config.nodes.associate { it.node to (it.startTime to it.endTime) }
-                            val tableStartDate = table.startDate
-                            val firstDayOfWeekTableStarts = tableStartDate.dayOfWeek.isoDayNumber
-                            val firstMondayOfTable =
-                                tableStartDate.minus(DatePeriod(days = firstDayOfWeekTableStarts - 1))
-                            (node.startWeek..node.endWeek).mapNotNull { week ->
-                                if (node.weekType == 1 && week % 2 == 0) return@mapNotNull null
-                                if (node.weekType == 2 && week % 2 != 0) return@mapNotNull null
-                                val weekStartLocalDate =
-                                    firstMondayOfTable.plus(DatePeriod(days = (week - 1) * 7))
-                                val nodeDate =
-                                    weekStartLocalDate.plus(DatePeriod(days = node.day - 1))
-                                val startNodeNum = node.startNode
-                                val endNodeNum = node.startNode + node.step - 1
-                                val nodeStartTimeInfo = timeConfigMap[startNodeNum]
-                                val nodeEndTimeInfo = timeConfigMap[endNodeNum]
-                                if (nodeStartTimeInfo != null && nodeEndTimeInfo != null) {
-                                    val nodeStartDateTime = nodeDate.atTime(nodeStartTimeInfo.first)
-                                    val nodeEndDateTime = nodeDate.atTime(nodeEndTimeInfo.second)
-                                    val startMillis =
-                                        nodeStartDateTime.toInstant(TimeZone.currentSystemDefault())
-                                            .toEpochMilliseconds()
-                                    val endMillis =
-                                        nodeEndDateTime.toInstant(TimeZone.currentSystemDefault())
-                                            .toEpochMilliseconds()
-                                    TimeSlot(
-                                        userId = userId,
-                                        startTime = startMillis,
-                                        endTime = endMillis,
-                                        scheduleType = ScheduleType.COURSE,
-                                        scheduleId = course.id,
-                                        isRepeated = true,
-                                        displayTitle = course.courseName,
-                                        displaySubtitle = node.room,
-                                        displayColor = course.color,
-                                        head = course.courseName,
-                                    )
-                                } else null
+        ordinarySchedules, // Flow<List<OrdinarySchedule>>
+        _currentTableState.flatMapLatest { tablesList -> // tablesList is List<Table?>
+            val validTables = tablesList.filterNotNull()
+            if (validTables.isEmpty()) {
+                flowOf(emptyList<TimeSlot>()) // 如果没有有效课表，则发射空列表
+            } else {
+                // 为每个有效课表创建一个 Flow<List<TimeSlot>>
+                val flowsOfTimeSlotsPerTable: List<Flow<List<TimeSlot>>> =
+                    validTables.map { table ->
+                        // 对每个课表，组合其课程、默认时间配置和当前用户ID
+                        combine(
+                            courseRepository.getCoursesByTableId(table.id),
+                            tableTimeConfigRepository.getDefaultTimeConfig(table.id),
+                            currentUserIdState.filterNotNull() // 确保 userId 可用且非空
+                        ) { coursesForTable, configForTable, userId ->
+                            // 当此课表的课程、配置或 userId 变化时，此 lambda 执行
+                            if (configForTable == null) {
+                                // 如果没有时间配置，则无法为此课表的课程生成时间槽
+                                Log.w("ScheduleViewModel", "allTimeSlots: No time config for table ${table.id}")
+                                emptyList<TimeSlot>()
+                            } else {
+                                // 为此课表的课程生成所有周的所有时间槽
+                                generateAllTimeSlotsForCourseNodes(
+                                    userId = userId.toInt(),
+                                    courses = coursesForTable,
+                                    tableTimeConfig = configForTable,
+                                    table = table
+                                )
                             }
                         }
                     }
 
+                // 如果没有生成任何 Flow (理论上如果 validTables 非空，这里也不会为空)
+                if (flowsOfTimeSlotsPerTable.isEmpty()) {
+                    flowOf(emptyList())
+                } else {
+                    // 组合所有课表特定 Flow 的结果
+                    combine(flowsOfTimeSlotsPerTable) { arrayOfListsOfTimeSlots ->
+                        // arrayOfListsOfTimeSlots 是 Array<List<TimeSlot>>
+                        // 将其展平为单个 List<TimeSlot>
+                        arrayOfListsOfTimeSlots.toList().flatten()
+                    }
                 }
-            } else emptyList()
+            }
         }
-//            // 这里假设getAllCourses()返回所有课程
-//            val userId = currentUserIdState.value?.toInt() ?: 0
-//            val course2Table = HashMap.newHashMap<Course, Table>(100)
-//            if (tables != null && configs != null) {
-//                courses.flatMap { course ->
-//                    val table = tableRepository.getTableById(course.).firstOrNull()
-//                    course.nodes.flatMap { node ->
-//                        // 生成所有节点对应的TimeSlot（不按周过滤）
-//                        val timeConfigMap =
-//                            configs.nodes.associate { it.node to (it.startTime to it.endTime) }
-//                        val tableStartDate = tables.startDate
-//                        val firstDayOfWeekTableStarts = tableStartDate.dayOfWeek.isoDayNumber
-//                        val firstMondayOfTable =
-//                            tableStartDate.minus(DatePeriod(days = firstDayOfWeekTableStarts - 1))
-//                        (node.startWeek..node.endWeek).mapNotNull { week ->
-//                            if (node.weekType == 1 && week % 2 == 0) return@mapNotNull null
-//                            if (node.weekType == 2 && week % 2 != 0) return@mapNotNull null
-//                            val weekStartLocalDate =
-//                                firstMondayOfTable.plus(DatePeriod(days = (week - 1) * 7))
-//                            val nodeDate = weekStartLocalDate.plus(DatePeriod(days = node.day - 1))
-//                            val startNodeNum = node.startNode
-//                            val endNodeNum = node.startNode + node.step - 1
-//                            val nodeStartTimeInfo = timeConfigMap[startNodeNum]
-//                            val nodeEndTimeInfo = timeConfigMap[endNodeNum]
-//                            if (nodeStartTimeInfo != null && nodeEndTimeInfo != null) {
-//                                val nodeStartDateTime = nodeDate.atTime(nodeStartTimeInfo.first)
-//                                val nodeEndDateTime = nodeDate.atTime(nodeEndTimeInfo.second)
-//                                val startMillis =
-//                                    nodeStartDateTime.toInstant(TimeZone.currentSystemDefault())
-//                                        .toEpochMilliseconds()
-//                                val endMillis =
-//                                    nodeEndDateTime.toInstant(TimeZone.currentSystemDefault())
-//                                        .toEpochMilliseconds()
-//                                TimeSlot(
-//                                    userId = userId,
-//                                    startTime = startMillis,
-//                                    endTime = endMillis,
-//                                    scheduleType = ScheduleType.COURSE,
-//                                    scheduleId = course.id,
-//                                    isRepeated = true,
-//                                    displayTitle = course.courseName,
-//                                    displaySubtitle = node.room,
-//                                    displayColor = course.color,
-//                                    head = course.courseName,
-//                                )
-//                            } else null
-//                        }
-//                    }
-//                }
-//            } else emptyList()
-}
-) {
-    ordinary, courseSlots ->
-    // 合并普通日程和课程日程
-    val ordinarySlots = ordinary.flatMap { schedule ->
-        schedule.timeSlots.map { slot ->
-            slot.copy(
-                displayTitle = slot.head ?: schedule.title,
-                displaySubtitle = schedule.location,
-                displayColor = schedule.color ?: AppConstants.DEFAULT_COURSE_COLOR
-            )
+    ) { ordinarySchedulesList, courseTimeSlotsList ->
+        // 这是 ordinarySchedules 和所有课程派生的 time slots 的最终组合
+
+        // 1. 将普通日程转换为 TimeSlots
+        val ordinaryTimeSlots = ordinarySchedulesList.flatMap { schedule ->
+            schedule.timeSlots.map { slot ->
+                // 假设 slot 中已包含正确的 userId
+                slot.copy(
+                    displayTitle = slot.head ?: schedule.title,
+                    displaySubtitle = schedule.location,
+                    displayColor = schedule.color ?: AppConstants.DEFAULT_COURSE_COLOR
+                )
+            }
         }
+
+        // 2. 与课程时间槽合并并排序
+        (ordinaryTimeSlots + courseTimeSlotsList).sortedBy { it.startTime }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    // 当前周的所有日程，按天分组
+    val weekTimeSlotsMap: StateFlow<Map<LocalDate, List<TimeSlot>>> = combine(
+        currentWeekDates,
+        allTimeSlots
+    ) { weekDates, allSlots ->
+        weekDates.associateWith { date ->
+            allSlots.filter { slot -> slot.isOnDate(date) }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyMap()
+    )
+
+    // 切换当前周的起始日期（周一）
+    fun updateCurrentWeekStartDate(newStart: LocalDate) {
+        _currentWeekStartDate.value = newStart
     }
-    (ordinarySlots + courseSlots).sortedBy { it.startTime }
-}.stateIn(
-scope = viewModelScope,
-started = SharingStarted.WhileSubscribed(5000),
-initialValue = emptyList()
-)
 
-// 当前周的所有日程，按天分组
-val weekTimeSlotsMap: StateFlow<Map<LocalDate, List<TimeSlot>>> = combine(
-    currentWeekDates,
-    allTimeSlots
-) { weekDates, allSlots ->
-    weekDates.associateWith { date ->
-        allSlots.filter { slot -> slot.isOnDate(date) }
+    // 辅助函数：获取本周一
+    private fun getThisMonday(): LocalDate {
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        return today.minus(DatePeriod(days = today.dayOfWeek.isoDayNumber - 1))
     }
-}.stateIn(
-    scope = viewModelScope,
-    started = SharingStarted.WhileSubscribed(5000),
-    initialValue = emptyMap()
-)
 
-// 切换当前周的起始日期（周一）
-fun updateCurrentWeekStartDate(newStart: LocalDate) {
-    _currentWeekStartDate.value = newStart
-}
-
-// 辅助函数：获取本周一
-private fun getThisMonday(): LocalDate {
-    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-    return today.minus(DatePeriod(days = today.dayOfWeek.isoDayNumber - 1))
-}
-
-// 辅助函数：判断TimeSlot是否在某天
-private fun TimeSlot.isOnDate(date: LocalDate): Boolean {
-    val slotDate = Instant.fromEpochMilliseconds(this.startTime)
-        .toLocalDateTime(TimeZone.currentSystemDefault()).date
-    return slotDate == date
+    // 辅助函数：判断TimeSlot是否在某天
+    private fun TimeSlot.isOnDate(date: LocalDate): Boolean {
+        val slotDate = Instant.fromEpochMilliseconds(this.startTime)
+            .toLocalDateTime(TimeZone.currentSystemDefault()).date
+        return slotDate == date
     }
 
     // --- 多课表支持相关状态 ---
