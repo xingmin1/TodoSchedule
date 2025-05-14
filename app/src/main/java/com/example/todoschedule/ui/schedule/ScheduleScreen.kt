@@ -1,5 +1,7 @@
 package com.example.todoschedule.ui.schedule
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,6 +20,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,103 +29,99 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.ui.navigation.NavigationState
 import com.example.todoschedule.ui.schedule.model.ScheduleUiState
-import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlinx.datetime.toJavaLocalDate
+import java.time.YearMonth
+import java.time.format.TextStyle
+import java.util.Locale
 
 
 /**
  * 课程表屏幕 Composable 函数。
  *
- * 负责展示周视图的课程表界面，包括顶部应用栏（周数切换、设置入口）、
+ * 负责展示课程表界面，包括顶部应用栏、
  * 课程/日程网格、时间轴以及添加/导入按钮。
  * 它根据 ViewModel 提供的状态 (uiState) 显示不同的界面内容（加载中、成功、空、错误、未选择课表）。
  *
  * @param navigationState 用于处理导航事件的对象。
- * @param onNavigateToSettings 当点击设置图标时触发的回调。
  * @param paddingValues 用于处理 Scaffold 的 padding 参数。
  * @param viewModel ScheduleViewModel 的实例，用于获取界面状态和数据。
  */
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
     navigationState: NavigationState,
-    onNavigateToSettings: () -> Unit,
     paddingValues: PaddingValues,
-    viewModel: ScheduleViewModel = hiltViewModel()
+    viewModel: ScheduleViewModel = hiltViewModel(),
+    onNavigateToSettings: () -> Unit
 ) {
     // --- 状态收集 ---
     val uiState by viewModel.uiState.collectAsState()
-    val currentWeek by viewModel.currentWeek.collectAsState()
-//    val weekDates by viewModel.weekDates.collectAsState()
-//    val displayableTimeSlots by viewModel.displayableTimeSlots.collectAsState()
-    val defaultTableId by viewModel.defaultTableIdState.collectAsState()
     val viewMode by viewModel.viewMode.collectAsState()
-    val currentDayDate by viewModel.currentDayDate.collectAsState()
-    val currentTableState by viewModel.currentTablesState.collectAsState()
-//    val startDate = currentTableState?.startDate
-//    val currentDate by viewModel.currentDate.collectAsState()
-    val currentTable by viewModel.currentTable.collectAsState()
-//    val allTables by viewModel.allTables.collectAsState()
-    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
-//    var lastTableId by remember { mutableStateOf<Int?>(null) }
-    var showMoreMenu by remember { mutableStateOf(false) }
-    var showDialog by remember { mutableStateOf(false) }
-    var showBottomSheet by remember { mutableStateOf(false) }
-    var currentYearMonth by remember { mutableStateOf(java.time.YearMonth.now()) }
+    val anchorDate by viewModel.anchorDate.collectAsState()
+    val defaultTableIds by viewModel.defaultTableIdState.collectAsState()
+    val currentActiveTable by viewModel.currentActiveTable.collectAsState()
 
-    // --- 顶部栏 ---
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    var showMoreMenu by remember { mutableStateOf(false) }
+    var showQuickAddDialog by remember { mutableStateOf(false) }
+    var showBottomSheet by remember { mutableStateOf(false) }
+
+    // For MonthView's Pager state, driven by anchorDate
+    var currentDisplayYearMonth by remember { mutableStateOf(YearMonth.from(anchorDate.toJavaLocalDate())) }
+    LaunchedEffect(anchorDate) {
+        currentDisplayYearMonth = YearMonth.from(anchorDate.toJavaLocalDate())
+    }
+
+    // --- 顶部栏 --- //
     Scaffold(
         topBar = {
+            val topBarDateText: String
+            val topBarWeekInfo: String?
+
+            when (viewMode) {
+                ScheduleViewMode.MONTH -> {
+                    topBarDateText = "${currentDisplayYearMonth.year}/${currentDisplayYearMonth.monthValue.toString().padStart(2, '0')}"
+                    topBarWeekInfo = null
+                }
+                ScheduleViewMode.DAY -> {
+                    topBarDateText = "${anchorDate.year}/${anchorDate.monthNumber.toString().padStart(2, '0')}/${anchorDate.dayOfMonth.toString().padStart(2, '0')}"
+                    topBarWeekInfo = anchorDate.dayOfWeek.getChineseWeekName()
+                }
+                ScheduleViewMode.WEEK -> {
+                    val monday = anchorDate.minus((anchorDate.dayOfWeek.isoDayNumber - 1).toLong(), DateTimeUnit.DAY)
+                    val sunday = monday.plus(6, DateTimeUnit.DAY)
+                    topBarDateText = "${monday.monthNumber}/${monday.dayOfMonth} - ${sunday.monthNumber}/${sunday.dayOfMonth}"
+                    // Week info for week view might show the month or be empty
+                    val monthName = monday.month.getDisplayName(TextStyle.FULL, Locale.CHINA)
+                    topBarWeekInfo = if (monday.monthNumber != sunday.monthNumber) {
+                        "${monday.month.getDisplayName(TextStyle.SHORT, Locale.CHINA)} - ${sunday.month.getDisplayName(TextStyle.SHORT, Locale.CHINA)}"
+                    } else {
+                        monthName
+                    }
+                }
+            }
+
             ScheduleTopBar(
                 viewMode = viewMode,
-                formattedDate = when (viewMode) {
-                    ScheduleViewMode.MONTH -> "${currentYearMonth.year}/${
-                        currentYearMonth.monthValue.toString().padStart(2, '0')
-                    }"
-
-                    ScheduleViewMode.DAY -> currentDayDate?.let {
-                        "${it.year}/${
-                            it.monthNumber.toString().padStart(2, '0')
-                        }/${it.dayOfMonth.toString().padStart(2, '0')}"
-                    } ?: "--/--/--"
-
-                    else -> {
-                        val today = kotlinx.datetime.Clock.System.now()
-                            .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date
-                        "${today.year}/${
-                            today.monthNumber.toString().padStart(2, '0')
-                        }/${today.dayOfMonth.toString().padStart(2, '0')}"
-                    }
-                },
-                weekInfoText = when (viewMode) {
-                    ScheduleViewMode.DAY -> currentDayDate?.dayOfWeek?.getChineseWeekName() ?: ""
-                    ScheduleViewMode.WEEK -> "第${currentWeek}周 " + (currentDayDate?.dayOfWeek?.getChineseWeekName()
-                        ?: "")
-
-                    else -> null
-                },
+                formattedDate = topBarDateText,
+                weekInfoText = topBarWeekInfo,
                 onGoToToday = {
-                    when (viewMode) {
-                        ScheduleViewMode.WEEK -> viewModel.goToCurrentWeek()
-                        ScheduleViewMode.MONTH -> {
-                            val today = kotlinx.datetime.Clock.System.now()
-                                .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date
-                            currentYearMonth = java.time.YearMonth.of(today.year, today.monthNumber)
-                        }
-
-                        ScheduleViewMode.DAY -> {
-                            val today = kotlinx.datetime.Clock.System.now()
-                                .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).date
-                            viewModel.updateCurrentDayDate(today)
-                        }
-                    }
+                    viewModel.goToToday() // Universal go to today
                 },
-                onAdd = { showDialog = true },
+                onAdd = { showQuickAddDialog = true },
                 onDownload = {
                     navigationState.navigateSchoolSelectorScreen(
-                        defaultTableId
-                            ?: com.example.todoschedule.core.constants.AppConstants.Ids.INVALID_TABLE_ID
+                        defaultTableIds.firstOrNull() 
+                            ?: AppConstants.Ids.INVALID_TABLE_ID
                     )
                 },
                 onShare = { /* TODO: 分享逻辑 */ },
@@ -134,10 +133,10 @@ fun ScheduleScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showDialog = true },
+                onClick = { showQuickAddDialog = true },
                 modifier = Modifier
-                    .padding(16.dp)
-                    .padding(bottom = paddingValues.calculateBottomPadding()),
+                    .padding(16.dp) 
+                    .padding(bottom = paddingValues.calculateBottomPadding()), 
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
@@ -156,17 +155,15 @@ fun ScheduleScreen(
                     top = innerPadding.calculateTopPadding(),
                     start = innerPadding.calculateStartPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                     end = innerPadding.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
-                    bottom = paddingValues.calculateBottomPadding()
+                    bottom = 0.dp 
                 )
         ) {
-            // 多课表无数据提示
-            if (currentTable == null) {
+            if (currentActiveTable == null && defaultTableIds.isEmpty()) { 
                 NoTableBanner(
                     onCreateTable = { navigationState.navigateToCreateEditTable() },
-                    onImportTable = { navigationState.navigateSchoolSelectorScreen(com.example.todoschedule.core.constants.AppConstants.Ids.INVALID_TABLE_ID) }
+                    onImportTable = { navigationState.navigateSchoolSelectorScreen(AppConstants.Ids.INVALID_TABLE_ID) }
                 )
             }
-            // 内容分发
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -177,57 +174,58 @@ fun ScheduleScreen(
                         when (uiState) {
                             is ScheduleUiState.Loading -> LoadingScreen()
                             is ScheduleUiState.Success -> ScheduleWeekContent(
-                                viewModel = viewModel,
-                                onTimeSlotClick = { /* 处理点击 */ }
+                                viewModel = viewModel, // Passes the whole viewModel
+                                onTimeSlotClick = { /* TODO: Handle TimeSlot click */ }
                             )
-
                             is ScheduleUiState.Error -> ErrorScreen((uiState as ScheduleUiState.Error).message)
                             is ScheduleUiState.Empty -> EmptyScheduleScreen()
                             is ScheduleUiState.NoTableSelected -> NoTableSelectedScreen(
                                 navigationState = navigationState,
                                 onNavigateToImport = {
-                                    navigationState.navigateSchoolSelectorScreen(com.example.todoschedule.core.constants.AppConstants.Ids.INVALID_TABLE_ID)
+                                    navigationState.navigateSchoolSelectorScreen(AppConstants.Ids.INVALID_TABLE_ID)
                                 }
                             )
                         }
                     }
-
                     ScheduleViewMode.MONTH -> {
                         ScheduleMonthContent(
                             navigationState = navigationState,
-                            defaultTableId = defaultTableId,
-                            viewModel = viewModel,
-                            paddingValues = paddingValues,
-                            initialYearMonth = currentYearMonth,
-                            onYearMonthChange = { currentYearMonth = it }
+                            defaultTableId = defaultTableIds.firstOrNull(),
+                            viewModel = viewModel, // Passes the whole viewModel
+                            paddingValues = innerPadding, 
+                            initialYearMonth = currentDisplayYearMonth, // Driven by anchorDate
+                            onYearMonthChange = { yearMonth ->
+                                // When month pager changes, update the anchorDate
+                                val firstDayOfMonth = LocalDate(yearMonth.year, yearMonth.monthValue, 1)
+                                viewModel.setAnchorDate(firstDayOfMonth)
+                            }
                         )
                     }
-
                     ScheduleViewMode.DAY -> {
                         DayScheduleContent(
-                            viewModel = viewModel,
+                            viewModel = viewModel, // Passes the whole viewModel
                             navigationState = navigationState,
-                            defaultTableId = defaultTableId
+                            defaultTableId = defaultTableIds.firstOrNull()
                         )
                     }
                 }
             }
         }
     }
-    // --- 弹窗 ---
-    if (showDialog) {
+
+    if (showQuickAddDialog) {
         QuickAddScheduleDialog(
-            onDismiss = { showDialog = false },
+            onDismiss = { showQuickAddDialog = false },
             viewModel = hiltViewModel<QuickAddScheduleViewModel>()
         )
     }
-    // --- BottomSheet ---
+
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
             sheetState = rememberModalBottomSheetState()
         ) {
-            // 这里调用你的底部弹窗内容组件
+            // TODO: BottomSheet content composable here
         }
     }
 }

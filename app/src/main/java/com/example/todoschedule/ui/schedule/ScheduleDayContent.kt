@@ -74,67 +74,54 @@ private const val GRID_END_HOUR = 24 // 到 24 点结束 (显示 0:00 到 23:00 
 fun DayScheduleContent(
     viewModel: ScheduleViewModel = hiltViewModel(),
     navigationState: NavigationState,
-    defaultTableId: Int?
+    defaultTableId: Int? // This is defaultTableIds.firstOrNull() from ScheduleScreen
 ) {
     // Pager配置
-    val pageCount = 1000
-    val initialPage = pageCount / 2
-    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    val pageCount = 1000 // A large number for pseudo-infinite scrolling
+    val initialPage = pageCount / 2 // Start in the middle
+    val systemToday = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     val pagerState = rememberPagerState(initialPage = initialPage) { pageCount }
     val coroutineScope = rememberCoroutineScope()
 
-    // 当前页对应的日期
-    val currentPage = pagerState.currentPage
-    val currentDate =
-        remember(currentPage) { today.plus(currentPage - initialPage, DateTimeUnit.DAY) }
+    // Current date displayed by the pager
+    val currentDateInPager = remember(pagerState.currentPage) {
+        systemToday.plus(pagerState.currentPage - initialPage, DateTimeUnit.DAY)
+    }
 
-    // 监听currentDayDate变化，自动滚动到对应日期
-    val currentDayDate by viewModel.currentDayDate.collectAsState()
+    // Observe anchorDate from ViewModel
+    val anchorDate by viewModel.anchorDate.collectAsState()
 
-    LaunchedEffect(currentDayDate) {
-        currentDayDate?.let { targetDate ->
-            // 计算目标日期与今天相差的天数
-            val daysDiff = CalendarUtils.calculateDaysBetween(today, targetDate)
-            val targetPage = initialPage + daysDiff
-            // 只有当目标页码和当前页码不一致时才跳转，避免死循环
-            if (targetPage in 0 until pageCount && targetPage != pagerState.currentPage) {
-                pagerState.scrollToPage(targetPage)
-            }
+    // Effect to scroll pager when anchorDate changes externally
+    LaunchedEffect(anchorDate) {
+        // Calculate target page based on the new anchorDate
+        val daysDiff = CalendarUtils.calculateDaysBetween(systemToday, anchorDate)
+        val targetPage = initialPage + daysDiff
+        if (targetPage in 0 until pageCount && targetPage != pagerState.currentPage) {
+            pagerState.scrollToPage(targetPage)
         }
     }
 
-    // 将当前页面的日期反馈给ViewModel
-    LaunchedEffect(currentDate) {
-        // 延迟更新，避免过于频繁的状态更新
-        try {
-            viewModel.updateCurrentDayDate(currentDate)
-        } catch (e: Exception) {
-            Log.e("DayScheduleContent", "Error updating current day date", e)
+    // Effect to update ViewModel's anchorDate when pager scrolls
+    LaunchedEffect(currentDateInPager) {
+        if (currentDateInPager != anchorDate) { // Only update if different to avoid loops
+            viewModel.setAnchorDate(currentDateInPager)
         }
     }
 
-    // 获取当前日期的所有日程（课程+普通日程）
+    // Get all time slots and filter for the current date in pager
     val allTimeSlots by viewModel.allTimeSlots.collectAsState()
-    val slotsForDay = remember(allTimeSlots, currentDate) {
-        allTimeSlots.filter {
-            val slotDate = Instant.fromEpochMilliseconds(it.startTime)
+    val slotsForDay = remember(allTimeSlots, currentDateInPager) {
+        allTimeSlots.filter { slot ->
+            val slotDate = Instant.fromEpochMilliseconds(slot.startTime)
                 .toLocalDateTime(TimeZone.currentSystemDefault()).date
-            slotDate == currentDate
+            slotDate == currentDateInPager
         }.sortedBy { it.startTime }
     }
-    // 全天事件与普通事件分离
-    val allDayEvents = slotsForDay.filter { it.startTime == it.endTime }
-    val timedEvents = slotsForDay.filter { it.startTime != it.endTime }
+    
+    val allDayEvents = slotsForDay.filter { it.isAllDayEvent() } // Assuming an extension function
+    val timedEvents = slotsForDay.filter { !it.isAllDayEvent() }
 
     Column(Modifier.fillMaxSize()) {
-        // 头部区域
-        // DayViewHeader(
-        //     date = currentDate,
-        //     onPrevDay = { coroutineScope.launch { pagerState.animateScrollToPage(currentPage - 1) } },
-        //     onNextDay = { coroutineScope.launch { pagerState.animateScrollToPage(currentPage + 1) } },
-        //     onToday = { coroutineScope.launch { pagerState.animateScrollToPage(initialPage) } },
-        // )
-        // 全天事件区
         if (allDayEvents.isNotEmpty()) {
             AllDayEventRow(
                 events = allDayEvents,
@@ -142,29 +129,37 @@ fun DayScheduleContent(
                 defaultTableId = defaultTableId
             )
         }
-        // Pager内容
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.weight(1f)
-        ) { page ->
-            val date = today.plus(page - initialPage, DateTimeUnit.DAY)
-            val slots = slotsForDay.filter {
-                val slotDate = Instant.fromEpochMilliseconds(it.startTime)
-                    .toLocalDateTime(TimeZone.currentSystemDefault()).date
-                slotDate == date
-            }.sortedBy { it.startTime }
-            val allDay = slots.filter { it.startTime == it.endTime }
-            val timed = slots.filter { it.startTime != it.endTime }
+        ) { // page index is not directly used, currentDateInPager is the source of truth for content
             DayTimeline(
-                date = date,
-                events = timed,
-                allDayEvents = allDay,
+                date = currentDateInPager, // Pass the date this page represents
+                events = timedEvents, // Pass only timed events for this specific date
+                // allDayEvents are handled above the pager
                 navigationState = navigationState,
                 defaultTableId = defaultTableId
             )
         }
     }
 }
+
+// Helper extension for TimeSlot (consider placing in a more general location if used elsewhere)
+fun TimeSlot.isAllDayEvent(): Boolean {
+    // A common definition for an all-day event might be one where startTime equals endTime,
+    // or it spans a full 24-hour period starting at midnight.
+    // For now, let's assume if it was marked with head and no specific different start/end time in a day context,
+    // or if startTime and endTime are identical (which often signals a placeholder for an all-day concept).
+    // This might need refinement based on how OrdinarySchedule allDay is mapped to TimeSlot.
+    if (this.scheduleType == ScheduleType.ORDINARY) {
+        // Heuristic: if start and end are same, or if it's a placeholder from an all-day OrdinarySchedule
+        // This needs a clear definition from how OrdinarySchedule(isAllDay=true) creates its TimeSlots.
+        // A simple check for now:
+        return startTime == endTime // This is often how simple all-day tasks are marked
+    }
+    return false // Courses are typically not all-day in this manner
+}
+
 
 @Composable
 fun AllDayEventRow(
@@ -185,7 +180,6 @@ fun AllDayEventRow(
                 modifier = Modifier
                     .padding(end = 8.dp)
                     .clickable {
-                        // 处理全天事件点击
                         handleTimeSlotClick(event, navigationState, defaultTableId)
                     }
             ) {
@@ -203,23 +197,19 @@ fun AllDayEventRow(
 @Composable
 fun DayTimeline(
     date: LocalDate,
-    events: List<TimeSlot>,
-    allDayEvents: List<TimeSlot>,
+    events: List<TimeSlot>, // Should only contain timed events for this specific date
     navigationState: NavigationState,
     defaultTableId: Int?
 ) {
-    // 时间轴参数
     val hourHeight = HOUR_HEIGHT
     val gridStartHour = GRID_START_HOUR
     val gridEndHour = GRID_END_HOUR
-    val totalHours = gridEndHour - gridStartHour
-    val totalGridHeight = (totalHours * hourHeight.value).dp
+    val totalGridHeight = ((gridEndHour - gridStartHour) * hourHeight.value).dp
     val verticalScrollState = rememberScrollState()
     val isDarkTheme = isSystemInDarkTheme()
 
     Box(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxSize()) {
-            // 时间刻度（与事件区共用verticalScrollState，实现同步滚动）
             Column(
                 Modifier
                     .width(TIME_AXIS_WIDTH)
@@ -241,14 +231,12 @@ fun DayTimeline(
                     }
                 }
             }
-            // 事件区
             Box(
                 Modifier
                     .weight(1f)
                     .verticalScroll(verticalScrollState)
-                    .height(totalGridHeight)
+                    .height(totalGridHeight) // Important for scroll content size
             ) {
-                // 背景分割线
                 for (hour in gridStartHour until gridEndHour) {
                     Divider(
                         Modifier.offset(y = hourHeight * (hour - gridStartHour)),
@@ -257,89 +245,54 @@ fun DayTimeline(
                     )
                 }
 
-                // 事件卡片布局（优化重叠处理）
-                val eventSlots = calculateEventPositions(events, date)
-                eventSlots.forEach { (event, slotInfo) ->
-                    // 计算位置和尺寸
+                val eventSlotsWithPositionInfo = calculateEventPositions(events, date)
+                eventSlotsWithPositionInfo.forEach { (event, slotInfo) ->
                     val top = hourHeight * (slotInfo.startMinutes / 60f)
-                    val height =
-                        hourHeight * ((slotInfo.endMinutes - slotInfo.startMinutes) / 60f).coerceAtLeast(
-                            0.5f
-                        )
-
-                    // 计算宽度和位置
+                    val height = hourHeight * ((slotInfo.endMinutes - slotInfo.startMinutes) / 60f).coerceAtLeast(0.5f)
                     val hasOverlap = slotInfo.maxColumns > 1
                     val density = LocalDensity.current
-
-                    // 为重叠事件计算宽度和偏移
                     val horizontalOffset: Dp
                     val cardWidth: Dp
 
                     if (hasOverlap) {
-                        // 重叠事件组布局参数
-                        val containerWidth = with(LocalDensity.current) {
-                            LocalConfiguration.current.screenWidthDp.dp.toPx() * 0.9f
+                        val containerWidthPx = with(LocalDensity.current) {
+                            // Approximate width of the day column area
+                            (LocalConfiguration.current.screenWidthDp.dp - TIME_AXIS_WIDTH).toPx() * 0.95f // factor for safety
                         }
-                        val marginPx = with(density) { 8.dp.toPx() }  // 两侧边距
-                        val gapPx = with(density) { 4.dp.toPx() }     // 卡片间隔
-
-                        // 计算单个卡片宽度（像素）
+                        val marginPx = with(density) { 4.dp.toPx() }  // Reduced margin for day view
+                        val gapPx = with(density) { 2.dp.toPx() }     // Reduced gap
                         val totalGapWidth = gapPx * (slotInfo.maxColumns - 1)
-                        val availableWidth = containerWidth - 2 * marginPx - totalGapWidth
-                        val cardWidthPx = availableWidth / slotInfo.maxColumns
-
-                        // 计算水平偏移（像素）
+                        val availableWidth = containerWidthPx - 2 * marginPx - totalGapWidth
+                        val cardWidthPx = if (slotInfo.maxColumns > 0) availableWidth / slotInfo.maxColumns else availableWidth
                         val offsetPx = marginPx + (cardWidthPx + gapPx) * slotInfo.column
-
-                        // 转换回Dp单位
                         horizontalOffset = with(density) { offsetPx.toDp() }
                         cardWidth = with(density) { cardWidthPx.toDp() }
-
-                        Log.d(
-                            "DaySchedule",
-                            "重叠卡片 ${event.displayTitle} - 列:${slotInfo.column}/${slotInfo.maxColumns}, " +
-                                    "宽度:${cardWidthPx}px, 偏移:${offsetPx}px"
-                        )
                     } else {
-                        // 非重叠事件使用接近全宽但留出边距
-                        horizontalOffset = 8.dp
+                        horizontalOffset = 4.dp // Reduced margin for non-overlapping
                         cardWidth = with(density) {
-                            val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-                            screenWidth - 16.dp  // 两侧各留8dp边距
+                            (LocalConfiguration.current.screenWidthDp.dp - TIME_AXIS_WIDTH - 8.dp) // Adjusted for margins
                         }
                     }
 
-                    // 计算颜色
                     val (backgroundColor, contentColor) = ColorUtils.calculateTimeSlotColors(
                         event.displayColor,
                         event.scheduleId,
                         isDarkTheme,
                         MaterialTheme.colorScheme
                     )
-
-                    // 时间格式化
-                    val startTime = Instant.fromEpochMilliseconds(event.startTime)
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                    val endTime = Instant.fromEpochMilliseconds(event.endTime)
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                    val timeString =
-                        "${startTime.format(timeFormatter)} - ${endTime.format(timeFormatter)}"
+                    val startTime = Instant.fromEpochMilliseconds(event.startTime).toLocalDateTime(TimeZone.currentSystemDefault())
+                    val endTime = Instant.fromEpochMilliseconds(event.endTime).toLocalDateTime(TimeZone.currentSystemDefault())
+                    val timeString = "${startTime.format(timeFormatter)} - ${endTime.format(timeFormatter)}"
 
                     Card(
                         modifier = Modifier
                             .width(cardWidth)
                             .offset(x = horizontalOffset, y = top)
                             .height(height)
-                            .padding(horizontal = 1.dp, vertical = 1.dp) // 减少内边距
-                            .clickable {
-                                // 处理事件卡片点击，导航到对应详情页
-                                handleTimeSlotClick(event, navigationState, defaultTableId)
-                            },
-                        shape = RoundedCornerShape(6.dp), // 减小圆角
-                        colors = CardDefaults.cardColors(
-                            containerColor = backgroundColor,
-                            contentColor = contentColor
-                        ),
+                            .padding(horizontal = 1.dp, vertical = 1.dp)
+                            .clickable { handleTimeSlotClick(event, navigationState, defaultTableId) },
+                        shape = RoundedCornerShape(6.dp),
+                        colors = CardDefaults.cardColors(containerColor = backgroundColor, contentColor = contentColor),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(
@@ -347,17 +300,12 @@ fun DayTimeline(
                                 .fillMaxSize()
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
-                            // 标题
                             Text(
                                 event.displayTitle ?: "无标题",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-
-                            // 时间
                             if (height > 50.dp) {
                                 Text(
                                     timeString,
@@ -367,8 +315,6 @@ fun DayTimeline(
                                     color = contentColor.copy(alpha = 0.7f)
                                 )
                             }
-
-                            // 地点/详情
                             if (!event.displaySubtitle.isNullOrBlank() && height > 70.dp) {
                                 Text(
                                     event.displaySubtitle!!,
@@ -383,33 +329,18 @@ fun DayTimeline(
                     }
                 }
 
-                // 当前时间指示器（红线，最后渲染，确保在最上层）
                 val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
                 if (now.date == date) {
                     val nowMinutes = (now.hour - gridStartHour) * 60 + now.minute
                     val nowOffset = hourHeight * (nowMinutes / 60f)
-
-                    // 时间线指示器
                     Row(
                         Modifier
                             .offset(y = nowOffset - 1.dp)
                             .fillMaxWidth()
                             .height(2.dp)
                     ) {
-                        // 左侧圆点
-                        Box(
-                            Modifier
-                                .size(8.dp)
-                                .offset(x = (-3).dp)
-                                .background(MaterialTheme.colorScheme.error, CircleShape)
-                        )
-                        // 线条
-                        Box(
-                            Modifier
-                                .weight(1f)
-                                .height(2.dp)
-                                .background(MaterialTheme.colorScheme.error)
-                        )
+                        Box(Modifier.size(8.dp).offset(x = (-3).dp).background(MaterialTheme.colorScheme.error, CircleShape))
+                        Box(Modifier.weight(1f).height(2.dp).background(MaterialTheme.colorScheme.error))
                     }
                 }
             }
@@ -417,51 +348,27 @@ fun DayTimeline(
     }
 }
 
-/**
- * 处理时间槽点击事件，根据类型导航到对应详情页
- */
 private fun handleTimeSlotClick(
     timeSlot: TimeSlot,
     navigationState: NavigationState,
     defaultTableId: Int?
 ) {
-    Log.d(
-        "DaySchedule",
-        "点击日程: Type=${timeSlot.scheduleType}, ID=${timeSlot.scheduleId}, 标题='${timeSlot.displayTitle}'"
-    )
-
+    Log.d("DaySchedule", "Clicked on: Type=${timeSlot.scheduleType}, ID=${timeSlot.scheduleId}, Title='${timeSlot.displayTitle}'")
     when (timeSlot.scheduleType) {
         ScheduleType.COURSE -> {
-            if (defaultTableId != null && defaultTableId != AppConstants.Ids.INVALID_TABLE_ID) {
-                Log.i(
-                    "DaySchedule",
-                    "导航到课程详情: tableId=$defaultTableId, courseId=${timeSlot.scheduleId}"
-                )
-                navigationState.navigateToCourseDetail(
-                    tableId = defaultTableId,
-                    courseId = timeSlot.scheduleId
-                )
+            // Use the first default table ID if multiple are present, or if a specific active table ID is available
+            val tableIdToUse = defaultTableId ?: AppConstants.Ids.INVALID_TABLE_ID
+            if (tableIdToUse != AppConstants.Ids.INVALID_TABLE_ID) {
+                navigationState.navigateToCourseDetail(tableId = tableIdToUse, courseId = timeSlot.scheduleId)
             } else {
-                Log.w(
-                    "DaySchedule",
-                    "无法导航到课程详情，默认课表ID无效或为空"
-                )
+                Log.w("DaySchedule", "Cannot navigate to course detail, table ID is invalid.")
             }
         }
-
         ScheduleType.ORDINARY -> {
-            Log.i(
-                "DaySchedule",
-                "导航到普通日程详情: scheduleId=${timeSlot.scheduleId}"
-            )
             navigationState.navigateToOrdinaryScheduleDetail(timeSlot.scheduleId)
         }
-
         else -> {
-            Log.w(
-                "DaySchedule",
-                "未实现该日程类型的导航: ${timeSlot.scheduleType}"
-            )
+            Log.w("DaySchedule", "Navigation not implemented for schedule type: ${timeSlot.scheduleType}")
         }
     }
 }

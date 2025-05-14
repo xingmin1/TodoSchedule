@@ -1,7 +1,9 @@
 package com.example.todoschedule.ui.schedule
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,7 +60,7 @@ import com.example.todoschedule.ui.theme.ColorSchemeEnum
 import com.example.todoschedule.ui.utils.ColorUtils
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -80,6 +83,7 @@ private const val GRID_END_HOUR = 24
  * 周视图主内容 Composable
  * 以日期为主，渲染连续7天的日历周视图
  */
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -87,32 +91,43 @@ fun ScheduleWeekContent(
     viewModel: ScheduleViewModel,
     onTimeSlotClick: (TimeSlot) -> Unit
 ) {
-    // 收集当前周的7天日期和日程分组
-    val weekDates by viewModel.currentWeekDates.collectAsState()
-    val weekTimeSlotsMap by viewModel.weekTimeSlotsMap.collectAsState()
+    val anchorDate by viewModel.anchorDate.collectAsState()
+    val allTimeSlots by viewModel.allTimeSlots.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp.dp
     val dayColumnWidth = (screenWidthDp - TIME_AXIS_WIDTH) / 7
 
+    // Calculate the 7 days of the week based on the anchorDate
+    val mondayOfAnchorWeek = anchorDate.minus((anchorDate.dayOfWeek.isoDayNumber - 1).toLong(),  DateTimeUnit.DAY)
+    val weekDates = remember(mondayOfAnchorWeek) { // Recalculate if the Monday changes
+        List(7) { i -> mondayOfAnchorWeek.plus(i.toLong(), DateTimeUnit.DAY) }
+    }
+
+    // Filter allTimeSlots for the current weekDates and group by date
+    val weekTimeSlotsMap = remember(allTimeSlots, weekDates) {
+        weekDates.associateWith { dateInWeek ->
+            allTimeSlots.filter { slot ->
+                val slotDate = Instant.fromEpochMilliseconds(slot.startTime)
+                    .toLocalDateTime(TimeZone.currentSystemDefault()).date
+                slotDate == dateInWeek
+            }
+        }
+    }
+
     // 支持左右滑动切换周
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(weekDates) {
-                detectDragGestures { _, dragAmount ->
+            .pointerInput(anchorDate) { // Re-key when anchorDate changes
+                detectDragGestures {
+                    change, dragAmount ->
+                    change.consume()
                     if (abs(dragAmount.x) > 80 && abs(dragAmount.x) > abs(dragAmount.y)) {
-                        // 向左滑，下一周
-                        if (dragAmount.x < 0) {
-                            val nextMonday = weekDates.first().plus(DatePeriod(days = 7))
-                            coroutineScope.launch { viewModel.updateCurrentWeekStartDate(nextMonday) }
-                        }
-                        // 向右滑，上周
-                        if (dragAmount.x > 0) {
-                            val prevMonday = weekDates.first().minus(DatePeriod(days = 7))
-                            coroutineScope.launch { viewModel.updateCurrentWeekStartDate(prevMonday) }
-                        }
+                        val daysToShift = if (dragAmount.x < 0) 7 else -7
+                        val newAnchorDate = anchorDate.plus(daysToShift.toLong(), DateTimeUnit.DAY)
+                        coroutineScope.launch { viewModel.setAnchorDate(newAnchorDate) }
                     }
                 }
             }
@@ -125,7 +140,7 @@ fun ScheduleWeekContent(
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
             ) {
-                Spacer(Modifier.width(TIME_AXIS_WIDTH))
+                Spacer(Modifier.width(TIME_AXIS_WIDTH)) // Placeholder for time axis alignment
                 weekDates.forEach { date ->
                     val isToday = date == today
                     Column(
@@ -161,7 +176,7 @@ fun ScheduleWeekContent(
             Box(
                 Modifier
                     .weight(1f)
-                    .verticalScroll(scrollState)
+                    .verticalScroll(scrollState) // Entire content area below header is scrollable
             ) {
                 Row(Modifier.fillMaxSize()) {
                     // 左侧时间轴
@@ -186,15 +201,15 @@ fun ScheduleWeekContent(
                     }
                     // 右侧7天日程区
                     weekDates.forEach { date ->
-                        val slots = weekTimeSlotsMap[date] ?: emptyList()
+                        val slotsForThisDay = weekTimeSlotsMap[date] ?: emptyList()
                         Box(
                             Modifier
-                                .weight(1f)
+                                .width(dayColumnWidth) // Use calculated dayColumnWidth
                                 .fillMaxHeight()
                         ) {
                             DayColumnSchedule(
                                 date = date,
-                                slots = slots,
+                                slots = slotsForThisDay,
                                 onTimeSlotClick = onTimeSlotClick,
                                 columnWidth = dayColumnWidth
                             )
@@ -211,17 +226,18 @@ fun ScheduleWeekContent(
  */
 @Composable
 fun DayColumnSchedule(
-    date: LocalDate,
+    date: LocalDate, // Date for this column
     slots: List<TimeSlot>,
     onTimeSlotClick: (TimeSlot) -> Unit,
     columnWidth: Dp
 ) {
-    // 复用日视图的重叠处理算法
-    val eventSlots = calculateEventPositions(slots, date)
+    // 复用日视图的重叠处理算法 (from ScheduleOverlapUtils.kt)
+    val eventSlotsWithPositionInfo = calculateEventPositions(slots, date)
     val hourHeight = HOUR_HEIGHT
-    val minDurationMinutes = 20
-    Box(Modifier.fillMaxSize()) {
-        // 背景分割线
+    val minDurationMinutes = 20 // Minimum duration for display to ensure visibility
+
+    Box(Modifier.fillMaxSize()) { // This Box represents a single day column
+        // 背景分割线 (hourly grid lines)
         for (hour in GRID_START_HOUR until GRID_END_HOUR) {
             Box(
                 Modifier
@@ -231,19 +247,25 @@ fun DayColumnSchedule(
                     .background(MaterialTheme.colorScheme.outlineVariant)
             )
         }
+
         // 日程卡片
-        eventSlots.forEach { (event, slotInfo) ->
-            val top = hourHeight * (slotInfo.startMinutes / 60f)
-            val height = hourHeight * ((slotInfo.endMinutes - slotInfo.startMinutes).coerceAtLeast(
-                minDurationMinutes
-            ) / 60f)
+        eventSlotsWithPositionInfo.forEach { (event, slotInfo) ->
+            val topOffset = hourHeight * (slotInfo.startMinutes / 60f)
+            // Ensure minimum height for very short or zero-duration events
+            val eventDurationMinutes = (slotInfo.endMinutes - slotInfo.startMinutes).coerceAtLeast(minDurationMinutes)
+            val cardHeight = hourHeight * (eventDurationMinutes / 60f)
+
+            // Overlap handling: calculate width and horizontal offset within the day column
             val hasOverlap = slotInfo.maxColumns > 1
-            val margin = 4.dp
-            val gap = 4.dp
-            val availableWidth = columnWidth - 2 * margin - (slotInfo.maxColumns - 1) * gap
-            val cardWidth = availableWidth / slotInfo.maxColumns
-            val horizontalOffset = margin + (cardWidth + gap) * slotInfo.column
-            // 颜色
+            val margin = 1.dp // Reduced margin for tighter packing in week view columns
+            val gap = 1.dp    // Reduced gap
+
+            val availableWidthForCards = columnWidth - (2 * margin) - ((slotInfo.maxColumns - 1) * gap)
+            val individualCardWidth = if (slotInfo.maxColumns > 0) availableWidthForCards / slotInfo.maxColumns else availableWidthForCards
+
+            val horizontalCardOffset = margin + (individualCardWidth + gap) * slotInfo.column
+
+            // Colors
             val isDarkTheme = isSystemInDarkTheme()
             val (backgroundColor, contentColor) = ColorUtils.calculateTimeSlotColors(
                 event.displayColor,
@@ -251,56 +273,58 @@ fun DayColumnSchedule(
                 isDarkTheme,
                 MaterialTheme.colorScheme
             )
-            // 时间格式化
+
+            // Time formatting
             val startTime = Instant.fromEpochMilliseconds(event.startTime)
                 .toLocalDateTime(TimeZone.currentSystemDefault())
             val endTime = Instant.fromEpochMilliseconds(event.endTime)
                 .toLocalDateTime(TimeZone.currentSystemDefault())
-            val timeString = "${startTime.hour}:${
-                startTime.minute.toString().padStart(2, '0')
-            } - ${endTime.hour}:${endTime.minute.toString().padStart(2, '0')}"
+            val timeString = "${startTime.hour}:${startTime.minute.toString().padStart(2, '0')}" +
+                    " - ${endTime.hour}:${endTime.minute.toString().padStart(2, '0')}"
+
             Card(
                 modifier = Modifier
-                    .width(cardWidth)
-                    .offset(x = horizontalOffset, y = top)
-                    .height(height)
-                    .padding(horizontal = 1.dp, vertical = 1.dp)
+                    .width(individualCardWidth)
+                    .offset(x = horizontalCardOffset, y = topOffset)
+                    .height(cardHeight)
+                    .padding(horizontal = 0.5.dp, vertical = 0.5.dp) // Minimal padding around card
                     .clickable { onTimeSlotClick(event) },
-                shape = CardDefaults.shape,
+                shape = RoundedCornerShape(2.dp), // Sharper corners for dense view
                 colors = CardDefaults.cardColors(
                     containerColor = backgroundColor,
                     contentColor = contentColor
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(
                     Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = 4.dp, vertical = 2.dp) // Inner padding for content
                 ) {
                     Text(
                         event.displayTitle ?: "无标题",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 10.sp // Smaller font for week view items
                     )
-                    if (height > 50.dp) {
+                    if (cardHeight > 40.dp) { // Show time only if enough space
                         Text(
                             timeString,
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
-                            fontSize = 10.sp,
+                            fontSize = 8.sp, // Even smaller font for time
                             color = contentColor.copy(alpha = 0.7f)
                         )
                     }
-                    if (!event.displaySubtitle.isNullOrBlank() && height > 70.dp) {
+                    if (!event.displaySubtitle.isNullOrBlank() && cardHeight > 55.dp) { // Show subtitle if space
                         Text(
                             event.displaySubtitle!!,
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            fontSize = 10.sp,
-                            modifier = Modifier.padding(top = 2.dp)
+                            fontSize = 8.sp,
+                            modifier = Modifier.padding(top = 1.dp)
                         )
                     }
                 }

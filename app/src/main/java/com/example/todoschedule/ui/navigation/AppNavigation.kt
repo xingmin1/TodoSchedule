@@ -1,6 +1,8 @@
 package com.example.todoschedule.ui.navigation
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -38,7 +40,6 @@ import com.example.todoschedule.ui.settings.SettingsScreen
 import com.example.todoschedule.ui.settings.SingleTableSettingsScreen
 import com.example.todoschedule.ui.settings.TableManagementScreen
 import com.example.todoschedule.ui.settings.TimeNodesSettingsScreen
-import com.example.todoschedule.ui.settings.TimeNodesSettingsViewModel
 import com.example.todoschedule.ui.study.StudyScreen
 import com.example.todoschedule.ui.table.CreateEditTableScreen
 import com.example.todoschedule.ui.task.TaskScreen
@@ -53,6 +54,7 @@ import javax.inject.Inject
 /**
  * 应用导航主组件
  */
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
@@ -145,9 +147,9 @@ fun AppNavigation(
                 composable(AppRoutes.Schedule.route) {
                     ScheduleScreen(
                         navigationState = navigationState,
-                        onNavigateToSettings = { navigationState.navigateToSettings() },
-                        paddingValues = innerPadding // 这里传递了 innerPadding，确保课表页面有足够的底部空间
-                    )
+                        paddingValues = innerPadding
+                    ) { navigationState.navigateToSettings() } // 这里传递了 innerPadding，确保课表页面有足够的底部空间
+
                 }
 
                 // --- 添加新屏幕的 Composable --- //
