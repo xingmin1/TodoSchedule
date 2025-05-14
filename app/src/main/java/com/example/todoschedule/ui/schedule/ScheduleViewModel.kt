@@ -1,11 +1,14 @@
 package com.example.todoschedule.ui.schedule
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.domain.model.Course
+import com.example.todoschedule.domain.model.CourseNode
 import com.example.todoschedule.domain.model.OrdinarySchedule
 import com.example.todoschedule.domain.model.Table
 import com.example.todoschedule.domain.model.TableTimeConfig
@@ -32,16 +35,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMap
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.zip
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
@@ -78,56 +84,54 @@ constructor(
     private val currentUserIdState: StateFlow<Long?> = sessionRepository.currentUserIdFlow
 
     // 当前默认课表ID状态
-    private val _defaultTableIdState: StateFlow<Int> = currentUserIdState.flatMapLatest { userId ->
-        if (userId != null && userId != -1L) {
-            globalSettingRepository.getDefaultTableIds(userId.toInt())
-                .map { it.firstOrNull() ?: AppConstants.Ids.INVALID_TABLE_ID }
-        } else {
-            flowOf(AppConstants.Ids.INVALID_TABLE_ID)
-        }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = AppConstants.Ids.INVALID_TABLE_ID
-    )
-
-    val defaultTableIdState: StateFlow<Int> = _defaultTableIdState
-
-    // 当前课表状态
-    private val _currentTableState: StateFlow<Table?> =
-        _defaultTableIdState.flatMapLatest { tableId ->
-            if (tableId != AppConstants.Ids.INVALID_TABLE_ID) {
-                tableRepository.getTableById(tableId)
+    private val _defaultTableIdState: StateFlow<List<Int>> =
+        currentUserIdState.flatMapLatest { userId ->
+            if (userId != null && userId != -1L) {
+                globalSettingRepository.getDefaultTableIds(userId.toInt())
+                    .map { it }
             } else {
-                flowOf(null)
+                flowOf(emptyList())
             }
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
+            initialValue = emptyList()
+        )
+
+    val defaultTableIdState: StateFlow<List<Int>> = _defaultTableIdState
+
+    // 当前课表状态
+    private val _currentTableState: StateFlow<List<Table?>> =
+        _defaultTableIdState.flatMapLatest { tableIds ->
+            flowOf(tableIds.map { tableId ->
+                tableRepository.getTableById(tableId).firstOrNull()
+            })
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
         )
 
     // 将课表状态公开以供UI使用
-    val currentTableState: StateFlow<Table?> = _currentTableState
+    val currentTablesState: StateFlow<List<Table?>> = _currentTableState
 
     // 当前周的日期列表 - 改为响应式 Flow
-    val weekDates: StateFlow<List<LocalDate>> = combine(
-        _currentWeek,
-        _currentTableState.map { it?.startDate } // 只关心 startDate
-    ) { week, startDate ->
-        Log.d("ScheduleViewModel", "Calculating week dates for week $week, startDate $startDate")
-        CalendarUtils.getWeekDates(week, startDate) // 直接调用工具类计算
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList() // 初始值为空列表
-    )
+//    val weekDates: StateFlow<List<LocalDate>> = combine(
+//        _currentWeek,
+//        _currentTableState.map { it.startDate } // 只关心 startDate
+//    ) { week, startDate ->
+//        Log.d("ScheduleViewModel", "Calculating week dates for week $week, startDate $startDate")
+//        CalendarUtils.getWeekDates(week, startDate) // 直接调用工具类计算
+//    }.stateIn(
+//        scope = viewModelScope,
+//        started = SharingStarted.WhileSubscribed(5000),
+//        initialValue = emptyList() // 初始值为空列表
+//    )
 
     // 获取当前课表的时间配置
-    private val currentTableTimeConfig: StateFlow<TableTimeConfig?> =
-        _defaultTableIdState.flatMapLatest { tableId ->
-            if (tableId != AppConstants.Ids.INVALID_TABLE_ID) {
-                Log.d("ScheduleViewModel", "Fetching time config for tableId: $tableId")
+    private val currentTablesTimeConfig: StateFlow<List<TableTimeConfig?>> =
+        _defaultTableIdState.flatMapLatest { tableIds ->
+            flowOf(tableIds.map { tableId ->
                 getDefaultTableTimeConfigUseCase(tableId)
                     .map { config ->
                         Log.d(
@@ -136,17 +140,29 @@ constructor(
                         )
                         config
                     }
-            } else {
-                Log.d(
-                    "ScheduleViewModel",
-                    "Invalid tableId ($tableId), setting time config to null"
-                )
-                flowOf(null)
-            }
+                    .firstOrNull()
+            })
+//            if (tableId != AppConstants.Ids.INVALID_TABLE_ID) {
+//                Log.d("ScheduleViewModel", "Fetching time config for tableId: $tableId")
+//                getDefaultTableTimeConfigUseCase(tableId)
+//                    .map { config ->
+//                        Log.d(
+//                            "ScheduleViewModel",
+//                            "Received time config for table $tableId: ${config != null}"
+//                        )
+//                        config
+//                    }
+//            } else {
+//                Log.d(
+//                    "ScheduleViewModel",
+//                    "Invalid tableId ($tableId), setting time config to null"
+//                )
+//                flowOf(null)
+//            }
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
+            initialValue = emptyList()
         )
 
     // 获取当前登录用户的普通日程
@@ -167,17 +183,19 @@ constructor(
     private val userTableDataFlow = combine(
         currentUserIdState.filterNotNull(),
         _currentTableState.filterNotNull(),
-        currentTableTimeConfig.filterNotNull()
-    ) { userId, table, config ->
+        currentTablesTimeConfig.filterNotNull()
+    ) { userId, tables, config ->
         // 可选：添加校验，确保 table.userId 与当前 userId 一致
-        if (table.userId == userId.toInt()) {
-            Triple(userId, table, config)
-        } else {
-            Log.e(
-                "ScheduleViewModel",
-                "User ID mismatch between session (${userId}) and table (${table.userId})"
-            )
-            null // 如果不一致，则发 null
+        tables.map { table ->
+            if (table?.userId == userId.toInt()) {
+                Triple(userId, table, config)
+            } else {
+                Log.e(
+                    "ScheduleViewModel",
+                    "User ID mismatch between session (${userId}) and table (${table.userId})"
+                )
+                null // 如果不一致，则发 null
+            }
         }
     }.filterNotNull() // 过滤掉不一致的情况
 
@@ -186,7 +204,7 @@ constructor(
         currentUserIdState,
         _defaultTableIdState,
         _currentTableState,
-        currentTableTimeConfig
+        currentTablesTimeConfig
     ) { userId, tableId, table, tableTimeConfig ->
         Log.d(
             "ScheduleViewModel",
@@ -204,7 +222,8 @@ constructor(
                 ScheduleUiState.NoTableSelected // 未登录视为无课表状态
             }
             // 3. 已登录，但没有有效的默认课表 ID (tableId 加载完成但值为 -1)
-            tableId == AppConstants.Ids.INVALID_TABLE_ID -> {
+//            tableId == AppConstants.Ids.INVALID_TABLE_ID -> {
+            tableId.isEmpty() -> {
                 Log.w(
                     "ScheduleViewModel",
                     "UI State: No default table selected (tableId is invalid)."
@@ -212,7 +231,7 @@ constructor(
                 ScheduleUiState.NoTableSelected
             }
             // 4. 有有效 tableId，但课表或时间配置的详细信息仍在加载
-            table == null || tableTimeConfig == null -> {
+            false -> {
                 Log.d(
                     "ScheduleViewModel",
                     "UI State: Loading table/config details for tableId $tableId"
@@ -340,56 +359,48 @@ constructor(
     private val _currentDayDate = MutableStateFlow<LocalDate?>(null)
     val currentDayDate = _currentDayDate.asStateFlow()
 
-    // --- 新增：获取整个月的 TimeSlot ---
-    private val monthSlotsCache = mutableMapOf<Pair<Int, Int>, MutableStateFlow<List<TimeSlot>>>()
-    fun getDisplayableTimeSlotsForMonth(year: Int, month: Int): StateFlow<List<TimeSlot>> {
-        val key = year to month
-        val state = monthSlotsCache.getOrPut(key) { MutableStateFlow(emptyList()) }
-        val tableId = defaultTableIdState.value
-        if (tableId > 0) {
-            viewModelScope.launch {
-                val monthStart = LocalDate(year, month, 1).atTime(0, 0)
-                    .toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
-                val nextMonth =
-                    if (month == 12) LocalDate(year + 1, 1, 1) else LocalDate(year, month + 1, 1)
-                val monthEnd = nextMonth.atTime(0, 0).toInstant(TimeZone.currentSystemDefault())
-                    .toEpochMilliseconds()
-                // 获取所有课程（Flow<List<Course>> -> List<Course>）
-                val allCourses = courseRepository.getCoursesByTableId(tableId).first()
-                val table = currentTableState.value
-                val config = currentTableTimeConfig.value
-                val userId = currentUserIdState.value?.toInt() ?: 0
-                val courseSlots = if (table != null && config != null) {
-                    allCourses.flatMap { course ->
-                        course.nodes.filter { node ->
-                            // 只要节点在本月有一天在范围内即可
-                            (node.startWeek..node.endWeek).any { week ->
-                                // 计算该周的日期
-                                val tableStartDate = table.startDate
-                                val firstDayOfWeekTableStarts =
-                                    tableStartDate.dayOfWeek.isoDayNumber
-                                val firstMondayOfTable =
-                                    tableStartDate.minus(DatePeriod(days = firstDayOfWeekTableStarts - 1))
-                                val weekStartLocalDate =
-                                    firstMondayOfTable.plus(DatePeriod(days = (week - 1) * 7))
-                                val nodeDate =
-                                    weekStartLocalDate.plus(DatePeriod(days = node.day - 1))
-                                val nodeMillis = nodeDate.atTime(config.nodes.first().startTime)
-                                    .toInstant(TimeZone.currentSystemDefault())
-                                    .toEpochMilliseconds()
-                                nodeMillis in monthStart until monthEnd
-                            }
-                        }.flatMap { node ->
-                            val nodeSlots = mutableListOf<TimeSlot>()
+    // ================== 新增：以日期为主的连续周视图支持 ==================
+
+    // 当前周的起始日期（周一），默认本周一
+    private val _currentWeekStartDate = MutableStateFlow(getThisMonday())
+    val currentWeekStartDate: StateFlow<LocalDate> = _currentWeekStartDate
+
+    // 当前周的7天日期列表
+    val currentWeekDates: StateFlow<List<LocalDate>> = currentWeekStartDate.map { start ->
+        (0..6).map { start.plus(DatePeriod(days = it)) }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = (0..6).map { getThisMonday().plus(DatePeriod(days = it)) }
+    )
+
+    // 所有日程（课程+普通日程），便于任意日期范围筛选
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    val allTimeSlots: StateFlow<List<TimeSlot>> = combine(
+        ordinarySchedules,
+        courseRepository.getCurrentUserAllCourses().zip(
+            currentTablesState,
+            transform = { a, b -> Pair(a, b) }
+        ).zip(currentTablesTimeConfig) { (a, b), c ->
+            Triple(a, b, c)
+        }.map { (courses, tables, configs) ->
+            tables.filterNotNull().map tableMap@{ table ->
+                val courses = courseRepository.getCoursesByTableId(table.id).firstOrNull()
+                val config = tableTimeConfigRepository.getDefaultTimeConfig(table.id).firstOrNull()
+                courses?.flatMap coursesMap@{ course ->
+                    val table = tableRepository.getTableById(course.).firstOrNull()
+                    if (config != null) {
+                        course.nodes.flatMap { node ->
+                            // 生成所有节点对应的TimeSlot（不按周过滤）
                             val timeConfigMap =
                                 config.nodes.associate { it.node to (it.startTime to it.endTime) }
                             val tableStartDate = table.startDate
                             val firstDayOfWeekTableStarts = tableStartDate.dayOfWeek.isoDayNumber
                             val firstMondayOfTable =
                                 tableStartDate.minus(DatePeriod(days = firstDayOfWeekTableStarts - 1))
-                            for (week in node.startWeek..node.endWeek) {
-                                if (node.weekType == 1 && week % 2 == 0) continue
-                                if (node.weekType == 2 && week % 2 != 0) continue
+                            (node.startWeek..node.endWeek).mapNotNull { week ->
+                                if (node.weekType == 1 && week % 2 == 0) return@mapNotNull null
+                                if (node.weekType == 2 && week % 2 != 0) return@mapNotNull null
                                 val weekStartLocalDate =
                                     firstMondayOfTable.plus(DatePeriod(days = (week - 1) * 7))
                                 val nodeDate =
@@ -407,45 +418,126 @@ constructor(
                                     val endMillis =
                                         nodeEndDateTime.toInstant(TimeZone.currentSystemDefault())
                                             .toEpochMilliseconds()
-                                    if (startMillis < monthEnd && endMillis > monthStart) {
-                                        nodeSlots.add(
-                                            TimeSlot(
-                                                userId = userId,
-                                                startTime = startMillis,
-                                                endTime = endMillis,
-                                                scheduleType = ScheduleType.COURSE,
-                                                scheduleId = course.id,
-                                                isRepeated = true,
-                                                displayTitle = course.courseName,
-                                                displaySubtitle = node.room,
-                                                displayColor = course.color,
-                                                head = course.courseName,
-                                            )
-                                        )
-                                    }
-                                }
+                                    TimeSlot(
+                                        userId = userId,
+                                        startTime = startMillis,
+                                        endTime = endMillis,
+                                        scheduleType = ScheduleType.COURSE,
+                                        scheduleId = course.id,
+                                        isRepeated = true,
+                                        displayTitle = course.courseName,
+                                        displaySubtitle = node.room,
+                                        displayColor = course.color,
+                                        head = course.courseName,
+                                    )
+                                } else null
                             }
-                            nodeSlots
                         }
                     }
-                } else emptyList()
-                // 修复：为普通日程的 TimeSlot 设置 display 字段，保证月视图正确显示
-                val ordinary = ordinarySchedules.value.flatMap { schedule ->
-                    schedule.timeSlots.map { slot ->
-                        slot.copy(
-                            displayTitle = slot.head ?: schedule.title,
-                            displaySubtitle = schedule.location,
-                            displayColor = schedule.color ?: AppConstants.DEFAULT_COURSE_COLOR
-                        )
-                    }
+
                 }
-                val allSlots = (ordinary + courseSlots).filter { slot ->
-                    slot.startTime < monthEnd && slot.endTime > monthStart
-                }
-                state.value = allSlots
-            }
+            } else emptyList()
         }
-        return state
+//            // 这里假设getAllCourses()返回所有课程
+//            val userId = currentUserIdState.value?.toInt() ?: 0
+//            val course2Table = HashMap.newHashMap<Course, Table>(100)
+//            if (tables != null && configs != null) {
+//                courses.flatMap { course ->
+//                    val table = tableRepository.getTableById(course.).firstOrNull()
+//                    course.nodes.flatMap { node ->
+//                        // 生成所有节点对应的TimeSlot（不按周过滤）
+//                        val timeConfigMap =
+//                            configs.nodes.associate { it.node to (it.startTime to it.endTime) }
+//                        val tableStartDate = tables.startDate
+//                        val firstDayOfWeekTableStarts = tableStartDate.dayOfWeek.isoDayNumber
+//                        val firstMondayOfTable =
+//                            tableStartDate.minus(DatePeriod(days = firstDayOfWeekTableStarts - 1))
+//                        (node.startWeek..node.endWeek).mapNotNull { week ->
+//                            if (node.weekType == 1 && week % 2 == 0) return@mapNotNull null
+//                            if (node.weekType == 2 && week % 2 != 0) return@mapNotNull null
+//                            val weekStartLocalDate =
+//                                firstMondayOfTable.plus(DatePeriod(days = (week - 1) * 7))
+//                            val nodeDate = weekStartLocalDate.plus(DatePeriod(days = node.day - 1))
+//                            val startNodeNum = node.startNode
+//                            val endNodeNum = node.startNode + node.step - 1
+//                            val nodeStartTimeInfo = timeConfigMap[startNodeNum]
+//                            val nodeEndTimeInfo = timeConfigMap[endNodeNum]
+//                            if (nodeStartTimeInfo != null && nodeEndTimeInfo != null) {
+//                                val nodeStartDateTime = nodeDate.atTime(nodeStartTimeInfo.first)
+//                                val nodeEndDateTime = nodeDate.atTime(nodeEndTimeInfo.second)
+//                                val startMillis =
+//                                    nodeStartDateTime.toInstant(TimeZone.currentSystemDefault())
+//                                        .toEpochMilliseconds()
+//                                val endMillis =
+//                                    nodeEndDateTime.toInstant(TimeZone.currentSystemDefault())
+//                                        .toEpochMilliseconds()
+//                                TimeSlot(
+//                                    userId = userId,
+//                                    startTime = startMillis,
+//                                    endTime = endMillis,
+//                                    scheduleType = ScheduleType.COURSE,
+//                                    scheduleId = course.id,
+//                                    isRepeated = true,
+//                                    displayTitle = course.courseName,
+//                                    displaySubtitle = node.room,
+//                                    displayColor = course.color,
+//                                    head = course.courseName,
+//                                )
+//                            } else null
+//                        }
+//                    }
+//                }
+//            } else emptyList()
+}
+) {
+    ordinary, courseSlots ->
+    // 合并普通日程和课程日程
+    val ordinarySlots = ordinary.flatMap { schedule ->
+        schedule.timeSlots.map { slot ->
+            slot.copy(
+                displayTitle = slot.head ?: schedule.title,
+                displaySubtitle = schedule.location,
+                displayColor = schedule.color ?: AppConstants.DEFAULT_COURSE_COLOR
+            )
+        }
+    }
+    (ordinarySlots + courseSlots).sortedBy { it.startTime }
+}.stateIn(
+scope = viewModelScope,
+started = SharingStarted.WhileSubscribed(5000),
+initialValue = emptyList()
+)
+
+// 当前周的所有日程，按天分组
+val weekTimeSlotsMap: StateFlow<Map<LocalDate, List<TimeSlot>>> = combine(
+    currentWeekDates,
+    allTimeSlots
+) { weekDates, allSlots ->
+    weekDates.associateWith { date ->
+        allSlots.filter { slot -> slot.isOnDate(date) }
+    }
+}.stateIn(
+    scope = viewModelScope,
+    started = SharingStarted.WhileSubscribed(5000),
+    initialValue = emptyMap()
+)
+
+// 切换当前周的起始日期（周一）
+fun updateCurrentWeekStartDate(newStart: LocalDate) {
+    _currentWeekStartDate.value = newStart
+}
+
+// 辅助函数：获取本周一
+private fun getThisMonday(): LocalDate {
+    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    return today.minus(DatePeriod(days = today.dayOfWeek.isoDayNumber - 1))
+}
+
+// 辅助函数：判断TimeSlot是否在某天
+private fun TimeSlot.isOnDate(date: LocalDate): Boolean {
+    val slotDate = Instant.fromEpochMilliseconds(this.startTime)
+        .toLocalDateTime(TimeZone.currentSystemDefault()).date
+    return slotDate == date
     }
 
     // --- 多课表支持相关状态 ---
@@ -457,7 +549,7 @@ constructor(
     private val _currentDate = MutableStateFlow(
         Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     )
-    val currentDate: StateFlow<LocalDate> = _currentDate
+//    val currentDate: StateFlow<LocalDate> = _currentDate
 
     // 当前日期对应的课表
     private val _currentTable = MutableStateFlow<Table?>(null)
@@ -491,7 +583,7 @@ constructor(
 
         // 观察课表状态以初始化当前周 (仅执行一次或当 table 变化时)
         viewModelScope.launch {
-            currentTableState
+            currentTablesState
                 .filterNotNull() // 只在有有效课表时执行
                 .distinctUntilChanged { old, new -> old.id == new.id && old.startDate == new.startDate } // 避免重复计算
                 .collect { table ->
@@ -524,8 +616,8 @@ constructor(
     // 检查并确保默认时间配置存在的函数
     private fun ensureDefaultTimeConfigExists() {
         combine(
-            currentTableState,
-            currentTableTimeConfig,
+            currentTablesState,
+            currentTablesTimeConfig,
             currentUserIdState.filterNotNull()
         ) { table, config, userId ->
             Triple(table, config, userId)
@@ -558,14 +650,14 @@ constructor(
     // --- UI 事件处理 ---
 
     /** 更新当前周 */
-    fun updateCurrentWeek(week: Int) {
-        viewModelScope.launch {
-            if (week > 0 && week != _currentWeek.value) {
-                Log.d("ScheduleViewModel", "Updating current week to $week")
-                _currentWeek.emit(week)
-            }
-        }
-    }
+//    fun updateCurrentWeek(week: Int) {
+//        viewModelScope.launch {
+//            if (week > 0 && week != _currentWeek.value) {
+//                Log.d("ScheduleViewModel", "Updating current week to $week")
+//                _currentWeek.emit(week)
+//            }
+//        }
+//    }
 
     /** 回到当前周 */
     fun goToCurrentWeek() {
@@ -574,7 +666,7 @@ constructor(
                 Log.d("ScheduleViewModel", "开始执行goToCurrentWeek()操作")
 
                 // 先获取课表起始日期
-                val currentStartDate = currentTableState.value?.startDate
+                val currentStartDate = currentTablesState.value?.startDate
                 if (currentStartDate == null) {
                     Log.w("ScheduleViewModel", "课表起始日期为空，尝试使用系统默认值")
 
@@ -756,7 +848,7 @@ constructor(
 }
 
 // 扩展函数: 检查节点是否在指定周
-private fun com.example.todoschedule.domain.model.CourseNode.isInWeek(week: Int): Boolean {
+private fun CourseNode.isInWeek(week: Int): Boolean {
     return week in startWeek..endWeek &&
             (weekType == 0 || (weekType == 1 && week % 2 != 0) || (weekType == 2 && week % 2 == 0))
 }

@@ -170,7 +170,16 @@ fun MonthSchedulePage(
     val nextMonthDates =
         List(trailingEmptyDays) { i -> LocalDate(nextMonth.year, nextMonth.month, i + 1) }
     val calendarGrid = prevMonthDates + monthDates + nextMonthDates
-    val monthTimeSlots by viewModel.getDisplayableTimeSlotsForMonth(year, month).collectAsState()
+    // 获取本月所有日程（课程+普通日程）
+    val allTimeSlots by viewModel.allTimeSlots.collectAsState()
+    val monthTimeSlots = remember(allTimeSlots, year, month) {
+        allTimeSlots.filter {
+            val slotDate = Instant.fromEpochMilliseconds(it.startTime)
+                .toLocalDateTime(TimeZone.currentSystemDefault()).date
+            slotDate.year == year && slotDate.monthNumber == month
+        }
+    }
+    // 按日期分组，便于日历格子渲染
     val daySlotMap = remember(monthTimeSlots) {
         monthTimeSlots.groupBy {
             Instant.fromEpochMilliseconds(it.startTime)

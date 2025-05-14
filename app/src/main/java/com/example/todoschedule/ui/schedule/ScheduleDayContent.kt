@@ -55,7 +55,6 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
-import java.util.ArrayDeque
 
 // 定义左侧时间轴的宽度常量
 private val TIME_AXIS_WIDTH = 48.dp // 稍微增加宽度以容纳节次和时间
@@ -114,19 +113,16 @@ fun DayScheduleContent(
         }
     }
 
-    // 获取当前日期的TimeSlot
-    val daySlots by viewModel.getDisplayableTimeSlotsForMonth(
-        currentDate.year,
-        currentDate.monthNumber
-    ).collectAsState()
-    val slotsForDay = remember(daySlots, currentDate) {
-        daySlots.filter {
+    // 获取当前日期的所有日程（课程+普通日程）
+    val allTimeSlots by viewModel.allTimeSlots.collectAsState()
+    val slotsForDay = remember(allTimeSlots, currentDate) {
+        allTimeSlots.filter {
             val slotDate = Instant.fromEpochMilliseconds(it.startTime)
                 .toLocalDateTime(TimeZone.currentSystemDefault()).date
             slotDate == currentDate
         }.sortedBy { it.startTime }
     }
-    // 全天事件与普通事件分离（此处简单分离，实际可根据业务调整）
+    // 全天事件与普通事件分离
     val allDayEvents = slotsForDay.filter { it.startTime == it.endTime }
     val timedEvents = slotsForDay.filter { it.startTime != it.endTime }
 
@@ -152,7 +148,7 @@ fun DayScheduleContent(
             modifier = Modifier.weight(1f)
         ) { page ->
             val date = today.plus(page - initialPage, DateTimeUnit.DAY)
-            val slots = daySlots.filter {
+            val slots = slotsForDay.filter {
                 val slotDate = Instant.fromEpochMilliseconds(it.startTime)
                     .toLocalDateTime(TimeZone.currentSystemDefault()).date
                 slotDate == date
@@ -419,187 +415,6 @@ fun DayTimeline(
             }
         }
     }
-}
-
-/**
- * 事件在时间轴上的位置信息
- */
-data class EventSlotInfo(
-    val startMinutes: Int,
-    val endMinutes: Int,
-    val column: Int = 0,
-    val maxColumns: Int = 1
-)
-
-/**
- * 计算事件位置，处理重叠事件
- * 使用广度优先搜索(BFS)建立连通分量，确保所有直接或间接重叠的事件都被分到同一组
- * 使用贪心算法进行列分配，优先填充已有列位置，减少总列数
- */
-@OptIn(ExperimentalStdlibApi::class)
-fun calculateEventPositions(
-    events: List<TimeSlot>,
-    date: LocalDate
-): List<Pair<TimeSlot, EventSlotInfo>> {
-    if (events.isEmpty()) return emptyList()
-
-    Log.d("DaySchedule", "计算${events.size}个事件的位置")
-
-    // 设置最小时间段为20分钟（用于计算重叠）
-    val minDurationMinutes = 20
-
-    // 按开始时间排序
-    val sortedEvents = events.sortedBy { it.startTime }
-
-    // 转换为带位置信息的列表
-    val eventSlots = sortedEvents.map { event ->
-        val start = Instant.fromEpochMilliseconds(event.startTime)
-            .toLocalDateTime(TimeZone.currentSystemDefault())
-        val end = Instant.fromEpochMilliseconds(event.endTime)
-            .toLocalDateTime(TimeZone.currentSystemDefault())
-
-        val gridStartHour = GRID_START_HOUR
-        val startMinutes = (start.hour - gridStartHour) * 60 + start.minute
-
-        // 计算原始的结束分钟数
-        val originalEndMinutes = (end.hour - gridStartHour) * 60 + end.minute
-
-        // 应用最小持续时间规则：时间点日程和短于minDurationMinutes的日程都以minDurationMinutes计算重叠
-        val durationMinutes = originalEndMinutes - startMinutes
-        val endMinutes = if (durationMinutes < minDurationMinutes) {
-            startMinutes + minDurationMinutes
-        } else {
-            originalEndMinutes
-        }
-
-        Log.d(
-            "DaySchedule",
-            "事件 ${event.displayTitle} - 原始持续时间: ${durationMinutes}分钟, 用于计算重叠的持续时间: ${endMinutes - startMinutes}分钟"
-        )
-
-        event to EventSlotInfo(startMinutes, endMinutes)
-    }.toMutableList()
-
-    // 步骤1: 计算所有重叠区间（任意两个事件间的重叠）
-    val overlapMatrix = Array(eventSlots.size) { BooleanArray(eventSlots.size) { false } }
-
-    for (i in eventSlots.indices) {
-        for (j in i + 1 until eventSlots.size) {
-            if (isOverlapping(eventSlots[i].second, eventSlots[j].second)) {
-                overlapMatrix[i][j] = true
-                overlapMatrix[j][i] = true
-                Log.d(
-                    "DaySchedule",
-                    "事件 ${i}(${eventSlots[i].first.displayTitle}) 和 ${j}(${eventSlots[j].first.displayTitle}) 重叠"
-                )
-            }
-        }
-    }
-
-    // 步骤2: 使用广度优先搜索(BFS)构建重叠组（连通分量）
-    val visited = BooleanArray(eventSlots.size) { false }
-    val overlapGroups = mutableListOf<List<Int>>()
-
-    for (i in eventSlots.indices) {
-        if (!visited[i]) {
-            val group = mutableListOf<Int>()
-            val queue = ArrayDeque<Int>()
-            queue.addLast(i)
-            visited[i] = true
-
-            while (queue.isNotEmpty()) {
-                val current = queue.removeFirst()
-                group.add(current)
-
-                for (j in eventSlots.indices) {
-                    if (!visited[j] && overlapMatrix[current][j]) {
-                        queue.addLast(j)
-                        visited[j] = true
-                    }
-                }
-            }
-
-            overlapGroups.add(group)
-            Log.d(
-                "DaySchedule",
-                "重叠组 ${overlapGroups.size}: ${group.map { eventSlots[it].first.displayTitle }}"
-            )
-        }
-    }
-
-    // 步骤3: 对每个重叠组，使用贪心算法为事件分配最佳列位置
-    val result = eventSlots.toMutableList()
-
-    for ((groupIndex, group) in overlapGroups.withIndex()) {
-        // 特殊情况：只有一个事件的组不需要特殊处理
-        if (group.size == 1) {
-            val index = group[0]
-            val (event, slotInfo) = result[index]
-            result[index] = event to slotInfo.copy(column = 0, maxColumns = 1)
-            continue
-        }
-
-        // 按开始时间排序组内事件，确保先开始的事件优先分配列
-        val sortedIndices = group.sortedBy { result[it].second.startMinutes }
-
-        // 列占用跟踪：每列存储已分配事件的结束时间
-        val columnEndTimes = mutableListOf<Int>()
-
-        // 为组内每个事件贪心分配列
-        for (eventIndex in sortedIndices) {
-            val (event, slotInfo) = result[eventIndex]
-
-            // 寻找最早可用的列
-            var assignedColumn = -1
-
-            for (col in columnEndTimes.indices) {
-                if (slotInfo.startMinutes >= columnEndTimes[col]) {
-                    assignedColumn = col
-                    break
-                }
-            }
-
-            // 如果没有找到可用列，创建新列
-            if (assignedColumn == -1) {
-                assignedColumn = columnEndTimes.size
-                columnEndTimes.add(slotInfo.endMinutes)
-            } else {
-                // 更新现有列的结束时间
-                columnEndTimes[assignedColumn] = slotInfo.endMinutes
-            }
-
-            // 更新事件的列信息
-            result[eventIndex] = event to slotInfo.copy(
-                column = assignedColumn,
-                maxColumns = columnEndTimes.size
-            )
-
-            Log.d(
-                "DaySchedule",
-                "为事件 ${event.displayTitle} 分配列 $assignedColumn/${columnEndTimes.size}"
-            )
-        }
-
-        // 最后确认该组的所有事件使用相同的maxColumns值
-        val finalMaxColumns = columnEndTimes.size
-        for (eventIndex in group) {
-            val (event, slotInfo) = result[eventIndex]
-            result[eventIndex] = event to slotInfo.copy(maxColumns = finalMaxColumns)
-        }
-
-        Log.d("DaySchedule", "重叠组 $groupIndex 使用 $finalMaxColumns 列显示")
-    }
-
-    return result
-}
-
-/**
- * 检查两个时间段是否重叠
- */
-fun isOverlapping(a: EventSlotInfo, b: EventSlotInfo): Boolean {
-    // 添加1分钟的缓冲区，避免时间刚好接壤的事件被判定为重叠
-    val buffer = 1 // 1分钟缓冲区
-    return a.startMinutes < (b.endMinutes - buffer) && (a.endMinutes - buffer) > b.startMinutes
 }
 
 /**

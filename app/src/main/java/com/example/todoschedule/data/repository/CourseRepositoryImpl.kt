@@ -14,6 +14,7 @@ import com.example.todoschedule.domain.repository.GlobalSettingRepository
 import com.example.todoschedule.domain.repository.SessionRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -34,16 +35,21 @@ constructor(
             if (userId != null && userId != -1L) {
                 globalSettingRepository.getDefaultTableIds(userId.toInt())
                     .flatMapLatest { tableIds ->
-                    val tableId = tableIds.firstOrNull() ?: AppConstants.Ids.INVALID_TABLE_ID
-                    if (tableId == AppConstants.Ids.INVALID_TABLE_ID) {
-                        Log.w("CourseRepositoryImpl", "未找到默认课表ID，用户ID: $userId")
-                        flowOf(emptyList())
-                    } else {
-                        courseDao.getCoursesByTableId(tableId).map { courseWithNodes ->
-                            courseWithNodes.map { it.toCourse() }
+                        if (tableIds.isEmpty()) {
+                            Log.w("CourseRepositoryImpl", "未找到默认课表ID，用户ID: $userId")
+                            flowOf(emptyList())
+                        } else {
+                            courseDao.getCoursesByTableId(tableIds[0]).map { courseWithNodes ->
+                                val allCourses = mutableListOf<Course>()
+                                for (tableId in tableIds) {
+                                    val coursesForTable =
+                                        courseDao.getCoursesByTableId(tableId).first()
+                                    allCourses.addAll(coursesForTable.map { it.toCourse() })
+                                }
+                                allCourses
+                            }
                         }
                     }
-                }
             } else {
                 Log.w("CourseRepositoryImpl", "未找到当前用户或用户未登录 (userId: $userId)")
                 flowOf(emptyList())
@@ -101,12 +107,12 @@ constructor(
                     val courseNodes =
                         courseWithNodes.nodes.filter { node ->
                             node.startWeek <= week &&
-                                node.endWeek >= week &&
-                                (node.weekType == AppConstants.WeekTypes.ALL ||
-                                    (node.weekType == AppConstants.WeekTypes.ODD &&
-                                        week % 2 == 1) ||
-                                    (node.weekType == AppConstants.WeekTypes.EVEN &&
-                                        week % 2 == 0))
+                                    node.endWeek >= week &&
+                                    (node.weekType == AppConstants.WeekTypes.ALL ||
+                                            (node.weekType == AppConstants.WeekTypes.ODD &&
+                                                    week % 2 == 1) ||
+                                            (node.weekType == AppConstants.WeekTypes.EVEN &&
+                                                    week % 2 == 0))
                         }
                     courseWithNodes.copy(nodes = courseNodes).toCourse()
                 }
@@ -123,12 +129,12 @@ constructor(
             nodeEntities
                 .filter { node ->
                     node.startWeek <= week &&
-                        node.endWeek >= week &&
-                        (node.weekType == AppConstants.WeekTypes.ALL ||
-                            (node.weekType == AppConstants.WeekTypes.ODD &&
-                                week % 2 == 1) ||
-                            (node.weekType == AppConstants.WeekTypes.EVEN &&
-                                week % 2 == 0))
+                            node.endWeek >= week &&
+                            (node.weekType == AppConstants.WeekTypes.ALL ||
+                                    (node.weekType == AppConstants.WeekTypes.ODD &&
+                                            week % 2 == 1) ||
+                                    (node.weekType == AppConstants.WeekTypes.EVEN &&
+                                            week % 2 == 0))
                 }
                 .map { it.toCourseNode() }
         }

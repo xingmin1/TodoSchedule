@@ -54,18 +54,18 @@ fun ScheduleScreen(
     // --- 状态收集 ---
     val uiState by viewModel.uiState.collectAsState()
     val currentWeek by viewModel.currentWeek.collectAsState()
-    val weekDates by viewModel.weekDates.collectAsState()
-    val displayableTimeSlots by viewModel.displayableTimeSlots.collectAsState()
+//    val weekDates by viewModel.weekDates.collectAsState()
+//    val displayableTimeSlots by viewModel.displayableTimeSlots.collectAsState()
     val defaultTableId by viewModel.defaultTableIdState.collectAsState()
     val viewMode by viewModel.viewMode.collectAsState()
     val currentDayDate by viewModel.currentDayDate.collectAsState()
-    val currentTableState by viewModel.currentTableState.collectAsState()
-    val startDate = currentTableState?.startDate
-    val currentDate by viewModel.currentDate.collectAsState()
+    val currentTableState by viewModel.currentTablesState.collectAsState()
+//    val startDate = currentTableState?.startDate
+//    val currentDate by viewModel.currentDate.collectAsState()
     val currentTable by viewModel.currentTable.collectAsState()
-    val allTables by viewModel.allTables.collectAsState()
+//    val allTables by viewModel.allTables.collectAsState()
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
-    var lastTableId by remember { mutableStateOf<Int?>(null) }
+//    var lastTableId by remember { mutableStateOf<Int?>(null) }
     var showMoreMenu by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -177,11 +177,8 @@ fun ScheduleScreen(
                         when (uiState) {
                             is ScheduleUiState.Loading -> LoadingScreen()
                             is ScheduleUiState.Success -> ScheduleWeekContent(
-                                currentWeek = currentWeek,
-                                timeSlotsForCurrentWeek = displayableTimeSlots,
-                                onWeekChange = viewModel::updateCurrentWeek,
-                                onTimeSlotClick = { /* 处理点击 */ },
-                                startDate = startDate
+                                viewModel = viewModel,
+                                onTimeSlotClick = { /* 处理点击 */ }
                             )
 
                             is ScheduleUiState.Error -> ErrorScreen((uiState as ScheduleUiState.Error).message)
