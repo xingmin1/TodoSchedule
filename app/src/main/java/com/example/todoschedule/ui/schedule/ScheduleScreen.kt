@@ -20,7 +20,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,16 +30,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.ui.navigation.NavigationState
-import com.example.todoschedule.ui.schedule.model.ScheduleUiState
+import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
-import kotlinx.datetime.toJavaLocalDate
+import kotlinx.datetime.toLocalDateTime
 import java.time.YearMonth
-import java.time.format.TextStyle
-import java.util.Locale
 
 
 /**
@@ -75,11 +72,68 @@ fun ScheduleScreen(
     var showQuickAddDialog by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
 
-    // For MonthView's Pager state, driven by anchorDate
-    var currentDisplayYearMonth by remember { mutableStateOf(YearMonth.from(anchorDate.toJavaLocalDate())) }
-    LaunchedEffect(anchorDate) {
-        currentDisplayYearMonth = YearMonth.from(anchorDate.toJavaLocalDate())
+    // 独立维护各视图的日期状态
+    var localViewMode by remember { mutableStateOf(viewMode) }
+    var dayAnchorDate by remember {
+        mutableStateOf(
+            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        )
     }
+    var weekAnchorDate by remember {
+        mutableStateOf(
+            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        )
+    }
+    var monthYearMonth by remember { mutableStateOf(YearMonth.now()) }
+    var isMonthLargeMode by remember { mutableStateOf(false) }
+
+    // 切换视图时重置对应的日期状态
+    fun handleViewModeChange(newMode: ScheduleViewMode) {
+        localViewMode = newMode
+        when (newMode) {
+            ScheduleViewMode.WEEK -> {
+                weekAnchorDate =
+                    Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+            }
+
+            ScheduleViewMode.DAY -> {
+                dayAnchorDate =
+                    Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+            }
+
+            ScheduleViewMode.MONTH -> {
+                monthYearMonth = YearMonth.now()
+            }
+        }
+    }
+
+    // 顶部栏日期展示用中文
+    fun getChineseWeekName(dayOfWeek: kotlinx.datetime.DayOfWeek): String =
+        when (dayOfWeek) {
+            kotlinx.datetime.DayOfWeek.MONDAY -> "周一"
+            kotlinx.datetime.DayOfWeek.TUESDAY -> "周二"
+            kotlinx.datetime.DayOfWeek.WEDNESDAY -> "周三"
+            kotlinx.datetime.DayOfWeek.THURSDAY -> "周四"
+            kotlinx.datetime.DayOfWeek.FRIDAY -> "周五"
+            kotlinx.datetime.DayOfWeek.SATURDAY -> "周六"
+            kotlinx.datetime.DayOfWeek.SUNDAY -> "周日"
+        }
+
+    fun getChineseMonthName(month: kotlinx.datetime.Month): String =
+        when (month) {
+            kotlinx.datetime.Month.JANUARY -> "一月"
+            kotlinx.datetime.Month.FEBRUARY -> "二月"
+            kotlinx.datetime.Month.MARCH -> "三月"
+            kotlinx.datetime.Month.APRIL -> "四月"
+            kotlinx.datetime.Month.MAY -> "五月"
+            kotlinx.datetime.Month.JUNE -> "六月"
+            kotlinx.datetime.Month.JULY -> "七月"
+            kotlinx.datetime.Month.AUGUST -> "八月"
+            kotlinx.datetime.Month.SEPTEMBER -> "九月"
+            kotlinx.datetime.Month.OCTOBER -> "十月"
+            kotlinx.datetime.Month.NOVEMBER -> "十一月"
+            kotlinx.datetime.Month.DECEMBER -> "十二月"
+        }
 
     // --- 顶部栏 --- //
     Scaffold(
@@ -87,23 +141,32 @@ fun ScheduleScreen(
             val topBarDateText: String
             val topBarWeekInfo: String?
 
-            when (viewMode) {
+            when (localViewMode) {
                 ScheduleViewMode.MONTH -> {
-                    topBarDateText = "${currentDisplayYearMonth.year}/${currentDisplayYearMonth.monthValue.toString().padStart(2, '0')}"
+                    topBarDateText = "${monthYearMonth.year}/${
+                        monthYearMonth.monthValue.toString().padStart(2, '0')
+                    }"
                     topBarWeekInfo = null
                 }
+
                 ScheduleViewMode.DAY -> {
-                    topBarDateText = "${anchorDate.year}/${anchorDate.monthNumber.toString().padStart(2, '0')}/${anchorDate.dayOfMonth.toString().padStart(2, '0')}"
-                    topBarWeekInfo = anchorDate.dayOfWeek.getChineseWeekName()
+                    topBarDateText = "${dayAnchorDate.year}/${
+                        dayAnchorDate.monthNumber.toString().padStart(2, '0')
+                    }/${dayAnchorDate.dayOfMonth.toString().padStart(2, '0')}"
+                    topBarWeekInfo = getChineseWeekName(dayAnchorDate.dayOfWeek)
                 }
+
                 ScheduleViewMode.WEEK -> {
-                    val monday = anchorDate.minus((anchorDate.dayOfWeek.isoDayNumber - 1).toLong(), DateTimeUnit.DAY)
+                    val monday = weekAnchorDate.minus(
+                        (weekAnchorDate.dayOfWeek.isoDayNumber - 1).toLong(),
+                        DateTimeUnit.DAY
+                    )
                     val sunday = monday.plus(6, DateTimeUnit.DAY)
-                    topBarDateText = "${monday.monthNumber}/${monday.dayOfMonth} - ${sunday.monthNumber}/${sunday.dayOfMonth}"
-                    // Week info for week view might show the month or be empty
-                    val monthName = monday.month.getDisplayName(TextStyle.FULL, Locale.CHINA)
+                    topBarDateText =
+                        "${monday.monthNumber}/${monday.dayOfMonth} - ${sunday.monthNumber}/${sunday.dayOfMonth}"
+                    val monthName = getChineseMonthName(monday.month)
                     topBarWeekInfo = if (monday.monthNumber != sunday.monthNumber) {
-                        "${monday.month.getDisplayName(TextStyle.SHORT, Locale.CHINA)} - ${sunday.month.getDisplayName(TextStyle.SHORT, Locale.CHINA)}"
+                        "${getChineseMonthName(monday.month)} - ${getChineseMonthName(sunday.month)}"
                     } else {
                         monthName
                     }
@@ -111,7 +174,7 @@ fun ScheduleScreen(
             }
 
             ScheduleTopBar(
-                viewMode = viewMode,
+                viewMode = localViewMode,
                 formattedDate = topBarDateText,
                 weekInfoText = topBarWeekInfo,
                 onGoToToday = {
@@ -120,12 +183,12 @@ fun ScheduleScreen(
                 onAdd = { showQuickAddDialog = true },
                 onDownload = {
                     navigationState.navigateSchoolSelectorScreen(
-                        defaultTableIds.firstOrNull() 
+                        defaultTableIds.firstOrNull()
                             ?: AppConstants.Ids.INVALID_TABLE_ID
                     )
                 },
                 onShare = { /* TODO: 分享逻辑 */ },
-                onChangeViewMode = { viewModel.setViewMode(it) },
+                onChangeViewMode = { handleViewModeChange(it) },
                 showMoreMenu = showMoreMenu,
                 onShowMoreMenu = { showMoreMenu = true },
                 onDismissMoreMenu = { showMoreMenu = false }
@@ -135,8 +198,8 @@ fun ScheduleScreen(
             FloatingActionButton(
                 onClick = { showQuickAddDialog = true },
                 modifier = Modifier
-                    .padding(16.dp) 
-                    .padding(bottom = paddingValues.calculateBottomPadding()), 
+                    .padding(16.dp)
+                    .padding(bottom = paddingValues.calculateBottomPadding()),
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
@@ -155,10 +218,10 @@ fun ScheduleScreen(
                     top = innerPadding.calculateTopPadding(),
                     start = innerPadding.calculateStartPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                     end = innerPadding.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
-                    bottom = 0.dp 
+                    bottom = 0.dp
                 )
         ) {
-            if (currentActiveTable == null && defaultTableIds.isEmpty()) { 
+            if (currentActiveTable == null && defaultTableIds.isEmpty()) {
                 NoTableBanner(
                     onCreateTable = { navigationState.navigateToCreateEditTable() },
                     onImportTable = { navigationState.navigateSchoolSelectorScreen(AppConstants.Ids.INVALID_TABLE_ID) }
@@ -169,41 +232,34 @@ fun ScheduleScreen(
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                when (viewMode) {
+                when (localViewMode) {
                     ScheduleViewMode.WEEK -> {
-                        when (uiState) {
-                            is ScheduleUiState.Loading -> LoadingScreen()
-                            is ScheduleUiState.Success -> ScheduleWeekContent(
-                                viewModel = viewModel, // Passes the whole viewModel
-                                onTimeSlotClick = { /* TODO: Handle TimeSlot click */ }
-                            )
-                            is ScheduleUiState.Error -> ErrorScreen((uiState as ScheduleUiState.Error).message)
-                            is ScheduleUiState.Empty -> EmptyScheduleScreen()
-                            is ScheduleUiState.NoTableSelected -> NoTableSelectedScreen(
-                                navigationState = navigationState,
-                                onNavigateToImport = {
-                                    navigationState.navigateSchoolSelectorScreen(AppConstants.Ids.INVALID_TABLE_ID)
-                                }
-                            )
-                        }
-                    }
-                    ScheduleViewMode.MONTH -> {
-                        ScheduleMonthContent(
-                            navigationState = navigationState,
-                            defaultTableId = defaultTableIds.firstOrNull(),
-                            viewModel = viewModel, // Passes the whole viewModel
-                            paddingValues = innerPadding, 
-                            initialYearMonth = currentDisplayYearMonth, // Driven by anchorDate
-                            onYearMonthChange = { yearMonth ->
-                                // When month pager changes, update the anchorDate
-                                val firstDayOfMonth = LocalDate(yearMonth.year, yearMonth.monthValue, 1)
-                                viewModel.setAnchorDate(firstDayOfMonth)
-                            }
+                        ScheduleWeekContent(
+                            anchorDate = weekAnchorDate,
+                            onDateChange = { weekAnchorDate = it },
+                            viewModel = viewModel,
+                            onTimeSlotClick = { /* TODO: Handle TimeSlot click */ }
                         )
                     }
+
+                    ScheduleViewMode.MONTH -> {
+                        ScheduleMonthContent(
+                            initialYearMonth = monthYearMonth,
+                            onYearMonthChange = { monthYearMonth = it },
+                            navigationState = navigationState,
+                            defaultTableId = defaultTableIds.firstOrNull(),
+                            viewModel = viewModel,
+                            paddingValues = innerPadding,
+                            isLargeMode = isMonthLargeMode,
+                            onLargeModeChange = { isMonthLargeMode = it }
+                        )
+                    }
+
                     ScheduleViewMode.DAY -> {
                         DayScheduleContent(
-                            viewModel = viewModel, // Passes the whole viewModel
+                            anchorDate = dayAnchorDate,
+                            onDateChange = { dayAnchorDate = it },
+                            viewModel = viewModel,
                             navigationState = navigationState,
                             defaultTableId = defaultTableIds.firstOrNull()
                         )

@@ -7,21 +7,20 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,14 +33,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.platform.LocalConfiguration
@@ -53,23 +50,21 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.times
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.domain.model.TimeSlot
 import com.example.todoschedule.ui.theme.ColorSchemeEnum
 import com.example.todoschedule.ui.utils.ColorUtils
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.daysUntil
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import java.util.LinkedList
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 
@@ -88,247 +83,46 @@ private const val GRID_END_HOUR = 24
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ScheduleWeekContent(
+    anchorDate: kotlinx.datetime.LocalDate,
+    onDateChange: (kotlinx.datetime.LocalDate) -> Unit,
     viewModel: ScheduleViewModel,
     onTimeSlotClick: (TimeSlot) -> Unit
 ) {
-    val anchorDate by viewModel.anchorDate.collectAsState()
     val allTimeSlots by viewModel.allTimeSlots.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
-    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-    val configuration = LocalConfiguration.current
-    val screenWidthDp = configuration.screenWidthDp.dp
-    val dayColumnWidth = (screenWidthDp - TIME_AXIS_WIDTH) / 7
+    val pageCount = 1000
+    val initialPage = pageCount / 2
+    val systemToday = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    val systemMonday =
+        systemToday.minus((systemToday.dayOfWeek.isoDayNumber - 1).toLong(), DateTimeUnit.DAY)
+    val daysDiff = anchorDate.daysUntil(systemMonday) * -1
+    val weeksDiff = daysDiff / 7
+    val targetPage = initialPage + weeksDiff
 
-    // Calculate the 7 days of the week based on the anchorDate
-    val mondayOfAnchorWeek = anchorDate.minus((anchorDate.dayOfWeek.isoDayNumber - 1).toLong(),  DateTimeUnit.DAY)
-    val weekDates = remember(mondayOfAnchorWeek) { // Recalculate if the Monday changes
-        List(7) { i -> mondayOfAnchorWeek.plus(i.toLong(), DateTimeUnit.DAY) }
-    }
-
-    // Filter allTimeSlots for the current weekDates and group by date
-    val weekTimeSlotsMap = remember(allTimeSlots, weekDates) {
-        weekDates.associateWith { dateInWeek ->
-            allTimeSlots.filter { slot ->
+    key(anchorDate) {
+        val pagerState = rememberPagerState(initialPage = targetPage) { pageCount }
+        val configuration = LocalConfiguration.current
+        val screenWidthDp = configuration.screenWidthDp.dp
+        val dayColumnWidth = (screenWidthDp - TIME_AXIS_WIDTH) / 7
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            val mondayOfWeek = systemMonday.plus((page - initialPage) * 7, DateTimeUnit.DAY)
+            if (pagerState.currentPage == page && mondayOfWeek != anchorDate) {
+                onDateChange(mondayOfWeek)
+            }
+            val weekDates = List(7) { i -> mondayOfWeek.plus(i.toLong(), DateTimeUnit.DAY) }
+            val weekTimeSlots = allTimeSlots.filter { slot ->
                 val slotDate = Instant.fromEpochMilliseconds(slot.startTime)
                     .toLocalDateTime(TimeZone.currentSystemDefault()).date
-                slotDate == dateInWeek
+                weekDates.contains(slotDate)
             }
-        }
-    }
-
-    // 支持左右滑动切换周
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(anchorDate) { // Re-key when anchorDate changes
-                detectDragGestures {
-                    change, dragAmount ->
-                    change.consume()
-                    if (abs(dragAmount.x) > 80 && abs(dragAmount.x) > abs(dragAmount.y)) {
-                        val daysToShift = if (dragAmount.x < 0) 7 else -7
-                        val newAnchorDate = anchorDate.plus(daysToShift.toLong(), DateTimeUnit.DAY)
-                        coroutineScope.launch { viewModel.setAnchorDate(newAnchorDate) }
-                    }
-                }
-            }
-    ) {
-        val scrollState = rememberScrollState()
-        Column(Modifier.fillMaxSize()) {
-            // 头部：显示7天日期
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Spacer(Modifier.width(TIME_AXIS_WIDTH)) // Placeholder for time axis alignment
-                weekDates.forEach { date ->
-                    val isToday = date == today
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(bottom = 4.dp)
-                    ) {
-                        Text(
-                            text = date.dayOfWeek.getChineseWeekName().substring(0, 2),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                        )
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .padding(top = 2.dp)
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(if (isToday) MaterialTheme.colorScheme.primary else Color.Transparent)
-                        ) {
-                            Text(
-                                text = date.dayOfMonth.toString(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (isToday) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-            }
-            // 主体区整体可滚动
-            Box(
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(scrollState) // Entire content area below header is scrollable
-            ) {
-                Row(Modifier.fillMaxSize()) {
-                    // 左侧时间轴
-                    Column(
-                        Modifier.width(TIME_AXIS_WIDTH)
-                    ) {
-                        for (hour in GRID_START_HOUR until GRID_END_HOUR) {
-                            Box(
-                                Modifier
-                                    .height(HOUR_HEIGHT)
-                                    .fillMaxWidth(),
-                                contentAlignment = Alignment.TopEnd
-                            ) {
-                                Text(
-                                    "${hour}:00",
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(end = 8.dp, top = 8.dp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                    // 右侧7天日程区
-                    weekDates.forEach { date ->
-                        val slotsForThisDay = weekTimeSlotsMap[date] ?: emptyList()
-                        Box(
-                            Modifier
-                                .width(dayColumnWidth) // Use calculated dayColumnWidth
-                                .fillMaxHeight()
-                        ) {
-                            DayColumnSchedule(
-                                date = date,
-                                slots = slotsForThisDay,
-                                onTimeSlotClick = onTimeSlotClick,
-                                columnWidth = dayColumnWidth
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * 单天的日程列，纵向为时间轴，卡片按时间段排列，重叠处理参考日视图
- */
-@Composable
-fun DayColumnSchedule(
-    date: LocalDate, // Date for this column
-    slots: List<TimeSlot>,
-    onTimeSlotClick: (TimeSlot) -> Unit,
-    columnWidth: Dp
-) {
-    // 复用日视图的重叠处理算法 (from ScheduleOverlapUtils.kt)
-    val eventSlotsWithPositionInfo = calculateEventPositions(slots, date)
-    val hourHeight = HOUR_HEIGHT
-    val minDurationMinutes = 20 // Minimum duration for display to ensure visibility
-
-    Box(Modifier.fillMaxSize()) { // This Box represents a single day column
-        // 背景分割线 (hourly grid lines)
-        for (hour in GRID_START_HOUR until GRID_END_HOUR) {
-            Box(
-                Modifier
-                    .offset(y = hourHeight * (hour - GRID_START_HOUR))
-                    .fillMaxWidth()
-                    .height(0.5.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant)
+            WeekSchedulePage(
+                weekDates = weekDates,
+                timeSlots = weekTimeSlots,
+                dayWidth = dayColumnWidth,
+                onTimeSlotClick = onTimeSlotClick
             )
-        }
-
-        // 日程卡片
-        eventSlotsWithPositionInfo.forEach { (event, slotInfo) ->
-            val topOffset = hourHeight * (slotInfo.startMinutes / 60f)
-            // Ensure minimum height for very short or zero-duration events
-            val eventDurationMinutes = (slotInfo.endMinutes - slotInfo.startMinutes).coerceAtLeast(minDurationMinutes)
-            val cardHeight = hourHeight * (eventDurationMinutes / 60f)
-
-            // Overlap handling: calculate width and horizontal offset within the day column
-            val hasOverlap = slotInfo.maxColumns > 1
-            val margin = 1.dp // Reduced margin for tighter packing in week view columns
-            val gap = 1.dp    // Reduced gap
-
-            val availableWidthForCards = columnWidth - (2 * margin) - ((slotInfo.maxColumns - 1) * gap)
-            val individualCardWidth = if (slotInfo.maxColumns > 0) availableWidthForCards / slotInfo.maxColumns else availableWidthForCards
-
-            val horizontalCardOffset = margin + (individualCardWidth + gap) * slotInfo.column
-
-            // Colors
-            val isDarkTheme = isSystemInDarkTheme()
-            val (backgroundColor, contentColor) = ColorUtils.calculateTimeSlotColors(
-                event.displayColor,
-                event.scheduleId,
-                isDarkTheme,
-                MaterialTheme.colorScheme
-            )
-
-            // Time formatting
-            val startTime = Instant.fromEpochMilliseconds(event.startTime)
-                .toLocalDateTime(TimeZone.currentSystemDefault())
-            val endTime = Instant.fromEpochMilliseconds(event.endTime)
-                .toLocalDateTime(TimeZone.currentSystemDefault())
-            val timeString = "${startTime.hour}:${startTime.minute.toString().padStart(2, '0')}" +
-                    " - ${endTime.hour}:${endTime.minute.toString().padStart(2, '0')}"
-
-            Card(
-                modifier = Modifier
-                    .width(individualCardWidth)
-                    .offset(x = horizontalCardOffset, y = topOffset)
-                    .height(cardHeight)
-                    .padding(horizontal = 0.5.dp, vertical = 0.5.dp) // Minimal padding around card
-                    .clickable { onTimeSlotClick(event) },
-                shape = RoundedCornerShape(2.dp), // Sharper corners for dense view
-                colors = CardDefaults.cardColors(
-                    containerColor = backgroundColor,
-                    contentColor = contentColor
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 4.dp, vertical = 2.dp) // Inner padding for content
-                ) {
-                    Text(
-                        event.displayTitle ?: "无标题",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontSize = 10.sp // Smaller font for week view items
-                    )
-                    if (cardHeight > 40.dp) { // Show time only if enough space
-                        Text(
-                            timeString,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            fontSize = 8.sp, // Even smaller font for time
-                            color = contentColor.copy(alpha = 0.7f)
-                        )
-                    }
-                    if (!event.displaySubtitle.isNullOrBlank() && cardHeight > 55.dp) { // Show subtitle if space
-                        Text(
-                            event.displaySubtitle!!,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 8.sp,
-                            modifier = Modifier.padding(top = 1.dp)
-                        )
-                    }
-                }
-            }
         }
     }
 }
