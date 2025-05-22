@@ -675,6 +675,13 @@ constructor(
             _viewMode.value = mode
         }
     }
+
+    // ========== 月视图大月模式状态 ==========
+    private val _isMonthLargeMode = MutableStateFlow(false)
+    val isMonthLargeMode: StateFlow<Boolean> = _isMonthLargeMode
+    fun setMonthLargeMode(large: Boolean) {
+        _isMonthLargeMode.value = large
+    }
 }
 
 // CourseNode.isInWeek(week: Int) is still needed by generateAllTimeSlotsForCourseNodes if it uses integer week numbers

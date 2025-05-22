@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -85,43 +86,60 @@ fun DayScheduleContent(
     val systemToday = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     val targetPage = initialPage + anchorDate.daysUntil(systemToday) * -1
 
-    key(anchorDate) {
-        val pagerState = rememberPagerState(initialPage = targetPage) { pageCount }
-        // Get all time slots and filter for the current date in pager
-        val allTimeSlots by viewModel.allTimeSlots.collectAsState()
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            beyondViewportPageCount = 2
-        ) { page ->
-            val currentDate = systemToday.plus(page - initialPage, DateTimeUnit.DAY)
-            if (currentDate != anchorDate && pagerState.currentPage == page) {
-                onDateChange(currentDate)
-            }
-            val slotsForDay = remember(allTimeSlots, currentDate) {
-                allTimeSlots.filter { slot ->
-                    val slotDate = Instant.fromEpochMilliseconds(slot.startTime)
-                        .toLocalDateTime(TimeZone.currentSystemDefault()).date
-                    slotDate == currentDate
-                }.sortedBy { it.startTime }
-            }
-            val allDayEvents = slotsForDay.filter { it.isAllDayEvent() }
-            val timedEvents = slotsForDay.filter { !it.isAllDayEvent() }
-            Column(Modifier.fillMaxSize()) {
-                if (allDayEvents.isNotEmpty()) {
-                    AllDayEventRow(
-                        events = allDayEvents,
-                        navigationState = navigationState,
-                        defaultTableId = defaultTableId
-                    )
-                }
-                DayTimeline(
-                    date = currentDate,
-                    events = timedEvents,
+    // 1. PagerState 只初始化一次，避免重组导致的卡顿
+    val pagerState = rememberPagerState(initialPage = targetPage) { pageCount }
+
+    // 2. 当前页面对应的日期，直接由 page 索引推导
+    val currentDate = remember(pagerState.currentPage) {
+        systemToday.plus((pagerState.currentPage - initialPage), DateTimeUnit.DAY)
+    }
+
+    // 3. 监听 anchorDate 变化，外部跳转时自动 scrollToPage
+    LaunchedEffect(anchorDate) {
+        val newPage = initialPage + anchorDate.daysUntil(systemToday) * -1
+        if (pagerState.currentPage != newPage) {
+            pagerState.scrollToPage(newPage)
+        }
+    }
+
+    // 4. 只在 currentDate 变化时回调 onDateChange，避免死循环
+    LaunchedEffect(currentDate) {
+        if (currentDate != anchorDate) {
+            onDateChange(currentDate)
+        }
+    }
+
+    // Get all time slots and filter for the current date in pager
+    val allTimeSlots by viewModel.allTimeSlots.collectAsState()
+    HorizontalPager(
+        state = pagerState,
+        modifier = Modifier.fillMaxSize(),
+        beyondViewportPageCount = 1
+    ) { page ->
+        val date = systemToday.plus((page - initialPage), DateTimeUnit.DAY)
+        val slotsForDay = remember(allTimeSlots, date) {
+            allTimeSlots.filter { slot ->
+                val slotDate = Instant.fromEpochMilliseconds(slot.startTime)
+                    .toLocalDateTime(TimeZone.currentSystemDefault()).date
+                slotDate == date
+            }.sortedBy { it.startTime }
+        }
+        val allDayEvents = slotsForDay.filter { it.isAllDayEvent() }
+        val timedEvents = slotsForDay.filter { !it.isAllDayEvent() }
+        Column(Modifier.fillMaxSize()) {
+            if (allDayEvents.isNotEmpty()) {
+                AllDayEventRow(
+                    events = allDayEvents,
                     navigationState = navigationState,
                     defaultTableId = defaultTableId
                 )
             }
+            DayTimeline(
+                date = date,
+                events = timedEvents,
+                navigationState = navigationState,
+                defaultTableId = defaultTableId
+            )
         }
     }
 }
