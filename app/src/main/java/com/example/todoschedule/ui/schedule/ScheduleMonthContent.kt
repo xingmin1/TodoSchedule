@@ -1,6 +1,7 @@
 package com.example.todoschedule.ui.schedule
 
-import android.util.Log
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
@@ -35,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -60,6 +62,7 @@ import java.time.YearMonth
 /**
  * 月视图主内容 Composable
  */
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @OptIn(
     ExperimentalFoundationApi::class,
     ExperimentalAnimationApi::class,
@@ -67,62 +70,63 @@ import java.time.YearMonth
 )
 @Composable
 fun ScheduleMonthContent(
+    initialYearMonth: java.time.YearMonth,
+    onYearMonthChange: (java.time.YearMonth) -> Unit,
     navigationState: NavigationState,
     defaultTableId: Int?,
     viewModel: ScheduleViewModel,
     paddingValues: PaddingValues,
-    initialYearMonth: YearMonth,
-    onYearMonthChange: (YearMonth) -> Unit
+    isLargeMode: Boolean,
+    onLargeModeChange: (Boolean) -> Unit,
+    selectedDate: LocalDate,
+    onDateSelected: (LocalDate) -> Unit
 ) {
-    val pagerState = rememberPagerState(
-        initialPage = 500,
-        pageCount = { 1000 }
-    )
-    val baseYearMonth = remember { YearMonth.now() }
-    val currentPage = pagerState.currentPage
-    val currentYearMonth = remember(currentPage) {
-        baseYearMonth.plusMonths((currentPage - 500).toLong())
-    }
-    // 监听外部指定的年月，自动滚动到对应月份
-    LaunchedEffect(initialYearMonth) {
-        if (initialYearMonth != currentYearMonth) {
-            // 计算目标月份与基准月份的差距
-            val monthsDiff = YearMonth.of(
-                initialYearMonth.year,
-                initialYearMonth.monthValue
-            ).toEpochMonth() - baseYearMonth.toEpochMonth()
-            // 计算目标页码
-            val targetPage = 500 + monthsDiff.toInt()
-            // 如果目标页码在有效范围内且与当前页不同，则直接跳转到目标页
-            if (targetPage in 0 until 1000 && targetPage != pagerState.currentPage) {
-                Log.d(
-                    "MonthSchedulePager",
-                    "使用无动画直接跳转到月份：${initialYearMonth.year}年${initialYearMonth.monthValue}月"
-                )
-                pagerState.scrollToPage(targetPage)
-            }
-        }
-    }
-    // 统一管理大/小格子模式
-    var isLargeMode by remember { mutableStateOf(false) }
-    LaunchedEffect(currentYearMonth) {
-        onYearMonthChange(currentYearMonth)
+    val pageCount = 1000
+    val initialPage = pageCount / 2
+    val baseYearMonth = remember { java.time.YearMonth.now() }
+    val monthsDiff = baseYearMonth.until(initialYearMonth, java.time.temporal.ChronoUnit.MONTHS)
+    val targetPage = initialPage + monthsDiff.toInt()
+
+    // 1. PagerState 只初始化一次，避免重组导致的卡顿
+    val pagerState = rememberPagerState(initialPage = targetPage) { pageCount }
+
+    // 2. 当前页面对应的 YearMonth，直接由 page 索引推导
+    val currentYearMonth = remember(pagerState.currentPage) {
+        baseYearMonth.plusMonths((pagerState.currentPage - initialPage).toLong())
     }
 
+    // 3. 监听 initialYearMonth 变化，外部跳转时自动 scrollToPage
+    LaunchedEffect(initialYearMonth) {
+        val newPage = initialPage + baseYearMonth.until(initialYearMonth, java.time.temporal.ChronoUnit.MONTHS).toInt()
+        if (pagerState.currentPage != newPage) {
+            pagerState.scrollToPage(newPage)
+        }
+    }
+
+    // 4. 只在 currentYearMonth 变化时回调 onYearMonthChange，避免死循环
+    LaunchedEffect(currentYearMonth) {
+        if (currentYearMonth != initialYearMonth) {
+            onYearMonthChange(currentYearMonth)
+        }
+    }
+
+    // 横向滑动分页，滑动时页面内容直接由 page 索引决定，保证流畅
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
         beyondViewportPageCount = 1, // 预加载相邻页面，提高滑动流畅度
         pageSpacing = 0.dp // 确保页面间无间隙
     ) { page ->
-        val yearMonth = baseYearMonth.plusMonths((page - 500).toLong())
+        val yearMonth = baseYearMonth.plusMonths((page - initialPage).toLong())
         MonthSchedulePage(
             navigationState = navigationState,
             defaultTableId = defaultTableId,
             viewModel = viewModel,
             yearMonth = yearMonth,
             isLargeMode = isLargeMode,
-            onLargeModeChange = { isLargeMode = it }
+            onLargeModeChange = onLargeModeChange,
+            selectedDate = selectedDate,
+            onDateSelected = onDateSelected
         )
     }
 }
@@ -137,6 +141,7 @@ private fun YearMonth.toEpochMonth(): Long {
     return year.toLong() * 12L + monthValue - 1
 }
 
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
 fun MonthSchedulePage(
     navigationState: NavigationState,
@@ -144,10 +149,11 @@ fun MonthSchedulePage(
     viewModel: ScheduleViewModel,
     yearMonth: YearMonth,
     isLargeMode: Boolean,
-    onLargeModeChange: (Boolean) -> Unit
+    onLargeModeChange: (Boolean) -> Unit,
+    selectedDate: LocalDate,
+    onDateSelected: (LocalDate) -> Unit
 ) {
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-    var selectedDate by remember { mutableStateOf(today) }
     val year = yearMonth.year
     val month = yearMonth.monthValue
     val firstDayOfMonth = LocalDate(year, month, 1)
@@ -274,7 +280,7 @@ fun MonthSchedulePage(
                                         .padding(2.dp)
                                         .height(cellHeight)
                                         .weight(1f)
-                                        .clickable { selectedDate = date }
+                                        .clickable { onDateSelected(date) }
                                 ) {
                                     Column(
                                         Modifier

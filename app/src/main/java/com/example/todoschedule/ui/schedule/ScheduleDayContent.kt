@@ -1,6 +1,8 @@
 package com.example.todoschedule.ui.schedule
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -30,8 +32,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -45,7 +47,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.domain.model.TimeSlot
-import com.example.todoschedule.domain.utils.CalendarUtils
 import com.example.todoschedule.ui.navigation.NavigationState
 import com.example.todoschedule.ui.utils.ColorUtils
 import kotlinx.datetime.Clock
@@ -53,6 +54,7 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.daysUntil
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 
@@ -70,73 +72,71 @@ private const val GRID_END_HOUR = 24 // 到 24 点结束 (显示 0:00 到 23:00 
 /**
  * 日视图主内容 Composable
  */
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
 fun DayScheduleContent(
+    anchorDate: kotlinx.datetime.LocalDate,
+    onDateChange: (kotlinx.datetime.LocalDate) -> Unit,
     viewModel: ScheduleViewModel = hiltViewModel(),
     navigationState: NavigationState,
-    defaultTableId: Int? // This is defaultTableIds.firstOrNull() from ScheduleScreen
+    defaultTableId: Int?
 ) {
-    // Pager配置
     val pageCount = 1000 // A large number for pseudo-infinite scrolling
     val initialPage = pageCount / 2 // Start in the middle
     val systemToday = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-    val pagerState = rememberPagerState(initialPage = initialPage) { pageCount }
-    val coroutineScope = rememberCoroutineScope()
+    val targetPage = initialPage + anchorDate.daysUntil(systemToday) * -1
 
-    // Current date displayed by the pager
-    val currentDateInPager = remember(pagerState.currentPage) {
-        systemToday.plus(pagerState.currentPage - initialPage, DateTimeUnit.DAY)
+    // 1. PagerState 只初始化一次，避免重组导致的卡顿
+    val pagerState = rememberPagerState(initialPage = targetPage) { pageCount }
+
+    // 2. 当前页面对应的日期，直接由 page 索引推导
+    val currentDate = remember(pagerState.currentPage) {
+        systemToday.plus((pagerState.currentPage - initialPage), DateTimeUnit.DAY)
     }
 
-    // Observe anchorDate from ViewModel
-    val anchorDate by viewModel.anchorDate.collectAsState()
-
-    // Effect to scroll pager when anchorDate changes externally
+    // 3. 监听 anchorDate 变化，外部跳转时自动 scrollToPage
     LaunchedEffect(anchorDate) {
-        // Calculate target page based on the new anchorDate
-        val daysDiff = CalendarUtils.calculateDaysBetween(systemToday, anchorDate)
-        val targetPage = initialPage + daysDiff
-        if (targetPage in 0 until pageCount && targetPage != pagerState.currentPage) {
-            pagerState.scrollToPage(targetPage)
+        val newPage = initialPage + anchorDate.daysUntil(systemToday) * -1
+        if (pagerState.currentPage != newPage) {
+            pagerState.scrollToPage(newPage)
         }
     }
 
-    // Effect to update ViewModel's anchorDate when pager scrolls
-    LaunchedEffect(currentDateInPager) {
-        if (currentDateInPager != anchorDate) { // Only update if different to avoid loops
-            viewModel.setAnchorDate(currentDateInPager)
+    // 4. 只在 currentDate 变化时回调 onDateChange，避免死循环
+    LaunchedEffect(currentDate) {
+        if (currentDate != anchorDate) {
+            onDateChange(currentDate)
         }
     }
 
     // Get all time slots and filter for the current date in pager
     val allTimeSlots by viewModel.allTimeSlots.collectAsState()
-    val slotsForDay = remember(allTimeSlots, currentDateInPager) {
-        allTimeSlots.filter { slot ->
-            val slotDate = Instant.fromEpochMilliseconds(slot.startTime)
-                .toLocalDateTime(TimeZone.currentSystemDefault()).date
-            slotDate == currentDateInPager
-        }.sortedBy { it.startTime }
-    }
-    
-    val allDayEvents = slotsForDay.filter { it.isAllDayEvent() } // Assuming an extension function
-    val timedEvents = slotsForDay.filter { !it.isAllDayEvent() }
-
-    Column(Modifier.fillMaxSize()) {
-        if (allDayEvents.isNotEmpty()) {
-            AllDayEventRow(
-                events = allDayEvents,
-                navigationState = navigationState,
-                defaultTableId = defaultTableId
-            )
+    HorizontalPager(
+        state = pagerState,
+        modifier = Modifier.fillMaxSize(),
+        beyondViewportPageCount = 1
+    ) { page ->
+        val date = systemToday.plus((page - initialPage), DateTimeUnit.DAY)
+        val slotsForDay = remember(allTimeSlots, date) {
+            allTimeSlots.filter { slot ->
+                val slotDate = Instant.fromEpochMilliseconds(slot.startTime)
+                    .toLocalDateTime(TimeZone.currentSystemDefault()).date
+                slotDate == date
+            }.sortedBy { it.startTime }
         }
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.weight(1f)
-        ) { // page index is not directly used, currentDateInPager is the source of truth for content
+        val allDayEvents = slotsForDay.filter { it.isAllDayEvent() }
+        val timedEvents = slotsForDay.filter { !it.isAllDayEvent() }
+        Column(Modifier.fillMaxSize()) {
+            if (allDayEvents.isNotEmpty()) {
+                AllDayEventRow(
+                    events = allDayEvents,
+                    navigationState = navigationState,
+                    defaultTableId = defaultTableId
+                )
+            }
             DayTimeline(
-                date = currentDateInPager, // Pass the date this page represents
-                events = timedEvents, // Pass only timed events for this specific date
-                // allDayEvents are handled above the pager
+                date = date,
+                events = timedEvents,
                 navigationState = navigationState,
                 defaultTableId = defaultTableId
             )
@@ -248,7 +248,10 @@ fun DayTimeline(
                 val eventSlotsWithPositionInfo = calculateEventPositions(events, date)
                 eventSlotsWithPositionInfo.forEach { (event, slotInfo) ->
                     val top = hourHeight * (slotInfo.startMinutes / 60f)
-                    val height = hourHeight * ((slotInfo.endMinutes - slotInfo.startMinutes) / 60f).coerceAtLeast(0.5f)
+                    val height =
+                        hourHeight * ((slotInfo.endMinutes - slotInfo.startMinutes) / 60f).coerceAtLeast(
+                            0.5f
+                        )
                     val hasOverlap = slotInfo.maxColumns > 1
                     val density = LocalDensity.current
                     val horizontalOffset: Dp
@@ -263,7 +266,8 @@ fun DayTimeline(
                         val gapPx = with(density) { 2.dp.toPx() }     // Reduced gap
                         val totalGapWidth = gapPx * (slotInfo.maxColumns - 1)
                         val availableWidth = containerWidthPx - 2 * marginPx - totalGapWidth
-                        val cardWidthPx = if (slotInfo.maxColumns > 0) availableWidth / slotInfo.maxColumns else availableWidth
+                        val cardWidthPx =
+                            if (slotInfo.maxColumns > 0) availableWidth / slotInfo.maxColumns else availableWidth
                         val offsetPx = marginPx + (cardWidthPx + gapPx) * slotInfo.column
                         horizontalOffset = with(density) { offsetPx.toDp() }
                         cardWidth = with(density) { cardWidthPx.toDp() }
@@ -280,9 +284,12 @@ fun DayTimeline(
                         isDarkTheme,
                         MaterialTheme.colorScheme
                     )
-                    val startTime = Instant.fromEpochMilliseconds(event.startTime).toLocalDateTime(TimeZone.currentSystemDefault())
-                    val endTime = Instant.fromEpochMilliseconds(event.endTime).toLocalDateTime(TimeZone.currentSystemDefault())
-                    val timeString = "${startTime.format(timeFormatter)} - ${endTime.format(timeFormatter)}"
+                    val startTime = Instant.fromEpochMilliseconds(event.startTime)
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                    val endTime = Instant.fromEpochMilliseconds(event.endTime)
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                    val timeString =
+                        "${startTime.format(timeFormatter)} - ${endTime.format(timeFormatter)}"
 
                     Card(
                         modifier = Modifier
@@ -290,9 +297,18 @@ fun DayTimeline(
                             .offset(x = horizontalOffset, y = top)
                             .height(height)
                             .padding(horizontal = 1.dp, vertical = 1.dp)
-                            .clickable { handleTimeSlotClick(event, navigationState, defaultTableId) },
+                            .clickable {
+                                handleTimeSlotClick(
+                                    event,
+                                    navigationState,
+                                    defaultTableId
+                                )
+                            },
                         shape = RoundedCornerShape(6.dp),
-                        colors = CardDefaults.cardColors(containerColor = backgroundColor, contentColor = contentColor),
+                        colors = CardDefaults.cardColors(
+                            containerColor = backgroundColor,
+                            contentColor = contentColor
+                        ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(
@@ -339,8 +355,18 @@ fun DayTimeline(
                             .fillMaxWidth()
                             .height(2.dp)
                     ) {
-                        Box(Modifier.size(8.dp).offset(x = (-3).dp).background(MaterialTheme.colorScheme.error, CircleShape))
-                        Box(Modifier.weight(1f).height(2.dp).background(MaterialTheme.colorScheme.error))
+                        Box(
+                            Modifier
+                                .size(8.dp)
+                                .offset(x = (-3).dp)
+                                .background(MaterialTheme.colorScheme.error, CircleShape)
+                        )
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .height(2.dp)
+                                .background(MaterialTheme.colorScheme.error)
+                        )
                     }
                 }
             }
@@ -353,22 +379,33 @@ private fun handleTimeSlotClick(
     navigationState: NavigationState,
     defaultTableId: Int?
 ) {
-    Log.d("DaySchedule", "Clicked on: Type=${timeSlot.scheduleType}, ID=${timeSlot.scheduleId}, Title='${timeSlot.displayTitle}'")
+    Log.d(
+        "DaySchedule",
+        "Clicked on: Type=${timeSlot.scheduleType}, ID=${timeSlot.scheduleId}, Title='${timeSlot.displayTitle}'"
+    )
     when (timeSlot.scheduleType) {
         ScheduleType.COURSE -> {
             // Use the first default table ID if multiple are present, or if a specific active table ID is available
             val tableIdToUse = defaultTableId ?: AppConstants.Ids.INVALID_TABLE_ID
             if (tableIdToUse != AppConstants.Ids.INVALID_TABLE_ID) {
-                navigationState.navigateToCourseDetail(tableId = tableIdToUse, courseId = timeSlot.scheduleId)
+                navigationState.navigateToCourseDetail(
+                    tableId = tableIdToUse,
+                    courseId = timeSlot.scheduleId
+                )
             } else {
                 Log.w("DaySchedule", "Cannot navigate to course detail, table ID is invalid.")
             }
         }
+
         ScheduleType.ORDINARY -> {
             navigationState.navigateToOrdinaryScheduleDetail(timeSlot.scheduleId)
         }
+
         else -> {
-            Log.w("DaySchedule", "Navigation not implemented for schedule type: ${timeSlot.scheduleType}")
+            Log.w(
+                "DaySchedule",
+                "Navigation not implemented for schedule type: ${timeSlot.scheduleType}"
+            )
         }
     }
 }

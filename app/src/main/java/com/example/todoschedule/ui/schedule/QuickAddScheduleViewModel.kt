@@ -319,7 +319,7 @@ class QuickAddScheduleViewModel @Inject constructor(
                     else -> {
                         // 创建普通日程
                         val schedule = OrdinarySchedule(
-                            userId = defaultTableId,
+                            userId = userId,
                             title = _uiState.value.title,
                             description = _uiState.value.detail,
                             location = _uiState.value.location,
@@ -349,7 +349,7 @@ class QuickAddScheduleViewModel @Inject constructor(
                                         else -> ScheduleType.ORDINARY
                                     },
                                     scheduleId = 0,
-                                    userId = defaultTableId
+                                    userId = userId
                                 )
                             )
                         )
