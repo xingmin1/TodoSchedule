@@ -33,7 +33,7 @@ class WebViewScreenViewModel @Inject constructor(
     private val courseRepository: CourseRepository,
     private val tableRepository: TableRepository,
     private val globalSettingRepository: GlobalSettingRepository,
-    private val getLoginUserIdFlowUseCase: GetLoginUserIdFlowUseCase,
+    private val getLoginUserIdFlowUseCase: GetLoginUserIdFlowUseCase
 ) : ViewModel() {
     // 使用 StateFlow 管理保存状态
     private val _saveState = MutableStateFlow<SaveCourseState>(SaveCourseState.Idle)

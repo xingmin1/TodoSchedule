@@ -102,8 +102,56 @@ interface CourseDao {
     suspend fun deleteCourseNode(nodeId: Int)
 
     /**
+     * 根据ID获取课程实体（非Flow）
+     */
+    @Query("SELECT * FROM course WHERE id = :id LIMIT 1")
+    suspend fun getCourseByIdValue(id: Int): CourseEntity?
+
+    /**
+     * 根据CRDT键查询课程
+     */
+    @Query("SELECT * FROM course WHERE crdtKey = :crdtKey LIMIT 1")
+    suspend fun getCourseByCrdtKey(crdtKey: String): CourseEntity?
+
+    /**
+     * 获取所有课程
+     */
+    @Query("SELECT * FROM course")
+    suspend fun getAllCourses(): List<CourseEntity>
+
+    /**
      * 删除课程的所有节点
      */
     @Query("DELETE FROM course_node WHERE courseId = :courseId")
     suspend fun deleteAllNodesOfCourse(courseId: Int)
+
+    /**
+     * 根据crdtKey查询课程本地ID
+     */
+    @Query("SELECT id FROM course WHERE crdtKey = :crdtKey LIMIT 1")
+    suspend fun getIdByCrdtKey(crdtKey: String): Int?
+
+    /**
+     * 根据crdtKey查询课程节点
+     */
+    @Query("SELECT * FROM course_node WHERE crdtKey = :crdtKey LIMIT 1")
+    suspend fun getCourseNodeByCrdtKey(crdtKey: String): CourseNodeEntity?
+
+    /**
+     * 根据tableCrdtKey查询课程列表
+     */
+    @Query("SELECT * FROM course WHERE tableCrdtKey = :tableCrdtKey")
+    suspend fun getCoursesByTableCrdtKey(tableCrdtKey: String): List<CourseEntity>
+
+    /**
+     * 根据ID获取课程节点
+     */
+    @Query("SELECT * FROM course_node WHERE id = :nodeId")
+    suspend fun getCourseNodeById(nodeId: Int): CourseNodeEntity?
+
+    /**
+     * 根据ID获取课程实体（不含节点）
+     */
+    @Query("SELECT * FROM course WHERE id = :courseId")
+    suspend fun getCourseById(courseId: Int): CourseEntity?
 }

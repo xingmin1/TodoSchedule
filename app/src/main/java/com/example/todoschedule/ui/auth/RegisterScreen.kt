@@ -8,8 +8,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -57,6 +62,7 @@ fun RegisterScreen(
     val context = LocalContext.current
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var confirmPasswordVisible by rememberSaveable { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
 
     // 处理注册成功事件
     LaunchedEffect(uiState.registrationSuccess) {
@@ -92,7 +98,9 @@ fun RegisterScreen(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth(0.8f)
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .verticalScroll(scrollState)
             ) {
                 Text("创建新账号", style = MaterialTheme.typography.headlineMedium)
 
@@ -101,6 +109,7 @@ fun RegisterScreen(
                     onValueChange = viewModel::onUsernameChange,
                     label = { Text("用户名") },
                     singleLine = true,
+                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = "用户名") },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -139,6 +148,26 @@ fun RegisterScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     isError = uiState.error == "两次输入的密码不一致" // 简单标记密码不一致错误
+                )
+
+                OutlinedTextField(
+                    value = uiState.phoneNumber,
+                    onValueChange = viewModel::onPhoneNumberChange,
+                    label = { Text("手机号(选填)") },
+                    singleLine = true,
+                    leadingIcon = { Icon(Icons.Default.Phone, contentDescription = "手机号") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = uiState.email,
+                    onValueChange = viewModel::onEmailChange,
+                    label = { Text("邮箱(选填)") },
+                    singleLine = true,
+                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = "邮箱") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Button(

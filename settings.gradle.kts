@@ -7,6 +7,9 @@ pluginManagement {
         
         // 华为云镜像
         maven { url = uri("https://repo.huaweicloud.com/repository/maven") }
+
+        // JitPack仓库 - 用于Synk和HLC库
+        maven { url = uri("https://jitpack.io") }
         
         // 原有配置作为备选
         google {
@@ -30,6 +33,9 @@ dependencyResolutionManagement {
         
         // 华为云镜像
         maven { url = uri("https://repo.huaweicloud.com/repository/maven") }
+
+        // JitPack仓库 - 用于Synk和HLC库
+        maven { url = uri("https://jitpack.io") }
         
         // 原有配置作为备选
         google()

@@ -46,4 +46,20 @@ interface TableDao {
     /** 删除课表 */
     @Query("DELETE FROM `table` WHERE id = :tableId")
     suspend fun deleteTable(tableId: Int)
+
+    /** 根据crdtKey查询课表本地ID */
+    @Query("SELECT id FROM `table` WHERE crdtKey = :crdtKey LIMIT 1")
+    suspend fun getIdByCrdtKey(crdtKey: String): Int?
+
+    /** 根据crdtKey查询课表实体 */
+    @Query("SELECT * FROM `table` WHERE crdtKey = :crdtKey LIMIT 1")
+    suspend fun getTableByCrdtKey(crdtKey: String): TableEntity?
+
+    /** 根据userCrdtKey查询课表列表 */
+    @Query("SELECT * FROM `table` WHERE userCrdtKey = :userCrdtKey")
+    suspend fun getTablesByUserCrdtKey(userCrdtKey: String): List<TableEntity>
+
+    /** 获取所有课表(非Flow) */
+    @Query("SELECT * FROM `table` ORDER BY listPosition")
+    suspend fun getAllTablesSync(): List<TableEntity>
 }

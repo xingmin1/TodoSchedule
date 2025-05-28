@@ -25,4 +25,7 @@ interface UserRepository {
 
     /** 初始化用户数据 如果没有用户，则创建一个默认用户 */
     suspend fun initDefaultUserIfNeeded(): Int
+
+    /** 获取当前登录的用户 */
+    suspend fun getCurrentUser(): User?
 }

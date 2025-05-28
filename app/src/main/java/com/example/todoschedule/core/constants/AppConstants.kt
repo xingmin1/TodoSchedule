@@ -52,12 +52,18 @@ object AppConstants {
     /** 数据库相关常量 */
     object Database {
         const val DB_NAME = "todo_schedule.db" // 数据库名称
-        const val DB_VERSION = 4 // 数据库版本
+        const val DB_VERSION = 7 // 更新数据库版本：为TimeSlotEntity添加crdtKey和同步字段
         const val DEFAULT_TABLE_NAME = "默认课表" // 默认课表名称
         val DEFAULT_TABLE_START_DATE: LocalDate =
             LocalDate(2025, 2, 17) // 默认课表开始日期
         const val DEFAULT_USER_NAME = "默认用户" // 默认用户名称
         const val DEFAULT_TIME_CONFIG_TABLE_NAME = "默认时间配置表" // 默认时间配置表名称
+        const val DATABASE_NAME = "todo_schedule_database"
+
+        /** 数据同步相关 */
+        object Sync {
+            const val SYNC_MESSAGE_TABLE = "sync_message" // 同步消息表
+        }
     }
 
     /** 路由相关常量 */
@@ -66,4 +72,39 @@ object AppConstants {
     }
 
     val DEFAULT_COURSE_COLOR = ColorSchemeEnum.ONERROR // 默认课程颜色
+
+    /** 网络API相关常量 */
+    object Api {
+        const val BASE_URL = "http://10.172.60.115:8080"
+        const val CONNECT_TIMEOUT = 15L // 15秒
+        const val READ_TIMEOUT = 15L // 15秒
+        const val WRITE_TIMEOUT = 15L // 15秒
+
+        object Endpoints {
+            const val LOGIN = "/users/login"
+            const val REGISTER = "/users/register"
+        }
+
+        object Headers {
+            const val AUTHORIZATION = "Authorization"
+            const val BEARER_PREFIX = "Bearer "
+            const val DEVICE_ID = "X-Device-ID" // 设备ID请求头
+        }
+
+        /** 同步相关API */
+        object Sync {
+            const val REGISTER_DEVICE = "/sync/device/register"
+            const val UPLOAD_MESSAGES = "/sync/messages/{entityType}"
+            const val DOWNLOAD_ALL_MESSAGES = "/sync/messages/all"
+            const val DOWNLOAD_ENTITY_MESSAGES = "/sync/messages/{entityType}"
+            const val DOWNLOAD_EXCLUDE_ORIGIN = "/sync/messages/all/exclude-origin"
+            const val DOWNLOAD_ENTITY_EXCLUDE_ORIGIN = "/sync/messages/{entityType}/exclude-origin"
+        }
+    }
+
+    /** 同步相关常量 */
+    object Sync {
+        const val SYNC_INITIAL_DELAY = 10_000L // 10秒
+        const val SYNC_INTERVAL = 10_000L // 10秒
+    }
 }

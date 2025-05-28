@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -93,12 +94,36 @@ fun TaskScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navigationState.navigateToAddEditOrdinarySchedule() }, // Navigate to add task screen
-                containerColor = MaterialTheme.colorScheme.primary,
-                shape = CircleShape
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "添加任务", tint = Color.White)
+            Column(horizontalAlignment = Alignment.End) {
+                // 提醒按钮
+                FloatingActionButton(
+                    onClick = {
+                        // 明确指定筛选参数为"all"，确保导航正确
+                        try {
+                            navigationState.navigateToTaskCalendarSync("all")
+                        } catch (e: Exception) {
+                            Log.e("TaskScreen", "导航到日历同步页面失败", e)
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    shape = CircleShape,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "设置提醒",
+                        tint = Color.White
+                    )
+                }
+
+                // 添加任务按钮 (原有的)
+                FloatingActionButton(
+                    onClick = { navigationState.navigateToAddEditOrdinarySchedule() }, // Navigate to add task screen
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    shape = CircleShape
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "添加任务", tint = Color.White)
+                }
             }
         },
         floatingActionButtonPosition = FabPosition.End,
@@ -311,7 +336,7 @@ fun TaskList(
                     val endTime = task.endTime
 
                     when {
-                        startTime == today || endTime == today -> TaskGroup.TODAY
+                        startTime.date == today || endTime.date == today -> TaskGroup.TODAY
                         startTime.date in weekStart..weekEnd || endTime.date in weekStart..weekEnd
                             -> TaskGroup.WEEK
 

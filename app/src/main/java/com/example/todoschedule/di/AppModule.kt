@@ -1,6 +1,7 @@
 package com.example.todoschedule.di
 
 import com.example.todoschedule.data.remote.TodoApiService
+import com.squareup.moshi.Moshi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,7 +16,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-
 
     /**
      * 提供API服务

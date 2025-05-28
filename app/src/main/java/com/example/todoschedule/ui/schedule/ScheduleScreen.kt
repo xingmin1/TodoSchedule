@@ -287,7 +287,7 @@ fun ScheduleScreen(
                                 when (it.scheduleType) {
                                     ScheduleType.COURSE -> {
                                         val currentTableId = defaultTableId
-                                        if (currentTableId != null && currentTableId != AppConstants.Ids.INVALID_TABLE_ID) {
+                                        if (currentTableId != AppConstants.Ids.INVALID_TABLE_ID) {
                                             Log.i(
                                                 "ScheduleScreen",
                                                 "Navigating to Course Detail: tableId=$currentTableId, courseId=${it.scheduleId}"

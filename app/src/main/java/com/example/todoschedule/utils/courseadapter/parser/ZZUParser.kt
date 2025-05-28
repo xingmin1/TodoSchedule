@@ -130,8 +130,8 @@ class ZZUParser (source: String) : Parser(source) {
             startPos = 1
         }
         else if(timeInfo[0] == '双') {
-            result[1] = 2
-            startPos = 2
+            result[2] = 2
+            startPos = 1
         }
         //起止周
         val mid = timeInfo.indexOf("-")

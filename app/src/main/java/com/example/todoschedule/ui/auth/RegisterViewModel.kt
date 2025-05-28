@@ -31,6 +31,14 @@ class RegisterViewModel @Inject constructor(
         _uiState.update { it.copy(confirmPassword = confirmPassword, error = null) }
     }
 
+    fun onPhoneNumberChange(phoneNumber: String) {
+        _uiState.update { it.copy(phoneNumber = phoneNumber, error = null) }
+    }
+
+    fun onEmailChange(email: String) {
+        _uiState.update { it.copy(email = email, error = null) }
+    }
+
     fun register() {
         viewModelScope.launch {
             val state = _uiState.value
@@ -41,7 +49,13 @@ class RegisterViewModel @Inject constructor(
 
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            val result = registerUserUseCase(state.username, state.password)
+            val result = registerUserUseCase(
+                username = state.username,
+                password = state.password,
+                phoneNumber = state.phoneNumber.takeIf { it.isNotBlank() },
+                email = state.email.takeIf { it.isNotBlank() },
+                useRemote = true
+            )
 
             result.onSuccess {
                 _uiState.update { it.copy(isLoading = false, registrationSuccess = true) }

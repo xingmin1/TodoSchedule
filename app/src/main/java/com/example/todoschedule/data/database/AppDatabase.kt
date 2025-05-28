@@ -6,8 +6,10 @@ import androidx.room.TypeConverters
 import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.converter.Converters
 import com.example.todoschedule.data.database.dao.CourseDao
+import com.example.todoschedule.data.database.dao.CourseNodeDao
 import com.example.todoschedule.data.database.dao.GlobalSettingDao
 import com.example.todoschedule.data.database.dao.OrdinaryScheduleDao
+import com.example.todoschedule.data.database.dao.SyncMessageDao
 import com.example.todoschedule.data.database.dao.TableDao
 import com.example.todoschedule.data.database.dao.TableTimeConfigDao
 import com.example.todoschedule.data.database.dao.TimeSlotDao
@@ -16,6 +18,7 @@ import com.example.todoschedule.data.database.entity.CourseEntity
 import com.example.todoschedule.data.database.entity.CourseNodeEntity
 import com.example.todoschedule.data.database.entity.GlobalTableSettingEntity
 import com.example.todoschedule.data.database.entity.OrdinaryScheduleEntity
+import com.example.todoschedule.data.database.entity.SyncMessageEntity
 import com.example.todoschedule.data.database.entity.TableEntity
 import com.example.todoschedule.data.database.entity.TableTimeConfigEntity
 import com.example.todoschedule.data.database.entity.TableTimeConfigNodeDetaileEntity
@@ -33,7 +36,8 @@ import com.example.todoschedule.data.database.entity.UserEntity
         TableTimeConfigEntity::class,
         TableTimeConfigNodeDetaileEntity::class,
         OrdinaryScheduleEntity::class,
-        TimeSlotEntity::class
+        TimeSlotEntity::class,
+        SyncMessageEntity::class
     ],
     version = AppConstants.Database.DB_VERSION,
     exportSchema = false,
@@ -52,6 +56,9 @@ abstract class AppDatabase : RoomDatabase() {
     /** 获取课程DAO */
     abstract fun courseDao(): CourseDao
 
+    /** 获取课程节点DAO */
+    abstract fun courseNodeDao(): CourseNodeDao
+
     /** 获取时间配置DAO (新) */
     abstract fun tableTimeConfigDao(): TableTimeConfigDao
 
@@ -60,4 +67,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     /** 获取时间槽DAO */
     abstract fun timeSlotDao(): TimeSlotDao
+
+    /** 获取同步消息DAO */
+    abstract fun syncMessageDao(): SyncMessageDao
 }

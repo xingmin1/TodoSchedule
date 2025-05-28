@@ -36,6 +36,8 @@ import com.example.todoschedule.ui.schedule.ScheduleScreen
 import com.example.todoschedule.ui.settings.SettingsScreen
 import com.example.todoschedule.ui.study.StudyScreen
 import com.example.todoschedule.ui.table.CreateEditTableScreen
+import com.example.todoschedule.ui.task.TaskCalendarSyncScreen
+import com.example.todoschedule.ui.task.TaskReminderScreen
 import com.example.todoschedule.ui.task.TaskScreen
 import com.example.todoschedule.ui.theme.TodoScheduleTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -311,6 +313,29 @@ fun AppNavigation(
                     // OrdinaryScheduleDetailScreen 需要适配或有自己的 Scaffold
                     OrdinaryScheduleDetailScreen(
                         // scheduleId = scheduleId,
+                        navigationState = navigationState
+                    )
+                }
+
+                // 任务提醒选择页面
+                composable(AppRoutes.TaskReminder.route) {
+                    TaskReminderScreen(
+                        navigationState = navigationState
+                    )
+                }
+
+                // 任务日历同步页面
+                composable(
+                    route = AppRoutes.TaskCalendarSync.route,
+                    arguments = listOf(navArgument(AppRoutes.TaskCalendarSync.ARG_FILTER) {
+                        type = NavType.StringType
+                    })
+                ) { backStackEntry ->
+                    val filter =
+                        backStackEntry.arguments?.getString(AppRoutes.TaskCalendarSync.ARG_FILTER)
+                            ?: "all"
+                    TaskCalendarSyncScreen(
+                        filter = filter,
                         navigationState = navigationState
                     )
                 }

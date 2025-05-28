@@ -1,12 +1,11 @@
 package com.example.todoschedule
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todoschedule.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -16,8 +15,8 @@ class MainActivityViewModel @Inject constructor(
     sessionRepository: SessionRepository
 ) : ViewModel() {
 
-    private val _isSessionLoaded = MutableStateFlow(false)
-    val isSessionLoaded: StateFlow<Boolean> = _isSessionLoaded.asStateFlow()
+    private val _isSessionLoaded = MutableLiveData(false)
+    val isSessionLoaded: LiveData<Boolean> = _isSessionLoaded
 
     init {
         viewModelScope.launch {
