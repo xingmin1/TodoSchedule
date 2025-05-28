@@ -41,6 +41,7 @@ import com.example.todoschedule.ui.settings.SingleTableSettingsScreen
 import com.example.todoschedule.ui.settings.TableManagementScreen
 import com.example.todoschedule.ui.settings.TimeNodesSettingsScreen
 import com.example.todoschedule.ui.study.StudyScreen
+import com.example.todoschedule.ui.study.StudyViewModel
 import com.example.todoschedule.ui.table.CreateEditTableScreen
 import com.example.todoschedule.ui.task.TaskScreen
 import com.example.todoschedule.ui.theme.TodoScheduleTheme
@@ -66,6 +67,8 @@ fun AppNavigation(
 
     // 收集主题设置状态
     val themeSettings by sessionViewModel.themeSettingsFlow.collectAsState()
+
+    val sharedStudyViewModel: StudyViewModel = hiltViewModel()
 
     // 应用主题 - 将 themeSettings 传递给 TodoScheduleTheme
     TodoScheduleTheme(
@@ -140,7 +143,8 @@ fun AppNavigation(
                 composable(AppRoutes.Home.route) {
                     HomeScreen(
                         navigationState = navigationState,
-                        paddingValues = innerPadding
+                        paddingValues = innerPadding,
+                        studyViewModel = sharedStudyViewModel
                     ) // 传递 padding
                 }
 
@@ -161,7 +165,10 @@ fun AppNavigation(
                 }
 
                 composable(AppRoutes.Study.route) {
-                    StudyScreen(paddingValues = innerPadding) // 传递 padding
+                    StudyScreen(
+                        paddingValues = innerPadding,
+                        viewModel = sharedStudyViewModel
+                    ) // 传递 padding
                 }
 
                 composable(AppRoutes.Profile.route) {

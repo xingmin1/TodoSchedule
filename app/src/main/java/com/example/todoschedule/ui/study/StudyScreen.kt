@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -75,11 +74,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -97,7 +94,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun StudyScreen(
     paddingValues: PaddingValues = PaddingValues(),
-    viewModel: StudyViewModel = viewModel()
+    viewModel: StudyViewModel
 ) {
     val stats by viewModel.studyStat.collectAsStateWithLifecycle()
     val studyPlans by viewModel.studyPlans.collectAsStateWithLifecycle()
@@ -165,8 +162,10 @@ fun StudyScreen(
             FloatingActionButton(
                 onClick = { viewModel.onAddStudyPlanClicked() },
                 containerColor = MaterialTheme.colorScheme.primary,
-                shape = CircleShape,
-                modifier = Modifier.padding(paddingValues)
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .padding(16.dp)
+                    .padding(bottom = paddingValues.calculateBottomPadding())
             ) {
                 Icon(Icons.Default.Add, contentDescription = "添加学习计划")
             }
@@ -1020,19 +1019,22 @@ fun AddEditStudyPlanModal(
             )
             Text("开始时间*", style = MaterialTheme.typography.labelMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val startDateButtonEnabled = true
                 Button(
                     onClick = { showStartDatePicker = true },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.outlinedButtonColors(),
-                    border = ButtonDefaults.outlinedButtonBorder
+                    border = ButtonDefaults.outlinedButtonBorder(enabled = startDateButtonEnabled)
                 ) {
                     Text(startDate.formatForDisplay())
                 }
+
+                val startTimeButtonEnabled = startDate != null
                 Button(
                     onClick = { showStartTimePicker = true },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.outlinedButtonColors(),
-                    border = ButtonDefaults.outlinedButtonBorder,
+                    border = ButtonDefaults.outlinedButtonBorder(enabled = startTimeButtonEnabled),
                     enabled = startDate != null // 只有选了日期才能选时间
                 ) {
                     Text(startTime.formatForDisplay())
@@ -1047,19 +1049,22 @@ fun AddEditStudyPlanModal(
             }
             Text("结束时间*", style = MaterialTheme.typography.labelMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val endDateButtonEnabled = true
                 Button(
                     onClick = { showEndDatePicker = true },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.outlinedButtonColors(),
-                    border = ButtonDefaults.outlinedButtonBorder
+                    border = ButtonDefaults.outlinedButtonBorder(enabled = endDateButtonEnabled)
                 ) {
                     Text(endDate.formatForDisplay())
                 }
+
+                val endTimeButtonEnabled = endDate != null
                 Button(
                     onClick = { showEndTimePicker = true },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.outlinedButtonColors(),
-                    border = ButtonDefaults.outlinedButtonBorder,
+                    border = ButtonDefaults.outlinedButtonBorder(enabled = endTimeButtonEnabled),
                     enabled = endDate != null
                 ) {
                     Text(endTime.formatForDisplay())
@@ -1198,15 +1203,13 @@ fun AddEditStudyPlanModal(
 }
 
 fun LocalDate?.formatForDisplay(): String {
-    return this?.let {
-        it.toJavaLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE)
-    } ?: "选择日期"
+    return this?.toJavaLocalDate()?.format(DateTimeFormatter.ISO_LOCAL_DATE)
+        ?: "选择日期"
 }
 
 fun LocalTime?.formatForDisplay(): String {
-    return this?.let {
-        it.toJavaLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"))
-    } ?: "选择时间"
+    return this?.toJavaLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm"))
+        ?: "选择时间"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1459,13 +1462,5 @@ fun TaskSelectionModal(
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewStudyScreen() {
-    MaterialTheme {
-        StudyScreen()
     }
 }

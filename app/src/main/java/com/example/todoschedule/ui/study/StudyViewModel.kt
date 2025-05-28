@@ -2,6 +2,7 @@ package com.example.todoschedule.ui.study
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,8 +23,10 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import java.util.UUID
+import javax.inject.Inject
 
-class StudyViewModel : ViewModel() {
+@HiltViewModel
+class StudyViewModel @Inject constructor() : ViewModel() {
     private val _studyStats = MutableStateFlow<List<StudyStat>>(emptyList())
     val studyStat: StateFlow<List<StudyStat>> = _studyStats.asStateFlow()
 

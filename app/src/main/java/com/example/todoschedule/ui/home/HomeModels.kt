@@ -28,12 +28,3 @@ data class HomeScheduleUiModel(
     val isCompleted: Boolean
         get() = status == ScheduleStatus.DONE
 }
-
-/**
- * 首页学习统计UI模型
- */
-data class HomeStudyStatUiModel(
-    val weeklyFocusTime: Float,
-    val progress: Float,
-    val changePercentage: Float
-)

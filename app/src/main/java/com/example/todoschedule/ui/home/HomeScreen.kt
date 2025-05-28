@@ -15,11 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,13 +25,14 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -51,11 +50,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.ui.home.model.HomeUiState
 import com.example.todoschedule.ui.navigation.NavigationState
+import com.example.todoschedule.ui.study.StudyStat
+import com.example.todoschedule.ui.study.StudyViewModel
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import com.example.todoschedule.ui.study.StatType as StudyModelStatType
 
 /**
  * 首页
@@ -65,7 +67,8 @@ import kotlinx.datetime.toLocalDateTime
 fun HomeScreen(
     navigationState: NavigationState,
     paddingValues: PaddingValues,
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
+    studyViewModel: StudyViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val todayCourses by viewModel.todayCourses.collectAsState()
@@ -75,14 +78,38 @@ fun HomeScreen(
         .collectAsState(initial = 0)
     val defaultTableId by viewModel.defaultTableIdState.collectAsState()
 
+    var showQuickAddDialog by remember { mutableStateOf(false) }
+
+    val studyStats by studyViewModel.studyStat.collectAsState()
+    val todayFocusStat: StudyStat? =
+        studyStats.find { it.type == StudyModelStatType.DAILY && it.title.contains("今日专注") }
+    val weeklyFocusStat =
+        studyStats.find { it.type == StudyModelStatType.WEEKLY && it.title.contains("本周专注") }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    SearchBar()
-                }
+                title = { Text("首页", fontWeight = FontWeight.SemiBold) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             )
-        }
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showQuickAddDialog = true },
+                modifier = Modifier
+                    .padding(16.dp)
+                    .padding(bottom = paddingValues.calculateBottomPadding()),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "添加日程/课程"
+                )
+            }
+        },
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -104,12 +131,6 @@ fun HomeScreen(
                 )
 
                 is HomeUiState.Success -> {
-                    val studyStatUi = HomeStudyStatUiModel(
-                        weeklyFocusTime = 12.5f,
-                        progress = 0.75f,
-                        changePercentage = 2.3f
-                    )
-
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -120,6 +141,7 @@ fun HomeScreen(
                             TodayOverviewSection(
                                 courseCount = courseCount,
                                 scheduleCount = scheduleCount,
+                                todayFocusDisplay = todayFocusStat?.displayValue ?: "0小时",
                                 onCourseClick = { navigationState.navigateToSchedule() },
                                 onTaskClick = { navigationState.navigateToTask() },
                                 onStudyClick = { navigationState.navigateToStudy() }
@@ -149,52 +171,39 @@ fun HomeScreen(
                                 }
                             )
                         }
+
+                        val displayWeeklyStat = weeklyFocusStat ?: StudyStat(
+                            title = "本周专注",
+                            value = 0f,
+                            type = StudyModelStatType.WEEKLY
+                        )
+
                         item {
                             StudyStatisticsSection(
-                                studyStat = studyStatUi,
+                                studyStat = displayWeeklyStat,
                                 onClick = { navigationState.navigateToStudy() }
                             )
                         }
+
+//                        weeklyFocusStat?.let { stat ->
+//                            item {
+//                                StudyStatisticsSection(
+//                                    studyStat = stat,
+//                                    onClick = { navigationState.navigateToStudy() }
+//                                )
+//                            }
+//                        }
                     }
                 }
             }
         }
     }
-}
 
-@Composable
-fun SearchBar() {
-    var searchText by remember { mutableStateOf("") }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.Search,
-            contentDescription = "搜索",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+    if (showQuickAddDialog) {
+        QuickAddScheduleDialog(
+            onDismiss = { showQuickAddDialog = false },
+            viewModel = hiltViewModel<QuickAddScheduleViewModel>()
         )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "搜索课程、任务",
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            modifier = Modifier.weight(1f)
-        )
-        IconButton(
-            onClick = { /* TODO 处理录音逻辑 */ },
-            modifier = Modifier.size(24.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Mic,
-                contentDescription = "语音输入",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
     }
 }
 
@@ -333,6 +342,7 @@ fun NotableSelectedScreen(
 fun TodayOverviewSection(
     courseCount: Int,
     scheduleCount: Int,
+    todayFocusDisplay: String,
     onCourseClick: () -> Unit,
     onTaskClick: () -> Unit,
     onStudyClick: () -> Unit
@@ -364,7 +374,7 @@ fun TodayOverviewSection(
             )
             OverviewCard(
                 title = "专注时长",
-                value = "0h",  /* TODO 等待实现学习时长 */
+                value = todayFocusDisplay,
                 color = MaterialTheme.colorScheme.secondary,
                 onClick = onStudyClick
             )
@@ -467,9 +477,8 @@ fun CourseListItem(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier.padding(12.dp)
@@ -564,9 +573,8 @@ fun TaskListItem(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -618,7 +626,7 @@ fun TaskListItem(
 
 @Composable
 fun StudyStatisticsSection(
-    studyStat: HomeStudyStatUiModel,
+    studyStat: StudyStat,
     onClick: () -> Unit
 ) {
     Column(
@@ -635,9 +643,8 @@ fun StudyStatisticsSection(
                 .fillMaxWidth()
                 .clickable { onClick() },
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
                 modifier = Modifier.padding(12.dp)
@@ -649,25 +656,20 @@ fun StudyStatisticsSection(
                 ) {
                     Column {
                         Text(
-                            text = "本周专注时长",
+                            text = studyStat.title,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                         Text(
-                            text = studyStat.weeklyFocusTime.toString() + "小时",
+                            text = studyStat.displayValue,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    Text(
-                        text = studyStat.changePercentage.toString() + "小时↑",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 LinearProgressIndicator(
-                    progress = studyStat.progress,
+                    progress = { (studyStat.value / 20f).coerceIn(0f, 1f) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(4.dp),
@@ -678,20 +680,3 @@ fun StudyStatisticsSection(
         }
     }
 }
-
-//@Composable
-//fun Tag(text: String, color: Color) {
-//    Box(
-//        modifier = Modifier
-//            .clip(RoundedCornerShape(50))
-//            .background(color.copy(alpha = 0.1f))
-//            .border(1.dp, color.copy(alpha = 0.2f), RoundedCornerShape(50))
-//            .padding(horizontal = 8.dp, vertical = 4.dp)
-//    ) {
-//        Text(
-//            text = text,
-//            style = MaterialTheme.typography.labelSmall,
-//            color = color
-//        )
-//    }
-//}

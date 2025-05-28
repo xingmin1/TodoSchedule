@@ -23,7 +23,7 @@ data class StudyStat(
         get() {
             if (value < 0f) return "时长无效"
             if (value == 0.0f) {
-                return "暂无专注"
+                return "0小时"
             }
 
             val totalSeconds = (value * 3600).toInt()
