@@ -114,6 +114,8 @@ dependencies {
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
 
+    implementation(libs.coil.compose)
+
     // Room 数据库
     implementation(libs.androidx.room.runtime)
     kapt(libs.androidx.room.compiler)

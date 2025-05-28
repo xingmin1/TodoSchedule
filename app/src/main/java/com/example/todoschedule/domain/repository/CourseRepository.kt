@@ -57,4 +57,5 @@ interface CourseRepository {
      * 删除课程节点
      */
     suspend fun deleteCourseNode(nodeId: Int)
+
 }

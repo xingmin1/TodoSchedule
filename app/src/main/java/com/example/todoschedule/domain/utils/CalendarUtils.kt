@@ -1,13 +1,17 @@
 package com.example.todoschedule.domain.utils
 
+import android.util.Log
 import com.example.todoschedule.core.constants.AppConstants
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 
 /**
@@ -45,6 +49,8 @@ object CalendarUtils {
      */
     fun getWeekDates(week: Int, termStartDate: LocalDate? = null): List<LocalDate> {
         val startDate = termStartDate ?: AppConstants.Database.DEFAULT_TABLE_START_DATE
+
+        Log.d("CalendarUtils", "startDate: $startDate")
 
         // 计算该周的开始日期
         val weekStartDate = startDate.plus((week - 1) * 7, DateTimeUnit.DAY)
@@ -86,5 +92,21 @@ object CalendarUtils {
      */
     fun formatDate(date: LocalDate): String {
         return "${date.monthNumber}/${date.dayOfMonth}"
+    }
+
+    /**
+     * 计算两个 LocalDate 之间的天数差异
+     *
+     * @param date1 第一个日期
+     * @param date2 第二个日期
+     * @return date2 减去 date1 的天数差，可以为负数
+     */
+    fun calculateDaysBetween(date1: LocalDate, date2: LocalDate): Int {
+        // 使用 date2 的时间减去 date1 的时间，并转换为天数
+        val date1Instant = date1.atTime(0, 0).toInstant(TimeZone.currentSystemDefault())
+        val date2Instant = date2.atTime(0, 0).toInstant(TimeZone.currentSystemDefault())
+
+        val diffMillis = date2Instant.toEpochMilliseconds() - date1Instant.toEpochMilliseconds()
+        return (diffMillis / (1000 * 60 * 60 * 24)).toInt()
     }
 } 

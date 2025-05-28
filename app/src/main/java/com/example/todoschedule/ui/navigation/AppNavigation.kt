@@ -1,6 +1,8 @@
 package com.example.todoschedule.ui.navigation
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,7 +35,11 @@ import com.example.todoschedule.ui.ordinaryschedule.AddEditOrdinaryScheduleScree
 import com.example.todoschedule.ui.ordinaryschedule.OrdinaryScheduleDetailScreen
 import com.example.todoschedule.ui.profile.ProfileScreen
 import com.example.todoschedule.ui.schedule.ScheduleScreen
+import com.example.todoschedule.ui.settings.DefaultDisplaySettingsScreen
 import com.example.todoschedule.ui.settings.SettingsScreen
+import com.example.todoschedule.ui.settings.SingleTableSettingsScreen
+import com.example.todoschedule.ui.settings.TableManagementScreen
+import com.example.todoschedule.ui.settings.TimeNodesSettingsScreen
 import com.example.todoschedule.ui.study.StudyScreen
 import com.example.todoschedule.ui.table.CreateEditTableScreen
 import com.example.todoschedule.ui.task.TaskCalendarSyncScreen
@@ -50,6 +56,7 @@ import javax.inject.Inject
 /**
  * 应用导航主组件
  */
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
@@ -142,9 +149,9 @@ fun AppNavigation(
                 composable(AppRoutes.Schedule.route) {
                     ScheduleScreen(
                         navigationState = navigationState,
-                        onNavigateToSettings = { navigationState.navigateToSettings() },
-                        paddingValues = innerPadding // 这里传递了 innerPadding，确保课表页面有足够的底部空间
-                    )
+                        paddingValues = innerPadding
+                    ) { navigationState.navigateToSettings() } // 这里传递了 innerPadding，确保课表页面有足够的底部空间
+
                 }
 
                 // --- 添加新屏幕的 Composable --- //
@@ -160,20 +167,28 @@ fun AppNavigation(
                 }
 
                 composable(AppRoutes.Profile.route) {
-                    ProfileScreen(paddingValues = innerPadding) // 传递 padding
+                    ProfileScreen(
+                        paddingValues = innerPadding,
+                        onLogoutSuccess = {
+                            navController.navigate(AppRoutes.Login.route) {
+                                popUpTo(AppRoutes.Home.route) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        navigationState = navigationState // Pass navigationState
+                    ) // 传递 padding
                 }
 
                 // --- 其他现有屏幕 --- //
                 composable(AppRoutes.Settings.route) {
-                    // SettingsScreen 可能也需要处理 padding，如果它不使用自己的 Scaffold
                     SettingsScreen(
-                        onNavigateBack = { navigationState.navigateBack() },
                         onLogout = {
                             navController.navigate(AppRoutes.Login.route) {
                                 popUpTo(AppRoutes.Home.route) { inclusive = true }
                                 launchSingleTop = true
                             }
-                        }
+                        },
+                        navigationState = navigationState // Added
                     )
                 }
 
@@ -362,6 +377,43 @@ fun AppNavigation(
                         }
                     )
                 }
+
+                // Settings Sub-Screens
+                composable(AppRoutes.TableManagement.route) {
+                    TableManagementScreen(
+                        navigationState = navigationState
+                    )
+                }
+
+                composable(AppRoutes.DefaultDisplaySettings.route) {
+                    DefaultDisplaySettingsScreen(
+                        navigationState = navigationState
+                    )
+                }
+
+                composable(
+                    route = AppRoutes.SingleTableSettings.route,
+                    arguments = listOf(
+                        navArgument(AppRoutes.SingleTableSettings.ARG_TABLE_ID) {
+                            type = NavType.StringType // TODO: Should this be IntType?
+                        }
+                    )
+                ) {
+                    SingleTableSettingsScreen(
+                        navigationState = navigationState
+                    )
+                }
+
+                // 添加 TimeNodesSettingsScreen 路由
+                composable(
+                    route = AppRoutes.TimeNodesSettings.route,
+                    arguments = listOf(navArgument("configId") { type = NavType.IntType })
+                ) {
+                    TimeNodesSettingsScreen(
+                        navigationState = navigationState
+                    )
+                }
+
             } // End NavHost
         } // End Scaffold content lambda
     } // End TodoScheduleTheme

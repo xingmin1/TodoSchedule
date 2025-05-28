@@ -245,12 +245,12 @@ constructor(
                     val courseNodes =
                         courseWithNodes.nodes.filter { node ->
                             node.startWeek <= week &&
-                                node.endWeek >= week &&
-                                (node.weekType == AppConstants.WeekTypes.ALL ||
-                                    (node.weekType == AppConstants.WeekTypes.ODD &&
-                                        week % 2 == 1) ||
-                                    (node.weekType == AppConstants.WeekTypes.EVEN &&
-                                        week % 2 == 0))
+                                    node.endWeek >= week &&
+                                    (node.weekType == AppConstants.WeekTypes.ALL ||
+                                            (node.weekType == AppConstants.WeekTypes.ODD &&
+                                                    week % 2 == 1) ||
+                                            (node.weekType == AppConstants.WeekTypes.EVEN &&
+                                                    week % 2 == 0))
                         }
                     courseWithNodes.copy(nodes = courseNodes).toCourse()
                 }
@@ -267,12 +267,12 @@ constructor(
             nodeEntities
                 .filter { node ->
                     node.startWeek <= week &&
-                        node.endWeek >= week &&
-                        (node.weekType == AppConstants.WeekTypes.ALL ||
-                            (node.weekType == AppConstants.WeekTypes.ODD &&
-                                week % 2 == 1) ||
-                            (node.weekType == AppConstants.WeekTypes.EVEN &&
-                                week % 2 == 0))
+                            node.endWeek >= week &&
+                            (node.weekType == AppConstants.WeekTypes.ALL ||
+                                    (node.weekType == AppConstants.WeekTypes.ODD &&
+                                            week % 2 == 1) ||
+                                    (node.weekType == AppConstants.WeekTypes.EVEN &&
+                                            week % 2 == 0))
                 }
                 .map { it.toCourseNode() }
         }

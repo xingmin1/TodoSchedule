@@ -17,6 +17,13 @@ local.properties
 /.example
 /app/release
 .idea
+.kotlin
+.vscode
+.vscode/extensions.json
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
 /api.md
 /api-doc.md
 /content.txt
@@ -30,3 +37,4 @@ local.properties
 /sync_test_steps.md
 /sync_usage_guide.md
 /tap-hlc.md
+.cursor

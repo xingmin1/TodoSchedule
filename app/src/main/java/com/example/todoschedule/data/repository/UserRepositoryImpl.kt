@@ -1,5 +1,6 @@
 package com.example.todoschedule.data.repository
 
+import android.content.Context
 import android.util.Log
 import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.dao.UserDao
@@ -8,9 +9,11 @@ import com.example.todoschedule.data.mapper.toUserEntity
 import com.example.todoschedule.domain.model.User
 import com.example.todoschedule.domain.repository.SessionRepository
 import com.example.todoschedule.domain.repository.UserRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,7 +21,8 @@ import javax.inject.Singleton
 @Singleton
 class UserRepositoryImpl @Inject constructor(
     private val userDao: UserDao,
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    @ApplicationContext private val context: Context
 ) : UserRepository {
 
     override fun getAllUsers(): Flow<List<User>> {
@@ -55,6 +59,14 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun updateUser(user: User) {
         userDao.updateUser(user.toUserEntity())
+    }
+
+    override suspend fun deleteUser(user: User) {
+        userDao.deleteUser(user.id)
+    }
+
+    override fun getInternalFilesDir(): File {
+        return context.filesDir
     }
 
     override suspend fun initDefaultUserIfNeeded(): Int {

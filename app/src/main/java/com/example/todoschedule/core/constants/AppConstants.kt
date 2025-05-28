@@ -75,7 +75,7 @@ object AppConstants {
 
     /** 网络API相关常量 */
     object Api {
-        const val BASE_URL = "http://10.172.60.115:8080"
+        const val BASE_URL = "http://192.168.236.63:8080"
         const val CONNECT_TIMEOUT = 15L // 15秒
         const val READ_TIMEOUT = 15L // 15秒
         const val WRITE_TIMEOUT = 15L // 15秒

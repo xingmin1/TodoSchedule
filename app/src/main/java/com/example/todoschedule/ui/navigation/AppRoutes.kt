@@ -150,4 +150,17 @@ sealed class AppRoutes(val route: String) {
     object SyncSettings : AppRoutes("syncSettings") {
         fun createRoute() = "syncSettings"
     }
+
+    // Settings Sub-Screens
+    data object TableManagement : AppRoutes("table_management")
+    data object SingleTableSettings : AppRoutes("single_table_settings/{tableId}") {
+        const val ARG_TABLE_ID = "tableId" // Argument name constant
+        fun createRoute(tableId: Int) = "single_table_settings/$tableId"
+    }
+
+    data object TimeNodesSettings : AppRoutes("time_nodes_settings/{configId}") {
+        fun createRoute(configId: Int) = "time_nodes_settings/$configId"
+    }
+
+    data object DefaultDisplaySettings : AppRoutes("default_display_settings")
 }

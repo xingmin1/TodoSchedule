@@ -1,5 +1,6 @@
 package com.example.todoschedule.ui.settings
 
+import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,13 +20,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.EditCalendar
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -56,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.todoschedule.BuildConfig
+import com.example.todoschedule.ui.navigation.AppRoutes
+import com.example.todoschedule.ui.navigation.NavigationState
 
 /**
  * 设置页面
@@ -63,9 +66,9 @@ import com.example.todoschedule.BuildConfig
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onNavigateBack: () -> Unit,
     onLogout: () -> Unit,
-    viewModel: SettingsViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
+    navigationState: NavigationState
 ) {
     val darkTheme by viewModel.darkTheme.collectAsState()
     val materialYou by viewModel.materialYou.collectAsState()
@@ -77,7 +80,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text("设置") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { navigationState.navigateBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
@@ -93,7 +96,24 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
+                .padding(vertical = 8.dp)
         ) {
+            // Card 1: 课表配置
+            SettingsCategory(title = "课表配置") {
+                SettingsClickableItem(
+                    icon = Icons.AutoMirrored.Filled.ViewList,
+                    title = "课表管理",
+                    subtitle = "管理您的课表、开学日期和时间方案",
+                    onClick = { navigationState.navController.navigate(AppRoutes.TableManagement.route) }
+                )
+                SettingsClickableItem(
+                    icon = Icons.Default.EditCalendar,
+                    title = "默认显示课表",
+                    subtitle = "选择在日程主页默认显示的课表",
+                    onClick = { navigationState.navController.navigate(AppRoutes.DefaultDisplaySettings.route) }
+                )
+            }
+
             SettingsCategory(title = "外观") {
                 SettingsSwitchItem(
                     icon = Icons.Default.Palette,
@@ -103,54 +123,67 @@ fun SettingsScreen(
                     onCheckedChange = viewModel::updateDarkTheme
                 )
 
-                SettingsSwitchItem(
-                    icon = Icons.Default.Palette,
-                    title = "Material You",
-                    subtitle = "使用系统动态颜色",
-                    checked = materialYou,
-                    onCheckedChange = viewModel::updateMaterialYou
-                )
+                // 仅在 Android 12+ (API 31+) 上显示 Material You 选项
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    SettingsSwitchItem(
+                        icon = Icons.Default.Palette,
+                        title = "Material You",
+                        subtitle = "使用系统动态颜色 (Android 12+)",
+                        checked = materialYou,
+                        onCheckedChange = viewModel::updateMaterialYou
+                    )
+                }
             }
 
             SettingsCategory(title = "日历") {
-                SettingsClickableItem(
-                    icon = Icons.Default.DateRange,
-                    title = "一周起始日",
-                    subtitle = if (firstDayOfWeek == 1) "周一" else "周日",
-                    onClick = { viewModel.toggleFirstDayOfWeek() }
-                )
+                // SettingsClickableItem(
+                // icon = Icons.Default.DateRange,
+                // title = "一周起始日",
+                // subtitle = if (firstDayOfWeek == 1) "周一" else "周日",
+                // onClick = { viewModel.toggleFirstDayOfWeek() }
+                // )
 
-                SettingsClickableItem(
-                    icon = Icons.Default.DateRange,
-                    title = "开学日期",
-                    subtitle = "设置学期开始时间",
-                    onClick = { /* 显示日期选择器 */ }
-                )
+                // SettingsClickableItem(
+                // icon = Icons.Default.DateRange,
+                // title = "开学日期",
+                // subtitle = "设置学期开始时间",
+                // onClick = { /* 显示日期选择器 */ }
+                // )
 
-                SettingsClickableItem(
-                    icon = Icons.Default.Schedule,
-                    title = "节次设置",
-                    subtitle = "自定义课程时间",
-                    onClick = { /* 导航至时间设置页面 */ }
-                )
+                // SettingsClickableItem(
+                // icon = Icons.Default.Schedule,
+                // title = "节次设置",
+                // subtitle = "自定义课程时间",
+                // onClick = { /* 导航至时间设置页面 */ }
+                // )
             }
 
             SettingsCategory(title = "通知") {
-                SettingsSwitchItem(
-                    icon = Icons.Default.Notifications,
-                    title = "课程提醒",
-                    subtitle = "在上课前提醒您",
-                    checked = false,
-                    onCheckedChange = { /* 更新通知设置 */ }
-                )
+                // SettingsSwitchItem(
+                // icon = Icons.Default.Notifications,
+                // title = "课程提醒",
+                // subtitle = "在上课前提醒您",
+                // checked = false,
+                // onCheckedChange = { /* 更新通知设置 */ }
+                // )
             }
 
             SettingsCategory(title = "关于") {
+                // SettingsClickableItem(
+                // icon = Icons.Default.Info,
+                // title = "关于应用",
+                // subtitle = "版本 1.0.0",
+                // onClick = { /* 显示关于对话框 */ }
+                // )
+            }
+
+            // Card 3: 通用 (SUBTASK-004.6 - 可选)
+            SettingsCategory(title = "通用设置") {
                 SettingsClickableItem(
-                    icon = Icons.Default.Info,
-                    title = "关于应用",
-                    subtitle = "版本 1.0.0",
-                    onClick = { /* 显示关于对话框 */ }
+                    icon = Icons.Filled.Tune,
+                    title = "其他应用设置",
+                    subtitle = "配置通知、周末显示等",
+                    onClick = { /* TODO: Implement in SUBTASK-004.6. For now, no navigation. */ }
                 )
             }
 
@@ -453,4 +486,52 @@ fun DeveloperOptions(viewModel: SettingsViewModel) {
 @Composable
 fun DatabaseOperationHandler(viewModel: SettingsViewModel) {
     // Implementation of the new method
+}
+
+// Placeholder for TableManagementScreen
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TableManagementScreenPlaceholder(onNavigateBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("课表管理 (Placeholder)") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
+                }
+            )
+        }
+    ) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(it), contentAlignment = Alignment.Center) {
+            Text("课表管理占位符")
+        }
+    }
+}
+
+// Placeholder for DefaultDisplaySettingsScreen
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DefaultDisplaySettingsScreenPlaceholder(onNavigateBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("默认显示课表设置 (Placeholder)") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
+                }
+            )
+        }
+    ) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(it), contentAlignment = Alignment.Center) {
+            Text("默认显示课表设置占位符")
+        }
+    }
 } 

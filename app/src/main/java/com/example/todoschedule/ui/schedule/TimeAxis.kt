@@ -72,4 +72,4 @@ private fun TimeAxisLabel(
             textAlign = TextAlign.Center
         )
     }
-} 
+}
