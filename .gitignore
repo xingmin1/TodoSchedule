@@ -16,3 +16,16 @@ local.properties
 /.example
 /app/release
 .idea
+/api.md
+/api-doc.md
+/content.txt
+/.kotlin/errors/errors-1747101822134.log
+/fix_build.ps1
+/idea.md
+/.kotlin/sessions/kotlin-compiler-15592764673499032873.salive
+/records.md
+/shedule.md
+/step.md
+/sync_test_steps.md
+/sync_usage_guide.md
+/tap-hlc.md
