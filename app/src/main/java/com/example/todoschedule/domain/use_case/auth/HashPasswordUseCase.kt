@@ -5,6 +5,9 @@ import javax.inject.Inject
 
 /**
  * 将明文密码哈希化 Use Case
+ *
+ * 注意：该 Use Case 仅用于本地操作（如本地用户验证），
+ * 对于远程 API 调用，密码以明文形式发送，由服务器端负责哈希处理
  */
 class HashPasswordUseCase @Inject constructor() {
     operator fun invoke(password: String): String {

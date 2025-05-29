@@ -337,7 +337,9 @@ fun WebViewScreen(
                             Toast.makeText(context, "导入失败", Toast.LENGTH_SHORT).show()
                         }
                         // 4. 返回导航操作
-                        navigationState.navigateToSchedule(isPop = true)
+                        navigationState.navigateBack()
+                        navigationState.navigateBack()
+                        //navigationState.navigateToSchedule(isPop = true)
                     }
                 },
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer

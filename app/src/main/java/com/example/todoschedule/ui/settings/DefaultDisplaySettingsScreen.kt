@@ -82,12 +82,12 @@ fun DefaultDisplaySettingsScreen(
             viewModel.clearError()
         }
     }
-    
+
     // Handle validation errors specifically
     LaunchedEffect(uiState.validationError) {
         uiState.validationError?.let {
             scope.launch { snackbarHostState.showSnackbar(it) }
-             // Keep the validation error displayed until selection changes
+            // Keep the validation error displayed until selection changes
         }
     }
 
@@ -102,7 +102,10 @@ fun DefaultDisplaySettingsScreen(
                 },
                 actions = {
                     // Save Button
-                    IconButton(onClick = { viewModel.saveSettings() }, enabled = !uiState.isSaving) {
+                    IconButton(
+                        onClick = { viewModel.saveSettings() },
+                        enabled = !uiState.isSaving
+                    ) {
                         if (uiState.isSaving) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp))
                         } else {
@@ -127,18 +130,18 @@ fun DefaultDisplaySettingsScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
-                     // Optional: Display Validation Error prominently
+                    // Optional: Display Validation Error prominently
                     uiState.validationError?.let {
-                        ErrorCard(message = it, onDismiss = { viewModel.clearValidationError() } )
+                        ErrorCard(message = it, onDismiss = { viewModel.clearValidationError() })
                         Spacer(modifier = Modifier.height(8.dp))
                     }
-                    
+
                     LazyColumn(
                         modifier = Modifier.weight(1.0f), // Take remaining space
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                         item {
+                        item {
                             Text(
                                 text = "选择要在课表页默认显示的课表。注意：所选课表的学期时间不能重叠。",
                                 style = MaterialTheme.typography.bodyMedium,
@@ -172,7 +175,8 @@ private fun SelectableTableItem(
     val startDateFormatted = table.startDate.toJavaLocalDate().format(dateFormatter)
     // Basic end date calculation (doesn't account for exact end-of-week, but gives an idea)
     // For precise end date, call the use case's helper or replicate logic
-    val estimatedEndDate = table.startDate.plus(table.totalWeeks, DateTimeUnit.WEEK).minus(1, DateTimeUnit.DAY)
+    val estimatedEndDate =
+        table.startDate.plus(table.totalWeeks, DateTimeUnit.WEEK).minus(1, DateTimeUnit.DAY)
     val endDateFormatted = estimatedEndDate.toJavaLocalDate().format(dateFormatter)
 
 
@@ -226,7 +230,11 @@ fun ErrorCard(message: String, onDismiss: (() -> Unit)? = null) {
             )
             onDismiss?.let {
                 IconButton(onClick = it, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.Close, contentDescription = "Dismiss error", tint = MaterialTheme.colorScheme.onErrorContainer)
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Dismiss error",
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
                 }
             }
         }

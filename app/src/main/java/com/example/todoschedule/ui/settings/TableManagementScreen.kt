@@ -84,14 +84,14 @@ fun TableManagementScreen(
     val pullRefreshState = rememberPullToRefreshState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    
+
     // 记录上一次刷新状态以检测变化
     var wasRefreshing by remember { mutableStateOf(false) }
-    
+
     // 处理下拉刷新指示器的动画状态
     LaunchedEffect(isRefreshing) {
         Log.d("TableManagementScreen", "LaunchedEffect(isRefreshing) triggered: $isRefreshing")
-        
+
         if (isRefreshing) {
             Log.d("TableManagementScreen", "正在刷新，显示指示器")
             // 无需手动调用 animateToThreshold，Modifier.pullToRefresh 会处理
@@ -102,17 +102,17 @@ fun TableManagementScreen(
             wasRefreshing = false
         }
     }
-    
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .pullToRefresh(
                 state = pullRefreshState,
                 isRefreshing = isRefreshing,
-                onRefresh = { 
+                onRefresh = {
                     // onRefresh 回调会在用户拉过阈值并释放后触发
                     Log.d("TableManagementScreen", "onRefresh 回调被调用 (用户触发)")
-                    viewModel.refreshTables() 
+                    viewModel.refreshTables()
                 }
             ),
         topBar = {
@@ -131,7 +131,7 @@ fun TableManagementScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { 
+                onClick = {
                     // 导航到创建新课表页面
                     navigationState.navController.navigate(AppRoutes.CreateEditTable.createRoute())
                 },
@@ -192,7 +192,7 @@ fun TableManagementScreen(
                     }
                 )
             }
-            
+
             // 顶部进度指示器
             if (isRefreshing) {
                 // 显示不确定进度条
@@ -208,7 +208,7 @@ fun TableManagementScreen(
             }
         }
     }
-    
+
     // 错误提示
     uiState.error?.let { error ->
         LaunchedEffect(error) {
@@ -259,7 +259,7 @@ private fun TableItem(
     onDeleteClick: () -> Unit
 ) {
     var showDeleteConfirmation by remember { mutableStateOf(false) }
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth(),
@@ -295,7 +295,7 @@ private fun TableItem(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                
+
                 // 操作按钮
                 IconButton(onClick = onSettingsClick) {
                     Icon(
@@ -304,7 +304,7 @@ private fun TableItem(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                
+
                 IconButton(onClick = onEditClick) {
                     Icon(
                         imageVector = Icons.Default.Edit,
@@ -312,7 +312,7 @@ private fun TableItem(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                
+
                 IconButton(onClick = { showDeleteConfirmation = true }) {
                     Icon(
                         imageVector = Icons.Default.Delete,
@@ -325,7 +325,7 @@ private fun TableItem(
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = 8.dp),
             )
-            
+
             // 课表详情
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -343,7 +343,7 @@ private fun TableItem(
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
-                
+
                 Column {
                     Text(
                         text = "总周数",
@@ -359,7 +359,7 @@ private fun TableItem(
             }
         }
     }
-    
+
     if (showDeleteConfirmation) {
         DeleteConfirmationDialog(
             tableName = table.tableName,

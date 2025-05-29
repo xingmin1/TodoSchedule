@@ -88,6 +88,11 @@ dependencies {
     // SplashScreen API
     implementation(libs.androidx.core.splashscreen)
 
+    // Moshi JSON Parsing
+    implementation("com.squareup.moshi:moshi:1.15.0")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
+    kapt("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
+    
     // Compose UI
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.ui)
@@ -119,6 +124,7 @@ dependencies {
     // Retrofit 网络请求
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
+    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
     implementation(libs.logging.interceptor)
 
     //拼音库
@@ -132,6 +138,22 @@ dependencies {
 
     // Kotlin 序列化
     implementation(libs.kotlinx.serialization.json)
+
+    // HLC - Hybrid Logical Clock
+    implementation("com.github.charlietap:hlc:1.0.1")
+
+    // Synk CRDT 数据同步库
+    implementation("com.github.charlietap.synk:delightful-metastore:0.38")
+    implementation("com.github.charlietap.synk:synk:0.38")
+
+    // SQLDelight - 用于数据库访问
+    implementation("app.cash.sqldelight:android-driver:2.0.1")
+    implementation("app.cash.sqldelight:coroutines-extensions:2.0.1")
+
+    // WorkManager - 用于后台任务
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.hilt:hilt-work:1.1.0")
+    kapt("androidx.hilt:hilt-compiler:1.1.0")
 
     // 测试依赖
     testImplementation(libs.junit)

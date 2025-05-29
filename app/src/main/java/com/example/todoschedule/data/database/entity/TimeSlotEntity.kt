@@ -7,6 +7,8 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.example.todoschedule.data.database.converter.ReminderType
 import com.example.todoschedule.data.database.converter.ScheduleType
+import java.util.UUID
+import com.example.todoschedule.data.database.entity.Syncable
 
 @Entity(
     tableName = "time_slot",
@@ -19,7 +21,7 @@ import com.example.todoschedule.data.database.converter.ScheduleType
             onUpdate = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["user_id"], name = "idx_timeslot_userid")]
+    indices = [Index(value = ["user_id"], name = "idx_timeslot_userid"), Index("crdtKey")]
 )
 data class TimeSlotEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -34,5 +36,14 @@ data class TimeSlotEntity(
     @ColumnInfo(name = "is_repeated") val isRepeated: Boolean = false, // 是否重复
     @ColumnInfo(name = "repeat_pattern") val repeatPattern: String? = null, // 重复模式
     @ColumnInfo(name = "reminder_type") val reminderType: ReminderType? = ReminderType.NONE,
-    @ColumnInfo(name = "reminder_offset") val reminderOffset: Long? = null // 提醒偏移量 (相对开始时间的毫秒数)
-) 
+    @ColumnInfo(name = "reminder_offset") val reminderOffset: Long? = null, // 提醒偏移量 (相对开始时间的毫秒数)
+    // 同步字段
+    val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
+    @ColumnInfo(name = "schedule_crdt_key")
+    val scheduleCrdtKey: String? = null, // 关联日程的CRDT键
+    @ColumnInfo(name = "update_timestamp")
+    val updateTimestamp: Long? = null // 更新时间戳
+) : Syncable {
+    override val syncId: String
+        get() = crdtKey
+}

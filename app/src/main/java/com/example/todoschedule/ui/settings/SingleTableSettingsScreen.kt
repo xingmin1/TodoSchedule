@@ -84,7 +84,7 @@ fun SingleTableSettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    
+
     // 显示成功消息
     LaunchedEffect(uiState.success) {
         uiState.success?.let { successMessage ->
@@ -94,7 +94,7 @@ fun SingleTableSettingsScreen(
             }
         }
     }
-    
+
     // 显示错误消息
     LaunchedEffect(uiState.error) {
         uiState.error?.let { errorMessage ->
@@ -104,7 +104,7 @@ fun SingleTableSettingsScreen(
             }
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -163,9 +163,9 @@ fun SingleTableSettingsScreen(
                 ) {
                     Button(
                         onClick = {
-                            viewModel.saveTableSettings { 
+                            viewModel.saveTableSettings {
                                 // 保存成功后的回调
-                             }
+                            }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !uiState.isSaving
@@ -176,14 +176,18 @@ fun SingleTableSettingsScreen(
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+                            Icon(
+                                Icons.Default.Save,
+                                contentDescription = null,
+                                modifier = Modifier.size(ButtonDefaults.IconSize)
+                            )
                             Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                             Text("保存开学日期与周数")
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -197,9 +201,9 @@ fun SingleTableSettingsScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
-                            
+
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                            
+
                             StartDatePicker(
                                 currentDate = uiState.startDate,
                                 onDateSelected = { newDate ->
@@ -208,9 +212,9 @@ fun SingleTableSettingsScreen(
                             )
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -224,9 +228,9 @@ fun SingleTableSettingsScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
-                            
+
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                            
+
                             TotalWeeksSlider(
                                 currentWeeks = uiState.totalWeeks,
                                 onWeeksChange = { weeks ->
@@ -235,7 +239,7 @@ fun SingleTableSettingsScreen(
                             )
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Card(
@@ -257,7 +261,7 @@ fun SingleTableSettingsScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                            
+
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                             if (uiState.timeConfigs.isEmpty()) {
@@ -274,10 +278,16 @@ fun SingleTableSettingsScreen(
                                                 navigationState.navigateToTimeNodesSettings(config.id.toInt())
                                             },
                                             onEditClick = {
-                                                viewModel.showEditTimeConfigNameDialog(config.id, config.name)
+                                                viewModel.showEditTimeConfigNameDialog(
+                                                    config.id,
+                                                    config.name
+                                                )
                                             },
                                             onDeleteClick = {
-                                                viewModel.showDeleteTimeConfigDialog(config.id, config.name)
+                                                viewModel.showDeleteTimeConfigDialog(
+                                                    config.id,
+                                                    config.name
+                                                )
                                             },
                                             onSetDefaultClick = {
                                                 viewModel.setDefaultTimeConfig(config.id)
@@ -288,8 +298,8 @@ fun SingleTableSettingsScreen(
                             }
                         }
                     }
-                    
-                    Spacer(modifier = Modifier.height(80.dp)) 
+
+                    Spacer(modifier = Modifier.height(80.dp))
                 }
             }
         }
@@ -304,14 +314,21 @@ fun SingleTableSettingsScreen(
                 onConfirm = { newName -> viewModel.addTimeConfig(newName) }
             )
         }
+
         is SingleTableSettingsViewModel.DialogState.EditTimeConfigName -> {
             AddEditTimeConfigNameDialog(
                 isEdit = true,
                 currentName = dialogState.currentName,
                 onDismiss = { viewModel.dismissDialog() },
-                onConfirm = { newName -> viewModel.updateTimeConfigName(dialogState.configId, newName) }
+                onConfirm = { newName ->
+                    viewModel.updateTimeConfigName(
+                        dialogState.configId,
+                        newName
+                    )
+                }
             )
         }
+
         is SingleTableSettingsViewModel.DialogState.DeleteTimeConfig -> {
             DeleteTimeConfigConfirmationDialog(
                 configName = dialogState.configName,
@@ -319,6 +336,7 @@ fun SingleTableSettingsScreen(
                 onDismiss = { viewModel.dismissDialog() }
             )
         }
+
         is SingleTableSettingsViewModel.DialogState.None -> Unit
     }
 }
@@ -344,7 +362,11 @@ private fun TimeConfigItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = config.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                Text(
+                    text = config.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
                 if (config.isDefault) {
                     Text(
                         text = "(默认)",
@@ -353,17 +375,21 @@ private fun TimeConfigItem(
                     )
                 }
             }
-            
+
             if (!config.isDefault) {
                 IconButton(onClick = onSetDefaultClick, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Default.CheckCircleOutline, "设为默认", tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.Default.CheckCircleOutline,
+                        "设为默认",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
             IconButton(onClick = onEditClick, modifier = Modifier.size(36.dp)) {
                 Icon(Icons.Default.Edit, "编辑名称")
             }
             if (!config.isDefault) {
-                 IconButton(onClick = onDeleteClick, modifier = Modifier.size(36.dp)) {
+                IconButton(onClick = onDeleteClick, modifier = Modifier.size(36.dp)) {
                     Icon(Icons.Default.Delete, "删除", tint = MaterialTheme.colorScheme.error)
                 }
             }
@@ -436,7 +462,7 @@ private fun StartDatePicker(
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
     val formattedDate = currentDate?.let { formatDate(it) } ?: "未设置"
-    
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -455,7 +481,7 @@ private fun StartDatePicker(
                 fontWeight = FontWeight.Medium
             )
         }
-        
+
         IconButton(onClick = { showDatePicker = true }) {
             Icon(
                 imageVector = Icons.Default.CalendarMonth,
@@ -464,13 +490,13 @@ private fun StartDatePicker(
             )
         }
     }
-    
+
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = currentDate?.toJavaLocalDate()?.atStartOfDay()
                 ?.atZone(ZoneId.systemDefault())?.toInstant()?.toEpochMilli()
         )
-        
+
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
@@ -479,7 +505,7 @@ private fun StartDatePicker(
                         datePickerState.selectedDateMillis?.let { millis ->
                             val instant = java.time.Instant.ofEpochMilli(millis)
                             val localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate()
-                            onDateSelected(localDate.let { 
+                            onDateSelected(localDate.let {
                                 LocalDate(it.year, it.monthValue, it.dayOfMonth)
                             })
                         }
@@ -507,7 +533,7 @@ private fun TotalWeeksSlider(
 ) {
     var sliderValue by remember { mutableStateOf(currentWeeks.toFloat()) }
     var textFieldValue by remember { mutableStateOf(currentWeeks.toString()) }
-    
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -518,7 +544,7 @@ private fun TotalWeeksSlider(
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f)
             )
-            
+
             OutlinedTextField(
                 value = textFieldValue,
                 onValueChange = { input ->
@@ -536,16 +562,16 @@ private fun TotalWeeksSlider(
                 textStyle = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center),
                 singleLine = true
             )
-            
+
             Text(
                 text = "周",
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Slider(
             value = sliderValue,
             onValueChange = { value ->
@@ -558,7 +584,7 @@ private fun TotalWeeksSlider(
             steps = 28,
             modifier = Modifier.fillMaxWidth()
         )
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween

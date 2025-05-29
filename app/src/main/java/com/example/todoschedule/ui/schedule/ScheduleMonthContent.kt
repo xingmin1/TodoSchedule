@@ -97,7 +97,10 @@ fun ScheduleMonthContent(
 
     // 3. 监听 initialYearMonth 变化，外部跳转时自动 scrollToPage
     LaunchedEffect(initialYearMonth) {
-        val newPage = initialPage + baseYearMonth.until(initialYearMonth, java.time.temporal.ChronoUnit.MONTHS).toInt()
+        val newPage = initialPage + baseYearMonth.until(
+            initialYearMonth,
+            java.time.temporal.ChronoUnit.MONTHS
+        ).toInt()
         if (pagerState.currentPage != newPage) {
             pagerState.scrollToPage(newPage)
         }

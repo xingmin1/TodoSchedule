@@ -60,18 +60,18 @@ class DefaultDisplaySettingsViewModel @Inject constructor(
                             )
                         }
                     }.catch { e ->
-                         _uiState.update {
+                        _uiState.update {
                             it.copy(isLoading = false, error = "加载数据失败: ${e.message}")
                         }
                     }.collect()
 
                 } catch (e: Exception) {
-                     _uiState.update {
+                    _uiState.update {
                         it.copy(isLoading = false, error = "加载初始化数据失败: ${e.message}")
                     }
                 }
             } ?: run {
-                 _uiState.update { it.copy(isLoading = false, error = "无法获取用户ID") }
+                _uiState.update { it.copy(isLoading = false, error = "无法获取用户ID") }
             }
         }
     }
@@ -84,7 +84,11 @@ class DefaultDisplaySettingsViewModel @Inject constructor(
             } else {
                 currentSelection.remove(tableId)
             }
-            currentState.copy(selectedTableIds = currentSelection, validationError = null, saveSuccess = false) // Clear errors/success on change
+            currentState.copy(
+                selectedTableIds = currentSelection,
+                validationError = null,
+                saveSuccess = false
+            ) // Clear errors/success on change
         }
     }
 
@@ -111,10 +115,18 @@ class DefaultDisplaySettingsViewModel @Inject constructor(
             _uiState.update { it.copy(isSaving = true, validationError = null) }
             userIdFlow.firstOrNull()?.let { userId ->
                 try {
-                    globalSettingRepository.updateDefaultTableIds(userId.toInt(), selectedIds.toList())
+                    globalSettingRepository.updateDefaultTableIds(
+                        userId.toInt(),
+                        selectedIds.toList()
+                    )
                     _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
                 } catch (e: Exception) {
-                    _uiState.update { it.copy(isSaving = false, error = "保存设置失败: ${e.message}") }
+                    _uiState.update {
+                        it.copy(
+                            isSaving = false,
+                            error = "保存设置失败: ${e.message}"
+                        )
+                    }
                 }
             } ?: run {
                 _uiState.update { it.copy(isSaving = false, error = "无法获取用户ID以保存设置") }
@@ -129,7 +141,7 @@ class DefaultDisplaySettingsViewModel @Inject constructor(
     fun clearValidationError() {
         _uiState.update { it.copy(validationError = null) }
     }
-    
+
     fun clearSaveSuccess() {
         _uiState.update { it.copy(saveSuccess = false) }
     }

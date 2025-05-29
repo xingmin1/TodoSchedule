@@ -121,7 +121,7 @@ constructor(
     // 获取当前课表的时间配置
     private val currentTablesTimeConfig: StateFlow<List<TableTimeConfig?>> =
         _defaultTableIdState.flatMapLatest { tableIds ->
-            if (tableIds.isEmpty()){
+            if (tableIds.isEmpty()) {
                 flowOf(emptyList())
             } else {
                 val configFlows = tableIds.map { tableId ->
@@ -161,8 +161,8 @@ constructor(
     // --- 新增: 组合用户相关的课表数据 ---
     private val userTableDataFlow = combine(
         currentUserIdState.filterNotNull(),
-        _currentTableState.filterNotNull().map{ it.filterNotNull()}, //确保列表内也是非空
-        currentTablesTimeConfig.filterNotNull().map{ it.filterNotNull()} //确保列表内也是非空
+        _currentTableState.filterNotNull().map { it.filterNotNull() }, //确保列表内也是非空
+        currentTablesTimeConfig.filterNotNull().map { it.filterNotNull() } //确保列表内也是非空
     ) { userId, tables, configs ->
         tables.mapNotNull { table ->
             if (table.userId == userId.toInt()) {
@@ -195,7 +195,7 @@ constructor(
     ) { userId, tableIds, tables, tableTimeConfigs ->
         Log.d(
             "ScheduleViewModel",
-            "State combine for UI: userId=$userId, tableIds=$tableIds, tablesCount=${tables.count { it!=null }}, configsCount=${tableTimeConfigs.count{it!=null}}"
+            "State combine for UI: userId=$userId, tableIds=$tableIds, tablesCount=${tables.count { it != null }}, configsCount=${tableTimeConfigs.count { it != null }}"
         )
         when {
             userId == null && currentUserIdState.value == null -> ScheduleUiState.Loading
@@ -204,10 +204,18 @@ constructor(
             // 检查是否所有请求的课表和配置都已加载（或至少尝试过）
             // 这里简化逻辑：如果ID存在，但对应的table或config是null（且列表大小匹配），则认为是加载中
             // 更稳健的可能是检查是否有任何一个ID对应的table/config仍在加载（需要更复杂的状态跟踪）
-            tables.any { it == null && tableIds.contains(it?.id) } || tableTimeConfigs.any { it == null && tableIds.contains(it?.tableId) } && tables.size == tableIds.size && tableTimeConfigs.size == tableIds.size -> {
-                 Log.d("ScheduleViewModel", "UI State: Loading table/config details for tableIds $tableIds")
-                 ScheduleUiState.Loading
+            tables.any { it == null && tableIds.contains(it?.id) } || tableTimeConfigs.any {
+                it == null && tableIds.contains(
+                    it?.tableId
+                )
+            } && tables.size == tableIds.size && tableTimeConfigs.size == tableIds.size -> {
+                Log.d(
+                    "ScheduleViewModel",
+                    "UI State: Loading table/config details for tableIds $tableIds"
+                )
+                ScheduleUiState.Loading
             }
+
             tables.all { it != null } && tableTimeConfigs.all { it != null } && tables.isNotEmpty() && tableTimeConfigs.isNotEmpty() -> {
                 Log.d(
                     "ScheduleViewModel",
@@ -215,8 +223,12 @@ constructor(
                 )
                 ScheduleUiState.Success
             }
+
             else -> { // 其他中间状态或部分加载完成的状态，也视为Loading或根据需求调整
-                Log.d("ScheduleViewModel", "UI State: Fallback to Loading or specific error needed. tables: ${tables.map{it?.id}}, configs: ${tableTimeConfigs.map{it?.tableId}}")
+                Log.d(
+                    "ScheduleViewModel",
+                    "UI State: Fallback to Loading or specific error needed. tables: ${tables.map { it?.id }}, configs: ${tableTimeConfigs.map { it?.tableId }}"
+                )
                 ScheduleUiState.Loading // Fallback, ideally have more granular states
             }
         }
@@ -331,7 +343,8 @@ constructor(
     // 对于日视图，它就是当天日期
     // 对于周视图，它将是该周的某一天（例如周一，或用户通过左右滑动选择的任何一天的对应周一）
     // 对于月视图，它是当月的第一天或用户选择的月份
-    private val _anchorDate = MutableStateFlow(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date)
+    private val _anchorDate =
+        MutableStateFlow(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date)
     val anchorDate: StateFlow<LocalDate> = _anchorDate
 
     // ================== 新增：以日期为主的连续周视图支持 ==================
@@ -452,8 +465,8 @@ constructor(
     // 所有日程（课程+普通日程），便于任意日期范围筛选
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     val allTimeSlots: StateFlow<List<TimeSlot>> = combine(
-        ordinarySchedules, 
-        _currentTableState.flatMapLatest { tablesList -> 
+        ordinarySchedules,
+        _currentTableState.flatMapLatest { tablesList ->
             val validTables = tablesList.filterNotNull()
             if (validTables.isEmpty()) {
                 flowOf(emptyList<TimeSlot>())
@@ -466,7 +479,10 @@ constructor(
                             currentUserIdState.filterNotNull()
                         ) { coursesForTable, configForTable, userId ->
                             if (configForTable == null) {
-                                Log.w("ScheduleViewModel", "allTimeSlots: No time config for table ${table.id}")
+                                Log.w(
+                                    "ScheduleViewModel",
+                                    "allTimeSlots: No time config for table ${table.id}"
+                                )
                                 emptyList<TimeSlot>()
                             } else {
                                 generateAllTimeSlotsForCourseNodes(
@@ -558,7 +574,10 @@ constructor(
         val tableForDate = findTableForDate(date, _allTables.value)
         if (_currentActiveTable.value?.id != tableForDate?.id) {
             _currentActiveTable.value = tableForDate
-            Log.d("ScheduleViewModel", "Current active table set to: ${tableForDate?.tableName} for date $date")
+            Log.d(
+                "ScheduleViewModel",
+                "Current active table set to: ${tableForDate?.tableName} for date $date"
+            )
         }
     }
 
@@ -585,9 +604,13 @@ constructor(
                 .distinctUntilChanged { old, new -> old.id == new.id && old.startDate == new.startDate }
                 .collect { firstTable ->
                     // Calculate the Monday of the current actual week relative to this table's start date
-                    val currentActualWeekNumberForTable = CalendarUtils.getCurrentWeek(firstTable.startDate)
+                    val currentActualWeekNumberForTable =
+                        CalendarUtils.getCurrentWeek(firstTable.startDate)
                     // Assuming getWeekDates returns a list where the first element is Monday
-                    val mondayOfActualWeekForTable = CalendarUtils.getWeekDates(currentActualWeekNumberForTable, firstTable.startDate).firstOrNull()
+                    val mondayOfActualWeekForTable = CalendarUtils.getWeekDates(
+                        currentActualWeekNumberForTable,
+                        firstTable.startDate
+                    ).firstOrNull()
 
                     if (mondayOfActualWeekForTable != null && _currentWeekStartDate.value != mondayOfActualWeekForTable) {
                         Log.d(
@@ -606,7 +629,7 @@ constructor(
         loadAllTablesAndSetActive()
         // 监听所有课表列表变化，以防外部修改课表后能自动更新活动课表
         viewModelScope.launch {
-            _allTables.collect { 
+            _allTables.collect {
                 updateCurrentActiveTableForDate(_anchorDate.value) // Update based on current UI anchor if all tables change
             }
         }
@@ -622,9 +645,10 @@ constructor(
         viewModelScope.launch {
             _defaultTableIdState.collect { tableIds ->
                 tableIds.forEach { tableId ->
-                    launch { 
+                    launch {
                         val table = tableRepository.fetchTableById(tableId)
-                        val config = tableTimeConfigRepository.getDefaultTimeConfig(tableId).firstOrNull()
+                        val config =
+                            tableTimeConfigRepository.getDefaultTimeConfig(tableId).firstOrNull()
 
                         if (table != null && config == null && table.id != AppConstants.Ids.INVALID_TABLE_ID) {
                             Log.w(
@@ -633,12 +657,18 @@ constructor(
                             )
                             try {
                                 currentUserIdState.value?.let { userId ->
-                                    tableTimeConfigRepository.ensureDefaultTimeConfig(table.id, userId.toInt())
+                                    tableTimeConfigRepository.ensureDefaultTimeConfig(
+                                        table.id,
+                                        userId.toInt()
+                                    )
                                     Log.i(
                                         "ScheduleViewModel",
                                         "ensureDefaultTimeConfig called for table ${table.id}, userId $userId."
                                     )
-                                } ?: Log.e("ScheduleViewModel", "Cannot ensure default time config, userId is null.")
+                                } ?: Log.e(
+                                    "ScheduleViewModel",
+                                    "Cannot ensure default time config, userId is null."
+                                )
                             } catch (e: Exception) {
                                 Log.e(
                                     "ScheduleViewModel",
@@ -689,6 +719,6 @@ constructor(
 private fun CourseNode.isInWeek(weekNum: Int): Boolean {
     return weekNum in startWeek..endWeek &&
             (weekType == 0 ||
-             (weekType == AppConstants.WeekTypes.ODD && weekNum % 2 != 0) ||
-             (weekType == AppConstants.WeekTypes.EVEN && weekNum % 2 == 0))
+                    (weekType == AppConstants.WeekTypes.ODD && weekNum % 2 != 0) ||
+                    (weekType == AppConstants.WeekTypes.EVEN && weekNum % 2 == 0))
 }

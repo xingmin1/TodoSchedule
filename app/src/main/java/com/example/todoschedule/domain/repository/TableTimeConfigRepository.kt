@@ -18,7 +18,10 @@ interface TableTimeConfigRepository {
      * 返回创建或找到的默认配置的 ID。
      * 如果创建失败，则返回 null。
      */
-    suspend fun ensureDefaultTimeConfig(tableId: Int, userId: Int): Int? // userId might not be needed here if not used for ownership/permissions
+    suspend fun ensureDefaultTimeConfig(
+        tableId: Int,
+        userId: Int
+    ): Int? // userId might not be needed here if not used for ownership/permissions
 
     /**
      * 添加一个新的时间配置。

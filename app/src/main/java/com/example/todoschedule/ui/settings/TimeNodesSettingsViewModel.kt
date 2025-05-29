@@ -54,6 +54,7 @@ class TimeNodesSettingsViewModel @Inject constructor(
             val endTime: LocalTime = nodeToEdit?.endTime ?: LocalTime(8, 45),
             val nodeNumber: Int = nodeToEdit?.node ?: 0 // 添加模式下可能需要自动计算
         ) : DialogState()
+
         data class DeleteNode(val nodeId: Int, val nodeName: String) : DialogState()
     }
 
@@ -62,13 +63,16 @@ class TimeNodesSettingsViewModel @Inject constructor(
 
     // 时间配置信息 Flow (包含名称和节点)
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val timeConfigFlow: StateFlow<TableTimeConfig?> = 
+    private val timeConfigFlow: StateFlow<TableTimeConfig?> =
         MutableStateFlow(configId)
             .flatMapLatest { id ->
                 tableTimeConfigRepository.getTimeConfigById(id)
             }
             .catch { e ->
-                _uiState.value = _uiState.value.copy(isLoading = false, error = "加载时间配置详情失败: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "加载时间配置详情失败: ${e.message}"
+                )
                 emit(null)
             }
             .stateIn(
@@ -102,7 +106,8 @@ class TimeNodesSettingsViewModel @Inject constructor(
     }
 
     fun showEditNodeDialog(node: TableTimeConfigNode) {
-        _uiState.value = _uiState.value.copy(dialogState = DialogState.AddOrEditNode(nodeToEdit = node))
+        _uiState.value =
+            _uiState.value.copy(dialogState = DialogState.AddOrEditNode(nodeToEdit = node))
     }
 
     fun showDeleteNodeDialog(nodeId: Int, nodeName: String) {
@@ -137,7 +142,10 @@ class TimeNodesSettingsViewModel @Inject constructor(
 
             try {
                 val currentConfig = timeConfigFlow.value ?: run {
-                    _uiState.value = _uiState.value.copy(error = "无法保存，时间配置信息丢失", dialogState = DialogState.None)
+                    _uiState.value = _uiState.value.copy(
+                        error = "无法保存，时间配置信息丢失",
+                        dialogState = DialogState.None
+                    )
                     return@launch
                 }
 
@@ -176,14 +184,17 @@ class TimeNodesSettingsViewModel @Inject constructor(
 
     fun deleteNode(nodeId: Int) {
         viewModelScope.launch {
-             try {
-                 val currentConfig = timeConfigFlow.value ?: run {
-                    _uiState.value = _uiState.value.copy(error = "无法删除，时间配置信息丢失", dialogState = DialogState.None)
+            try {
+                val currentConfig = timeConfigFlow.value ?: run {
+                    _uiState.value = _uiState.value.copy(
+                        error = "无法删除，时间配置信息丢失",
+                        dialogState = DialogState.None
+                    )
                     return@launch
                 }
-                
+
                 val updatedNodes = currentConfig.nodes.filter { it.id != nodeId }
-                
+
                 // 重新编号节次，确保连续 (可选，取决于需求)
                 // val renumberedNodes = updatedNodes.sortedBy { it.startTime }.mapIndexed { index, node ->
                 //     node.copy(node = index + 1)
@@ -192,13 +203,13 @@ class TimeNodesSettingsViewModel @Inject constructor(
                 val updatedConfig = currentConfig.copy(nodes = updatedNodes) // 或 renumberedNodes
                 tableTimeConfigRepository.updateTimeConfig(updatedConfig) // 更新整个配置
 
-                 _uiState.value = _uiState.value.copy(
+                _uiState.value = _uiState.value.copy(
                     success = "节次已删除",
                     dialogState = DialogState.None
                 )
 
             } catch (e: Exception) {
-                 _uiState.value = _uiState.value.copy(
+                _uiState.value = _uiState.value.copy(
                     error = "删除节次失败: ${e.message}",
                     dialogState = DialogState.None
                 )
@@ -214,7 +225,7 @@ class TimeNodesSettingsViewModel @Inject constructor(
     fun clearErrorMessage() {
         _uiState.value = _uiState.value.copy(error = null)
     }
-    
+
     companion object {
         const val ARG_TABLE_ID = "tableId"
         const val ARG_CONFIG_ID = "configId"

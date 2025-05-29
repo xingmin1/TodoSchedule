@@ -17,43 +17,45 @@ class FileRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : FileRepository {
 
-    override suspend fun saveImageFromUri(uri: Uri, fileNamePrefix: String): Resource<String> = withContext(Dispatchers.IO) {
-        try {
-            val inputStream = context.contentResolver.openInputStream(uri)
-            if (inputStream == null) {
-                return@withContext Resource.Error("Failed to open input stream for URI: $uri")
-            }
-
-            // Create a directory for avatars if it doesn't exist
-            val avatarsDir = File(context.filesDir, "avatars")
-            if (!avatarsDir.exists()) {
-                if (!avatarsDir.mkdirs()) {
-                    return@withContext Resource.Error("Failed to create avatars directory.")
+    override suspend fun saveImageFromUri(uri: Uri, fileNamePrefix: String): Resource<String> =
+        withContext(Dispatchers.IO) {
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                if (inputStream == null) {
+                    return@withContext Resource.Error("Failed to open input stream for URI: $uri")
                 }
+
+                // Create a directory for avatars if it doesn't exist
+                val avatarsDir = File(context.filesDir, "avatars")
+                if (!avatarsDir.exists()) {
+                    if (!avatarsDir.mkdirs()) {
+                        return@withContext Resource.Error("Failed to create avatars directory.")
+                    }
+                }
+
+                // Determine file extension or use a default
+                val extension =
+                    context.contentResolver.getType(uri)?.substringAfterLast('/') ?: "jpg"
+                val fileName = "${fileNamePrefix}${UUID.randomUUID()}.$extension"
+                val outputFile = File(avatarsDir, fileName)
+
+                FileOutputStream(outputFile).use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+                inputStream.close()
+
+                Resource.Success(outputFile.absolutePath)
+            } catch (e: IOException) {
+                e.printStackTrace()
+                Resource.Error("Failed to save image: ${e.message}")
+            } catch (e: SecurityException) {
+                e.printStackTrace()
+                Resource.Error("Security permission denied for URI: $uri - ${e.message}")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Resource.Error("An unexpected error occurred while saving the image: ${e.message}")
             }
-
-            // Determine file extension or use a default
-            val extension = context.contentResolver.getType(uri)?.substringAfterLast('/') ?: "jpg"
-            val fileName = "${fileNamePrefix}${UUID.randomUUID()}.$extension"
-            val outputFile = File(avatarsDir, fileName)
-
-            FileOutputStream(outputFile).use { outputStream ->
-                inputStream.copyTo(outputStream)
-            }
-            inputStream.close()
-
-            Resource.Success(outputFile.absolutePath)
-        } catch (e: IOException) {
-            e.printStackTrace()
-            Resource.Error("Failed to save image: ${e.message}")
-        } catch (e: SecurityException) {
-            e.printStackTrace()
-            Resource.Error("Security permission denied for URI: $uri - ${e.message}")
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Resource.Error("An unexpected error occurred while saving the image: ${e.message}")
         }
-    }
 
     override suspend fun deleteFile(filePath: String): Boolean = withContext(Dispatchers.IO) {
         try {

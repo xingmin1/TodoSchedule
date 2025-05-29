@@ -5,6 +5,9 @@ import javax.inject.Inject
 
 /**
  * 验证明文密码和哈希是否匹配 Use Case
+ *
+ * 注意：该 Use Case 仅用于本地操作（如本地用户验证），
+ * 对于远程认证，密码验证由服务器端完成
  */
 class VerifyPasswordUseCase @Inject constructor() {
     operator fun invoke(password: String, storedHash: String?): Boolean {

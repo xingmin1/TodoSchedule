@@ -50,8 +50,18 @@ class ProfileViewModel @Inject constructor(
             getUserProfileUseCase().collect { result ->
                 _uiState.update {
                     when (result) {
-                        is Resource.Loading -> it.copy(isLoading = true, error = null, successMessage = null)
-                        is Resource.Success -> it.copy(user = result.data, isLoading = false, error = null)
+                        is Resource.Loading -> it.copy(
+                            isLoading = true,
+                            error = null,
+                            successMessage = null
+                        )
+
+                        is Resource.Success -> it.copy(
+                            user = result.data,
+                            isLoading = false,
+                            error = null
+                        )
+
                         is Resource.Error -> it.copy(isLoading = false, error = result.message)
                     }
                 }
@@ -85,14 +95,21 @@ class ProfileViewModel @Inject constructor(
                         if (value.isBlank() || value.length < 3) throw IllegalArgumentException("用户名长度不能少于3个字符")
                         currentUser.copy(username = value)
                     }
+
                     EditField.EMAIL -> {
-                        if (value.isNotBlank() && !android.util.Patterns.EMAIL_ADDRESS.matcher(value).matches()) throw IllegalArgumentException("邮箱格式不正确")
+                        if (value.isNotBlank() && !android.util.Patterns.EMAIL_ADDRESS.matcher(value)
+                                .matches()
+                        ) throw IllegalArgumentException("邮箱格式不正确")
                         currentUser.copy(email = value.ifBlank { null })
                     }
+
                     EditField.PHONE -> {
-                        if (value.isNotBlank() && !value.matches(Regex("^\\+?[0-9]{10,13}$"))) throw IllegalArgumentException("手机号格式不正确")
+                        if (value.isNotBlank() && !value.matches(Regex("^\\+?[0-9]{10,13}$"))) throw IllegalArgumentException(
+                            "手机号格式不正确"
+                        )
                         currentUser.copy(phoneNumber = value.ifBlank { null })
                     }
+
                     EditField.AVATAR -> currentUser
                 }
                 userRepository.updateUser(updatedUser)
@@ -101,7 +118,9 @@ class ProfileViewModel @Inject constructor(
                         user = updatedUser,
                         isSaving = false,
                         editingField = null,
-                        successMessage = "${field.name.lowercase().replaceFirstChar { it.uppercase() }} 更新成功"
+                        successMessage = "${
+                            field.name.lowercase().replaceFirstChar { it.uppercase() }
+                        } 更新成功"
                     )
                 }
             } catch (e: Exception) {
@@ -119,7 +138,12 @@ class ProfileViewModel @Inject constructor(
         saveAvatarUseCase(uri).onEach { result ->
             _uiState.update {
                 when (result) {
-                    is Resource.Loading -> it.copy(isSaving = true, error = null, successMessage = null)
+                    is Resource.Loading -> it.copy(
+                        isSaving = true,
+                        error = null,
+                        successMessage = null
+                    )
+
                     is Resource.Success -> {
                         it.copy(
                             user = result.data,
@@ -127,6 +151,7 @@ class ProfileViewModel @Inject constructor(
                             successMessage = "头像更新成功"
                         )
                     }
+
                     is Resource.Error -> {
                         it.copy(
                             isSaving = false,
@@ -149,7 +174,12 @@ class ProfileViewModel @Inject constructor(
             if (result.isSuccess) {
                 _uiState.update { it.copy(isLoggedOut = true, isLoading = false, user = null) }
             } else {
-                _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "退出登录失败", isLoading = false) }
+                _uiState.update {
+                    it.copy(
+                        error = result.exceptionOrNull()?.message ?: "退出登录失败",
+                        isLoading = false
+                    )
+                }
             }
         }
     }

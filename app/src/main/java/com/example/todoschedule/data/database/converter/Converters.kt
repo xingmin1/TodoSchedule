@@ -1,12 +1,16 @@
 package com.example.todoschedule.data.database.converter
 
 import androidx.room.TypeConverter
+import com.tap.hlc.Timestamp
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
+import kotlinx.serialization.json.Json
 
 /** Room类型转换器 */
 class Converters {
+    private val json = Json { ignoreUnknownKeys = true }
+    
     /** 整数列表转字符串 */
     @TypeConverter
     fun fromIntList(value: List<Int>?): String {
@@ -56,6 +60,18 @@ class Converters {
         return value?.let { Instant.fromEpochMilliseconds(it) }
     }
 
+    /** com.tap.hlc.Timestamp 转为长整型，使用明确的类型声明避免类型推断问题 */
+    @TypeConverter
+    fun hlcTimestampToLong(timestamp: com.tap.hlc.Timestamp?): Long? {
+        return timestamp?.epochMillis
+    }
+
+    /** 长整型转为 com.tap.hlc.Timestamp，使用明确的类型声明避免类型推断问题 */
+    @TypeConverter
+    fun longToHlcTimestamp(value: Long?): com.tap.hlc.Timestamp? {
+        return value?.let { com.tap.hlc.Timestamp(it) }
+    }
+
     // --- ScheduleStatus Converters ---
     @TypeConverter
     fun fromScheduleStatus(status: ScheduleStatus?): String? {
@@ -89,8 +105,4 @@ class Converters {
     fun toReminderType(typeString: String?): ReminderType? {
         return typeString?.let { enumValueOf<ReminderType>(it) }
     }
-
-    // 注意：对于 RepeatPattern，使用 String 类型仍然具有较高的灵活性，
-    // 除非重复模式非常固定且有限，否则通常不建议转换为复杂对象或枚举。
-    // 如果需要更复杂的重复逻辑（例如 RRule），可以考虑单独处理或使用特定库。
 }

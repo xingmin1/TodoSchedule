@@ -43,6 +43,8 @@ import com.example.todoschedule.ui.settings.TimeNodesSettingsScreen
 import com.example.todoschedule.ui.study.StudyScreen
 import com.example.todoschedule.ui.study.StudyViewModel
 import com.example.todoschedule.ui.table.CreateEditTableScreen
+import com.example.todoschedule.ui.task.TaskCalendarSyncScreen
+import com.example.todoschedule.ui.task.TaskReminderScreen
 import com.example.todoschedule.ui.task.TaskScreen
 import com.example.todoschedule.ui.theme.TodoScheduleTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -181,7 +183,7 @@ fun AppNavigation(
                             }
                         },
                         navigationState = navigationState // Pass navigationState
-                        ) // 传递 padding
+                    ) // 传递 padding
                 }
 
                 // --- 其他现有屏幕 --- //
@@ -337,6 +339,29 @@ fun AppNavigation(
                     )
                 }
 
+                // 任务提醒选择页面
+                composable(AppRoutes.TaskReminder.route) {
+                    TaskReminderScreen(
+                        navigationState = navigationState
+                    )
+                }
+
+                // 任务日历同步页面
+                composable(
+                    route = AppRoutes.TaskCalendarSync.route,
+                    arguments = listOf(navArgument(AppRoutes.TaskCalendarSync.ARG_FILTER) {
+                        type = NavType.StringType
+                    })
+                ) { backStackEntry ->
+                    val filter =
+                        backStackEntry.arguments?.getString(AppRoutes.TaskCalendarSync.ARG_FILTER)
+                            ?: "all"
+                    TaskCalendarSyncScreen(
+                        filter = filter,
+                        navigationState = navigationState
+                    )
+                }
+
                 // ----- 新增：创建/编辑课表页面 -----
                 composable(
                     route = AppRoutes.CreateEditTable.route,
@@ -366,17 +391,17 @@ fun AppNavigation(
                         navigationState = navigationState
                     )
                 }
-                
+
                 composable(AppRoutes.DefaultDisplaySettings.route) {
                     DefaultDisplaySettingsScreen(
                         navigationState = navigationState
                     )
                 }
-                
+
                 composable(
                     route = AppRoutes.SingleTableSettings.route,
                     arguments = listOf(
-                        navArgument(AppRoutes.SingleTableSettings.ARG_TABLE_ID) { 
+                        navArgument(AppRoutes.SingleTableSettings.ARG_TABLE_ID) {
                             type = NavType.StringType // TODO: Should this be IntType?
                         }
                     )
@@ -385,7 +410,7 @@ fun AppNavigation(
                         navigationState = navigationState
                     )
                 }
-                
+
                 // 添加 TimeNodesSettingsScreen 路由
                 composable(
                     route = AppRoutes.TimeNodesSettings.route,

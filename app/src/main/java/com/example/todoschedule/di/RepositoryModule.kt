@@ -4,6 +4,7 @@ import com.example.todoschedule.data.repository.CourseRepositoryImpl
 import com.example.todoschedule.data.repository.FileRepositoryImpl
 import com.example.todoschedule.data.repository.GlobalSettingRepositoryImpl
 import com.example.todoschedule.data.repository.OrdinaryScheduleRepositoryImpl
+import com.example.todoschedule.data.repository.RemoteUserRepositoryImpl
 import com.example.todoschedule.data.repository.SessionRepositoryImpl
 import com.example.todoschedule.data.repository.TableRepositoryImpl
 import com.example.todoschedule.data.repository.TableTimeConfigRepositoryImpl
@@ -12,6 +13,7 @@ import com.example.todoschedule.domain.repository.CourseRepository
 import com.example.todoschedule.domain.repository.FileRepository
 import com.example.todoschedule.domain.repository.GlobalSettingRepository
 import com.example.todoschedule.domain.repository.OrdinaryScheduleRepository
+import com.example.todoschedule.domain.repository.RemoteUserRepository
 import com.example.todoschedule.domain.repository.SessionRepository
 import com.example.todoschedule.domain.repository.TableRepository
 import com.example.todoschedule.domain.repository.TableTimeConfigRepository
@@ -77,10 +79,17 @@ abstract class RepositoryModule {
         sessionRepositoryImpl: SessionRepositoryImpl
     ): SessionRepository
 
+    /** 绑定远程用户仓库实现 */
+    @Binds
+    @Singleton
+    abstract fun bindRemoteUserRepository(
+        remoteUserRepositoryImpl: RemoteUserRepositoryImpl
+    ): RemoteUserRepository
+
     /** 绑定文件仓库实现 */
     @Binds
     @Singleton
     abstract fun bindFileRepository(
         fileRepositoryImpl: FileRepositoryImpl
     ): FileRepository
-} 
+}

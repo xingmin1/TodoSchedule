@@ -156,7 +156,8 @@ class NavigationState(
      * 导航到添加/编辑普通日程页面
      */
     fun navigateToAddEditOrdinarySchedule(scheduleId: Int? = null) {
-        navController.navigate(AppRoutes.AddEditOrdinarySchedule.createRoute(scheduleId))
+        val route = AppRoutes.AddEditOrdinarySchedule.createRoute(scheduleId)
+        navController.navigate(route)
     }
 
     /**
@@ -171,6 +172,27 @@ class NavigationState(
      */
     fun navigateToCreateEditTable(tableId: Int? = null) {
         navController.navigate(AppRoutes.CreateEditTable.createRoute(tableId))
+    }
+
+    /**
+     * 导航到任务提醒选择页面
+     */
+    fun navigateToTaskReminder() {
+        navController.navigate(AppRoutes.TaskReminder.createRoute())
+    }
+
+    /**
+     * 导航到任务日历同步页面
+     */
+    fun navigateToTaskCalendarSync(filter: String) {
+        navController.navigate(AppRoutes.TaskCalendarSync.createRoute(filter))
+    }
+
+    /**
+     * 导航到同步设置页面
+     */
+    fun navigateToSyncSettings() {
+        navController.navigate(AppRoutes.SyncSettings.route)
     }
 
     // Settings Sub-Screen Navigation

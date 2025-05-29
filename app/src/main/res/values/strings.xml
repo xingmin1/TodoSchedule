@@ -16,7 +16,7 @@
     <string name="profile_label_last_opened">上次打开</string>
     <string name="profile_edit_field_desc">编辑 %s</string>
     <string name="profile_logout_button">退出登录</string>
-    
+
     <!-- Strings for EditTextFieldDialog -->
     <string name="profile_edit_username_title">编辑用户名</string>
     <string name="profile_edit_email_title">编辑邮箱</string>

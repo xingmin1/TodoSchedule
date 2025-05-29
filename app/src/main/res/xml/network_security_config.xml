@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 允许特定IP地址的明文通信 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.172.60.115</domain>
+        <domain includeSubdomains="true">10.166.14.137</domain>
+        <domain includeSubdomains="true">192.168.236.63</domain>
+    </domain-config>
+</network-security-config>

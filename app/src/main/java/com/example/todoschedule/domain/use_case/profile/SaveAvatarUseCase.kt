@@ -50,9 +50,11 @@ class SaveAvatarUseCase @Inject constructor(
                         emit(Resource.Error("Failed to get new avatar path after saving."))
                     }
                 }
+
                 is Resource.Error -> {
                     emit(Resource.Error(saveResult.message ?: "Failed to save avatar image."))
                 }
+
                 is Resource.Loading -> {
                     // Should not happen here as saveImageFromUri is suspend
                 }

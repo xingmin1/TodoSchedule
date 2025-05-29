@@ -38,7 +38,7 @@ class SingleTableSettingsViewModel @Inject constructor(
     private val tableId: Int = checkNotNull(
         savedStateHandle.get<String>(AppRoutes.SingleTableSettings.ARG_TABLE_ID)?.toIntOrNull()
     )
-    
+
     // UI 状态
     @OptIn(ExperimentalCoroutinesApi::class)
     data class UiState(
@@ -57,20 +57,25 @@ class SingleTableSettingsViewModel @Inject constructor(
     sealed class DialogState {
         object None : DialogState()
         data class AddTimeConfig(val name: String = "") : DialogState()
-        data class EditTimeConfigName(val configId: Int, val currentName: String, val newName: String = currentName) : DialogState()
+        data class EditTimeConfigName(
+            val configId: Int,
+            val currentName: String,
+            val newName: String = currentName
+        ) : DialogState()
+
         data class DeleteTimeConfig(val configId: Int, val configName: String) : DialogState()
     }
-    
+
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
-    
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val _timeConfigs: StateFlow<List<TableTimeConfig>> = 
+    private val _timeConfigs: StateFlow<List<TableTimeConfig>> =
         MutableStateFlow(tableId) // Start with the tableId
             .flatMapLatest { id ->
                 tableTimeConfigRepository.getAllTimeConfigsForTable(id)
             }
-            .catch { e -> 
+            .catch { e ->
                 _uiState.value = _uiState.value.copy(error = "加载时间配置失败: ${e.message}")
                 emit(emptyList()) // Emit empty list on error
             }
@@ -83,7 +88,7 @@ class SingleTableSettingsViewModel @Inject constructor(
     init {
         loadTableAndCombineStates()
     }
-    
+
     /**
      * 加载课表信息并合并状态
      */
@@ -92,14 +97,15 @@ class SingleTableSettingsViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 val tableFlow = tableRepository.getTableById(tableId)
-                
+
                 combine(tableFlow, _timeConfigs) { table, timeConfigs ->
                     if (table != null) {
                         _uiState.value.copy(
                             isLoading = false,
                             table = table,
                             startDate = _uiState.value.startDate ?: table.startDate, // 保留UI上的临时更改
-                            totalWeeks = _uiState.value.totalWeeks.takeIf { it != 20 } ?: table.totalWeeks, // 保留UI上的临时更改
+                            totalWeeks = _uiState.value.totalWeeks.takeIf { it != 20 }
+                                ?: table.totalWeeks, // 保留UI上的临时更改
                             timeConfigs = timeConfigs,
                             error = null // Clear previous error on successful load
                         )
@@ -113,14 +119,14 @@ class SingleTableSettingsViewModel @Inject constructor(
                 }.collect { newState ->
                     _uiState.value = newState
                 }
-                
+
                 // 第一次加载时，用数据库的值覆盖初始默认值
                 val initialTable = tableFlow.first()
-                if(initialTable != null && _uiState.value.startDate == null && _uiState.value.totalWeeks == 20){
-                     _uiState.value = _uiState.value.copy(
+                if (initialTable != null && _uiState.value.startDate == null && _uiState.value.totalWeeks == 20) {
+                    _uiState.value = _uiState.value.copy(
                         startDate = initialTable.startDate,
                         totalWeeks = initialTable.totalWeeks
-                     )
+                    )
                 }
 
             } catch (e: Exception) {
@@ -131,14 +137,14 @@ class SingleTableSettingsViewModel @Inject constructor(
             }
         }
     }
-    
+
     /**
      * 更新开学日期
      */
     fun updateStartDate(newDate: LocalDate) {
         _uiState.value = _uiState.value.copy(startDate = newDate)
     }
-    
+
     /**
      * 更新总周数
      */
@@ -147,7 +153,7 @@ class SingleTableSettingsViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(totalWeeks = weeks)
         }
     }
-    
+
     /**
      * 保存课表设置 (开学日期和总周数)
      */
@@ -156,31 +162,31 @@ class SingleTableSettingsViewModel @Inject constructor(
             try {
                 val currentState = _uiState.value
                 val currentTable = currentState.table
-                
+
                 if (currentTable == null) {
                     _uiState.value = currentState.copy(
                         error = "无法保存：课表信息丢失"
                     )
                     return@launch
                 }
-                
+
                 _uiState.value = currentState.copy(isSaving = true)
-                
+
                 // 创建更新后的表对象
                 val updatedTable = currentTable.copy(
                     startDate = currentState.startDate ?: currentTable.startDate,
                     totalWeeks = currentState.totalWeeks
                 )
-                
+
                 // 更新表
                 tableRepository.updateTable(updatedTable)
-                
+
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
                     success = "课表设置已更新",
                     table = updatedTable // 更新本地状态中的 table
                 )
-                
+
                 onSuccess()
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -190,7 +196,7 @@ class SingleTableSettingsViewModel @Inject constructor(
             }
         }
     }
-    
+
     // --- 时间配置相关操作 ---
 
     /** 显示添加时间配置对话框 */
@@ -200,12 +206,14 @@ class SingleTableSettingsViewModel @Inject constructor(
 
     /** 显示编辑时间配置名称对话框 */
     fun showEditTimeConfigNameDialog(configId: Int, currentName: String) {
-        _uiState.value = _uiState.value.copy(dialogState = DialogState.EditTimeConfigName(configId, currentName))
+        _uiState.value =
+            _uiState.value.copy(dialogState = DialogState.EditTimeConfigName(configId, currentName))
     }
 
     /** 显示删除时间配置对话框 */
     fun showDeleteTimeConfigDialog(configId: Int, configName: String) {
-        _uiState.value = _uiState.value.copy(dialogState = DialogState.DeleteTimeConfig(configId, configName))
+        _uiState.value =
+            _uiState.value.copy(dialogState = DialogState.DeleteTimeConfig(configId, configName))
     }
 
     /** 更新对话框状态 (例如，当输入框内容改变时) */
@@ -234,9 +242,15 @@ class SingleTableSettingsViewModel @Inject constructor(
                     nodes = emptyList() // 初始为空，稍后在节次配置页面添加
                 )
                 tableTimeConfigRepository.addTimeConfig(newConfig)
-                _uiState.value = _uiState.value.copy(success = "时间配置 '$name' 已添加", dialogState = DialogState.None)
+                _uiState.value = _uiState.value.copy(
+                    success = "时间配置 '$name' 已添加",
+                    dialogState = DialogState.None
+                )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "添加失败: ${e.message}", dialogState = DialogState.None)
+                _uiState.value = _uiState.value.copy(
+                    error = "添加失败: ${e.message}",
+                    dialogState = DialogState.None
+                )
             }
         }
     }
@@ -250,15 +264,25 @@ class SingleTableSettingsViewModel @Inject constructor(
             }
             try {
                 // 获取现有配置，只更新名称
-                val configToUpdate = _uiState.value.timeConfigs.find { it.id == configId }?.copy(name = newName)
+                val configToUpdate =
+                    _uiState.value.timeConfigs.find { it.id == configId }?.copy(name = newName)
                 if (configToUpdate != null) {
                     tableTimeConfigRepository.updateTimeConfig(configToUpdate)
-                     _uiState.value = _uiState.value.copy(success = "名称已更新为 '$newName'", dialogState = DialogState.None)
+                    _uiState.value = _uiState.value.copy(
+                        success = "名称已更新为 '$newName'",
+                        dialogState = DialogState.None
+                    )
                 } else {
-                     _uiState.value = _uiState.value.copy(error = "未找到要更新的配置", dialogState = DialogState.None)
+                    _uiState.value = _uiState.value.copy(
+                        error = "未找到要更新的配置",
+                        dialogState = DialogState.None
+                    )
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "更新失败: ${e.message}", dialogState = DialogState.None)
+                _uiState.value = _uiState.value.copy(
+                    error = "更新失败: ${e.message}",
+                    dialogState = DialogState.None
+                )
             }
         }
     }
@@ -268,9 +292,13 @@ class SingleTableSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tableTimeConfigRepository.deleteTimeConfig(configId)
-                _uiState.value = _uiState.value.copy(success = "时间配置已删除", dialogState = DialogState.None)
+                _uiState.value =
+                    _uiState.value.copy(success = "时间配置已删除", dialogState = DialogState.None)
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "删除失败: ${e.message}", dialogState = DialogState.None)
+                _uiState.value = _uiState.value.copy(
+                    error = "删除失败: ${e.message}",
+                    dialogState = DialogState.None
+                )
             }
         }
     }
@@ -286,14 +314,14 @@ class SingleTableSettingsViewModel @Inject constructor(
             }
         }
     }
-    
+
     /**
      * 清除成功消息
      */
     fun clearSuccessMessage() {
         _uiState.value = _uiState.value.copy(success = null)
     }
-    
+
     /**
      * 清除错误消息
      */

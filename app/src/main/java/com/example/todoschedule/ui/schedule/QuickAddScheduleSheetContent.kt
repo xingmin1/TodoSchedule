@@ -173,15 +173,15 @@ fun QuickAddScheduleSheetContent(
                     )
             ) {
                 Icon(
-                        Icons.Default.CalendarMonth,
+                    Icons.Default.CalendarMonth,
                     contentDescription = "选择日期",
-                        modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(4.dp))
                 Text(
-                        text = uiState.selectedDate.formatDate(),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    text = uiState.selectedDate.formatDate(),
+                    style = MaterialTheme.typography.bodyMedium
+                )
                 }
 
                 // 时间选择
@@ -198,13 +198,13 @@ fun QuickAddScheduleSheetContent(
                 Icon(
                     Icons.Default.AccessTime,
                     contentDescription = "选择时间",
-                        modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(4.dp))
                 Text(
-                        text = uiState.startTime?.formatTime() ?: "时间",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    text = uiState.startTime?.formatTime() ?: "时间",
+                    style = MaterialTheme.typography.bodyMedium
+                )
                 }
             }
 
@@ -353,9 +353,9 @@ fun QuickAddScheduleSheetContent(
                 TextButton(onClick = {
                     viewModel.onTimeSelected(
                             kotlinx.datetime.LocalTime(
-                            timePickerState.hour,
-                            timePickerState.minute
-                        )
+                                timePickerState.hour,
+                                timePickerState.minute
+                            )
                     )
                 }) { Text("确定") }
             },

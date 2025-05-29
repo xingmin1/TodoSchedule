@@ -7,7 +7,9 @@ import android.net.Uri
  */
 sealed class ProfileEvent {
     data object LoadProfile : ProfileEvent()
-    data class StartEditField(val field: EditField) : ProfileEvent() // Renamed from EditField to avoid confusion with enum
+    data class StartEditField(val field: EditField) :
+        ProfileEvent() // Renamed from EditField to avoid confusion with enum
+
     data class SaveEditedField(val field: EditField, val value: String) : ProfileEvent()
     data class UpdateAvatar(val uri: Uri) : ProfileEvent() // New event for avatar URI
     data object CancelEdit : ProfileEvent()

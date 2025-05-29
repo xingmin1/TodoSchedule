@@ -90,7 +90,10 @@ interface TableTimeConfigDao {
      * @return 新配置的 ID
      */
     @Transaction
-    suspend fun insertConfigWithNodes(configEntity: TableTimeConfigEntity, nodeEntities: List<TableTimeConfigNodeDetaileEntity>): Long {
+    suspend fun insertConfigWithNodes(
+        configEntity: TableTimeConfigEntity,
+        nodeEntities: List<TableTimeConfigNodeDetaileEntity>
+    ): Long {
         val configId = insertTimeConfig(configEntity)
         // Ensure nodes have the correct configId (Room might handle this if ID is autoGenerate)
         val updatedNodes = nodeEntities.map { it.copy(tableTimeConfigId = configId.toInt()) }
@@ -105,7 +108,10 @@ interface TableTimeConfigDao {
      * @param nodeEntities 新的节点实体列表
      */
     @Transaction
-    suspend fun updateConfigWithNodes(configEntity: TableTimeConfigEntity, nodeEntities: List<TableTimeConfigNodeDetaileEntity>) {
+    suspend fun updateConfigWithNodes(
+        configEntity: TableTimeConfigEntity,
+        nodeEntities: List<TableTimeConfigNodeDetaileEntity>
+    ) {
         updateTimeConfig(configEntity) // Update the config details (e.g., name)
         deleteNodeDetailsForConfig(configEntity.id) // Delete old nodes
         // Ensure new nodes have the correct configId
@@ -121,7 +127,12 @@ interface TableTimeConfigDao {
     suspend fun deleteConfigWithNodes(configId: Int) {
         deleteNodeDetailsForConfig(configId) // Delete nodes first
         // Create a dummy entity just for the delete operation by ID
-        val configToDelete = TableTimeConfigEntity(id = configId, tableId = -1, name = "", isDefault = false) // tableId and name don't matter here
+        val configToDelete = TableTimeConfigEntity(
+            id = configId,
+            tableId = -1,
+            name = "",
+            isDefault = false
+        ) // tableId and name don't matter here
         deleteTimeConfigEntity(configToDelete) // Delete the config itself
     }
 

@@ -7,16 +7,21 @@ import com.example.todoschedule.data.database.dao.UserDao
 import com.example.todoschedule.data.mapper.toUser
 import com.example.todoschedule.data.mapper.toUserEntity
 import com.example.todoschedule.domain.model.User
+import com.example.todoschedule.domain.repository.SessionRepository
 import com.example.todoschedule.domain.repository.UserRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.File
 import javax.inject.Inject
+import javax.inject.Singleton
 
 /** 用户仓库实现类 */
+@Singleton
 class UserRepositoryImpl @Inject constructor(
     private val userDao: UserDao,
+    private val sessionRepository: SessionRepository,
     @ApplicationContext private val context: Context
 ) : UserRepository {
 
@@ -29,7 +34,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addUser(user: User): Long {
-        Log.w("UserRepository", "调用了未处理密码哈希的 addUser 方法")
+        Log.d("UserRepository", "添加用户: ${user.username}")
         return userDao.insertUser(user.toUserEntity())
     }
 
@@ -39,7 +44,6 @@ class UserRepositoryImpl @Inject constructor(
             if (existingUser != null) {
                 Result.failure(Exception("用户名 '${user.username}' 已被注册"))
             } else {
-                user
                 val userId = userDao.insertUser(user.toUserEntity())
                 Result.success(userId)
             }
@@ -77,10 +81,22 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         // 已有用户，直接返回第一个用户的ID
-        Log.w(
+        Log.d(
             "UserRepositoryImpl",
-            "initDefaultUserIfNeeded 在登录系统存在时不应再依赖返回有效用户 ID，将返回 INVALID_USER_ID"
+            "已有用户，系统不再自动返回默认用户"
         )
         return AppConstants.Ids.INVALID_USER_ID.toInt()
+    }
+
+    /**
+     * 获取当前登录的用户
+     * @return 当前登录的用户，如果没有登录则返回null
+     */
+    override suspend fun getCurrentUser(): User? {
+        val currentUserId = sessionRepository.currentUserIdFlow.first()
+        if (currentUserId == null || currentUserId <= 0) {
+            return null
+        }
+        return getUserById(currentUserId.toInt())
     }
 }

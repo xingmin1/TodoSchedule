@@ -93,7 +93,8 @@ fun ScheduleWeekContent(
     val systemToday = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     val systemMonday =
         systemToday.minus((systemToday.dayOfWeek.isoDayNumber - 1).toLong(), DateTimeUnit.DAY)
-    val anchorMonday = anchorDate.minus((anchorDate.dayOfWeek.isoDayNumber - 1).toLong(), DateTimeUnit.DAY)
+    val anchorMonday =
+        anchorDate.minus((anchorDate.dayOfWeek.isoDayNumber - 1).toLong(), DateTimeUnit.DAY)
     val weeksDiff = anchorMonday.daysUntil(systemMonday) * -1 / 7
     val targetPage = initialPage + weeksDiff
 
@@ -107,9 +108,13 @@ fun ScheduleWeekContent(
 
     // 3. 监听 anchorDate 变化，外部跳转时自动 scrollToPage
     LaunchedEffect(anchorDate) {
-        val anchorMonday = anchorDate.minus((anchorDate.dayOfWeek.isoDayNumber - 1).toLong(), DateTimeUnit.DAY)
+        val anchorMonday =
+            anchorDate.minus((anchorDate.dayOfWeek.isoDayNumber - 1).toLong(), DateTimeUnit.DAY)
         val newPage = initialPage + (anchorMonday.daysUntil(systemMonday) * -1) / 7
-        android.util.Log.d("ScheduleWeekContent", "anchorDate: $anchorDate, anchorMonday: $anchorMonday, newPage: $newPage")
+        android.util.Log.d(
+            "ScheduleWeekContent",
+            "anchorDate: $anchorDate, anchorMonday: $anchorMonday, newPage: $newPage"
+        )
         if (pagerState.currentPage != newPage) {
             pagerState.scrollToPage(newPage)
         }

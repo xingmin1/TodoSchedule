@@ -69,7 +69,7 @@ class TableManagementViewModel @Inject constructor(
                 _uiState.value = state
             }
         }
-        
+
         // 初始加载数据
         refreshTables()
     }
@@ -85,7 +85,7 @@ class TableManagementViewModel @Inject constructor(
                 if (userId != null) {
                     // 刷新操作 - 实际上只是触发 Flow，不需要额外操作
                     // 因为使用了 stateIn 和 flatMapLatest，tables 会自动更新
-                    
+
                     // 延迟一会儿以模拟网络请求，便于测试下拉刷新状态
                     kotlinx.coroutines.delay(1000)
                 }

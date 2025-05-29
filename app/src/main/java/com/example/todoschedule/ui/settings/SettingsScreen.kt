@@ -504,7 +504,9 @@ fun TableManagementScreenPlaceholder(onNavigateBack: () -> Unit) {
             )
         }
     ) {
-        Box(modifier = Modifier.fillMaxSize().padding(it), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(it), contentAlignment = Alignment.Center) {
             Text("课表管理占位符")
         }
     }
@@ -526,7 +528,9 @@ fun DefaultDisplaySettingsScreenPlaceholder(onNavigateBack: () -> Unit) {
             )
         }
     ) {
-        Box(modifier = Modifier.fillMaxSize().padding(it), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(it), contentAlignment = Alignment.Center) {
             Text("默认显示课表设置占位符")
         }
     }

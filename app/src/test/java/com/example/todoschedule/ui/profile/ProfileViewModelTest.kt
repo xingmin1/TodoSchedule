@@ -52,7 +52,8 @@ class ProfileViewModelTest {
 
     private lateinit var viewModel: ProfileViewModel
 
-    private val initialUser = User(id = 1, username = "testuser", email = "test@example.com", phoneNumber = "1234567890")
+    private val initialUser =
+        User(id = 1, username = "testuser", email = "test@example.com", phoneNumber = "1234567890")
 
     @Before
     fun setUp() {
@@ -82,14 +83,30 @@ class ProfileViewModelTest {
             // 2. Loading state (emitted by getUserProfileUseCase via loadUserProfile in init)
             val loadingState = awaitItem()
             assertTrue("State should be loading. Actual: $loadingState", loadingState.isLoading)
-            assertNull("User should be null during loading. Actual: ${loadingState.user}", loadingState.user)
-            assertNull("Error should be null during loading. Actual: ${loadingState.error}", loadingState.error)
+            assertNull(
+                "User should be null during loading. Actual: ${loadingState.user}",
+                loadingState.user
+            )
+            assertNull(
+                "Error should be null during loading. Actual: ${loadingState.error}",
+                loadingState.error
+            )
 
             // 3. Success state (emitted by getUserProfileUseCase)
             val successState = awaitItem()
-            assertFalse("State should not be loading after success. Actual: $successState", successState.isLoading)
-            assertEquals("User should match mockUser. Actual: ${successState.user}", mockUser, successState.user)
-            assertNull("Error should be null on success. Actual: ${successState.error}", successState.error)
+            assertFalse(
+                "State should not be loading after success. Actual: $successState",
+                successState.isLoading
+            )
+            assertEquals(
+                "User should match mockUser. Actual: ${successState.user}",
+                mockUser,
+                successState.user
+            )
+            assertNull(
+                "Error should be null on success. Actual: ${successState.error}",
+                successState.error
+            )
 
             cancelAndConsumeRemainingEvents()
         }
@@ -115,13 +132,26 @@ class ProfileViewModelTest {
             // 2. Loading state
             val loadingState = awaitItem()
             assertTrue("State should be loading. Actual: $loadingState", loadingState.isLoading)
-            assertNull("User should be null during loading. Actual: ${loadingState.user}", loadingState.user)
-            assertNull("Error should be null during loading. Actual: ${loadingState.error}", loadingState.error)
+            assertNull(
+                "User should be null during loading. Actual: ${loadingState.user}",
+                loadingState.user
+            )
+            assertNull(
+                "Error should be null during loading. Actual: ${loadingState.error}",
+                loadingState.error
+            )
 
             // 3. Error state
             val errorState = awaitItem()
-            assertFalse("State should not be loading after error. Actual: $errorState", errorState.isLoading)
-            assertEquals("Error message should match. Actual: ${errorState.error}", errorMessage, errorState.error)
+            assertFalse(
+                "State should not be loading after error. Actual: $errorState",
+                errorState.isLoading
+            )
+            assertEquals(
+                "Error message should match. Actual: ${errorState.error}",
+                errorMessage,
+                errorState.error
+            )
             assertNull("User should be null on error. Actual: ${errorState.user}", errorState.user)
 
             cancelAndConsumeRemainingEvents()
@@ -142,7 +172,11 @@ class ProfileViewModelTest {
         // try/finally for unmockkStatic is also removed.
 
         viewModel.uiState.test {
-            assertEquals("Initial state after setUp", ProfileUiState(user = initialUser), awaitItem())
+            assertEquals(
+                "Initial state after setUp",
+                ProfileUiState(user = initialUser),
+                awaitItem()
+            )
 
             viewModel.handleEvent(ProfileEvent.SaveEditedField(EditField.EMAIL, "invalid-email"))
             advanceUntilIdle() // Ensure event processing coroutine runs

@@ -1,10 +1,13 @@
 package com.example.todoschedule.data.database.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.tap.hlc.Timestamp
 import kotlinx.datetime.LocalDate
+import java.util.UUID
 
 /** 课表实体类 */
 @Entity(
@@ -17,15 +20,24 @@ import kotlinx.datetime.LocalDate
                 childColumns = ["userId"],
                 onDelete = ForeignKey.CASCADE
             )],
-    indices = [Index("userId")]
+    indices = [Index("userId"), Index("crdtKey"), Index("userCrdtKey")]
 )
 data class TableEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val userId: Int, // 用户ID
+    val userId: Int, // 用户ID (本地ID，用于Room外键关系)
     val tableName: String, // 课表名称
     val background: String = "", // 背景颜色
     val listPosition: Int = 0, // 列表中的位置
     val terms: String = "", // 学期信息
     val startDate: LocalDate, // 学期开始日期
-    val totalWeeks: Int = 20 // 总周数
-)
+    val totalWeeks: Int = 20, // 总周数
+
+    // 同步字段
+    val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
+    val userCrdtKey: String? = null, // 用户的CRDT唯一标识符
+    @ColumnInfo(name = "update_timestamp")
+    val updateTimestamp: Long? = null // 更新时间戳
+) : Syncable {
+    override val syncId: String
+        get() = crdtKey
+}

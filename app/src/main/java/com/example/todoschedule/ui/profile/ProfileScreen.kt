@@ -158,8 +158,9 @@ fun ProfileScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val showLoading = (uiState.isLoading && uiState.user == null && uiState.editingField == null && !uiState.isSaving) || 
-                              (uiState.isSaving && uiState.editingField == null) 
+            val showLoading =
+                (uiState.isLoading && uiState.user == null && uiState.editingField == null && !uiState.isSaving) ||
+                        (uiState.isSaving && uiState.editingField == null)
 
             if (showLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -217,7 +218,10 @@ fun ProfileScreen(
                     isLoading = uiState.isLoading || uiState.isSaving
                 )
             } else if (!uiState.isLoading && !uiState.isSaving) {
-                Text(stringResource(id = R.string.profile_no_user_info), modifier = Modifier.align(Alignment.CenterHorizontally))
+                Text(
+                    stringResource(id = R.string.profile_no_user_info),
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
             }
 
             uiState.editingField?.let { field ->
@@ -234,7 +238,12 @@ fun ProfileScreen(
                             editingField = field,
                             currentValue = currentValue,
                             onSave = { editedField, newValue ->
-                                viewModel.handleEvent(ProfileEvent.SaveEditedField(editedField, newValue))
+                                viewModel.handleEvent(
+                                    ProfileEvent.SaveEditedField(
+                                        editedField,
+                                        newValue
+                                    )
+                                )
                             },
                             onDismiss = { viewModel.handleEvent(ProfileEvent.CancelEdit) },
                             isSaving = uiState.isSaving,
@@ -346,14 +355,16 @@ fun ProfileInfoList(
             ProfileInfoItem(
                 icon = Icons.Filled.CalendarToday,
                 label = stringResource(id = R.string.profile_label_created_at),
-                value = user.createdAt.toJavaInstant().let { dateFormatter.format(it) } ?: stringResource(id = R.string.profile_not_set),
+                value = user.createdAt.toJavaInstant().let { dateFormatter.format(it) }
+                    ?: stringResource(id = R.string.profile_not_set),
                 isEditable = false
             )
             HorizontalDivider()
             ProfileInfoItem(
                 icon = Icons.Filled.History,
                 label = stringResource(id = R.string.profile_label_last_opened),
-                value = user.lastOpen.toJavaInstant().let { dateFormatter.format(it) } ?: stringResource(id = R.string.profile_not_set),
+                value = user.lastOpen.toJavaInstant().let { dateFormatter.format(it) }
+                    ?: stringResource(id = R.string.profile_not_set),
                 isEditable = false
             )
         }
@@ -372,7 +383,9 @@ fun ProfileInfoItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp)
-            .clickable(enabled = isEditable && onEditClick != null, onClick = { onEditClick?.invoke() }),
+            .clickable(
+                enabled = isEditable && onEditClick != null,
+                onClick = { onEditClick?.invoke() }),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -383,7 +396,11 @@ fun ProfileInfoItem(
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Text(text = value, style = MaterialTheme.typography.bodyLarge)
         }
         if (isEditable && onEditClick != null) {
@@ -484,7 +501,10 @@ fun ProfileScreenContentForPreview(uiState: ProfileUiState, paddingValues: Paddi
                     isLoading = false
                 )
             } else {
-                Text(stringResource(id = R.string.profile_no_user_info), modifier = Modifier.align(Alignment.CenterHorizontally))
+                Text(
+                    stringResource(id = R.string.profile_no_user_info),
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
             }
         }
     }
@@ -505,7 +525,8 @@ fun ProfileHeaderPreviewDefault() {
 @Preview(showBackground = true, name = "Profile Header Preview - With Avatar Path")
 @Composable
 fun ProfileHeaderPreviewWithAvatarPath() {
-    val userWithAvatar = previewUser.copy(avatar = "file:///android_asset/avatar_placeholder.png") // Example asset path
+    val userWithAvatar =
+        previewUser.copy(avatar = "file:///android_asset/avatar_placeholder.png") // Example asset path
     TodoScheduleTheme {
         ProfileHeader(
             user = userWithAvatar,

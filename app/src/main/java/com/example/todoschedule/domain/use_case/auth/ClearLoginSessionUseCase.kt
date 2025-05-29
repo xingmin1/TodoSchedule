@@ -11,5 +11,6 @@ class ClearLoginSessionUseCase @Inject constructor(
 ) {
     suspend operator fun invoke() {
         sessionRepository.clearUserId()
+        sessionRepository.clearUserToken()
     }
 } 

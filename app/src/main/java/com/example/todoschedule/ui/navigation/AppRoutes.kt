@@ -125,14 +125,42 @@ sealed class AppRoutes(val route: String) {
         const val ARG_TABLE_ID = "tableId" // Argument name
     }
 
+    /**
+     * 任务提醒选择页面
+     */
+    object TaskReminder : AppRoutes("task_reminder") {
+        fun createRoute() = "task_reminder"
+    }
+
+    /**
+     * 任务日历同步页面
+     */
+    object TaskCalendarSync : AppRoutes("task_calendar_sync/{filter}") {
+        const val ARG_FILTER = "filter"
+
+        fun createRoute(filter: String): String {
+            // 确保filter值被正确URL编码
+            return "task_calendar_sync/$filter"
+        }
+    }
+
+    /**
+     * 同步设置路由
+     */
+    object SyncSettings : AppRoutes("syncSettings") {
+        fun createRoute() = "syncSettings"
+    }
+
     // Settings Sub-Screens
     data object TableManagement : AppRoutes("table_management")
     data object SingleTableSettings : AppRoutes("single_table_settings/{tableId}") {
         const val ARG_TABLE_ID = "tableId" // Argument name constant
         fun createRoute(tableId: Int) = "single_table_settings/$tableId"
     }
+
     data object TimeNodesSettings : AppRoutes("time_nodes_settings/{configId}") {
         fun createRoute(configId: Int) = "time_nodes_settings/$configId"
     }
+
     data object DefaultDisplaySettings : AppRoutes("default_display_settings")
 }

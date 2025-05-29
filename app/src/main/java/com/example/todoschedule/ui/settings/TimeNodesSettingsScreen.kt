@@ -153,6 +153,7 @@ fun TimeNodesSettingsScreen(
                 onUpdateState = { viewModel.updateDialogState(it) }
             )
         }
+
         is TimeNodesSettingsViewModel.DialogState.DeleteNode -> {
             DeleteNodeConfirmationDialog(
                 nodeName = dialogState.nodeName,
@@ -160,6 +161,7 @@ fun TimeNodesSettingsScreen(
                 onDismiss = { viewModel.dismissDialog() }
             )
         }
+
         is TimeNodesSettingsViewModel.DialogState.None -> Unit // Do nothing
     }
 }
@@ -194,7 +196,9 @@ private fun TimeNodeItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${node.startTime.toJavaLocalTime().format(timeFormatter)} - ${node.endTime.toJavaLocalTime().format(timeFormatter)}",
+                    text = "${
+                        node.startTime.toJavaLocalTime().format(timeFormatter)
+                    } - ${node.endTime.toJavaLocalTime().format(timeFormatter)}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -204,7 +208,11 @@ private fun TimeNodeItem(
                     Icon(Icons.Default.Edit, contentDescription = "编辑")
                 }
                 IconButton(onClick = onDeleteClick) {
-                    Icon(Icons.Default.Delete, contentDescription = "删除", tint = MaterialTheme.colorScheme.error)
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "删除",
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }
@@ -240,17 +248,21 @@ private fun AddEditNodeDialog(
                 )
 
                 // 显示节次编号 (只读)
-                 Text(
-                     text = "节次编号: ${dialogState.nodeNumber}",
-                     style = MaterialTheme.typography.bodyMedium
-                 )
+                Text(
+                    text = "节次编号: ${dialogState.nodeNumber}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("开始时间: ${dialogState.startTime.toJavaLocalTime().format(timeFormatter)}")
+                    Text(
+                        "开始时间: ${
+                            dialogState.startTime.toJavaLocalTime().format(timeFormatter)
+                        }"
+                    )
                     TextButton(onClick = { showStartTimePicker = true }) {
                         Text("选择")
                     }

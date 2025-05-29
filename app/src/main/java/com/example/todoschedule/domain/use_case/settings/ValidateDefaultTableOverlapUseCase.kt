@@ -58,10 +58,10 @@ class ValidateDefaultTableOverlapUseCase @Inject constructor() {
         // Add the remaining weeks (totalWeeks - 1 because the first week is already included)
         // And subtract one day because the end date is inclusive (Sunday)
         if (totalWeeks <= 1) {
-             return endOfWeekStartDate
+            return endOfWeekStartDate
         }
-        
+
         return endOfWeekStartDate.plus(totalWeeks - 1, DateTimeUnit.WEEK)
-         
+
     }
 } 

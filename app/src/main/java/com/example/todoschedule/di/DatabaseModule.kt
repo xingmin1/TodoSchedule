@@ -11,6 +11,7 @@ import com.example.todoschedule.data.database.dao.TableDao
 import com.example.todoschedule.data.database.dao.TableTimeConfigDao
 import com.example.todoschedule.data.database.dao.TimeSlotDao
 import com.example.todoschedule.data.database.dao.UserDao
+import com.example.todoschedule.data.database.migration.DatabaseMigrations
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,7 +37,13 @@ object DatabaseModule {
             AppDatabase::class.java,
             AppConstants.Database.DB_NAME,
         )
-            .fallbackToDestructiveMigration() // 使用破坏性迁移，数据库版本变更时会删除旧数据
+            // 添加迁移策略
+            .addMigrations(
+                DatabaseMigrations.MIGRATION_5_6,
+                DatabaseMigrations.MIGRATION_6_7
+            )
+            // 仅在找不到迁移路径时才使用破坏性迁移
+            .fallbackToDestructiveMigration()
             .build()
     }
 
