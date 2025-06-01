@@ -36,6 +36,7 @@ import com.example.todoschedule.data.sync.CrdtKeyResolver
 import com.example.todoschedule.data.sync.adapter.SynkAdapterRegistry
 import org.json.JSONObject
 import java.util.UUID
+import com.tap.synk.Synk
 
 /**
  * 同步管理器
@@ -48,7 +49,8 @@ class SyncManager @Inject constructor(
     private val syncRepository: SyncRepository,
     private val deviceIdManager: DeviceIdManager,
     private val synkAdapterRegistry: SynkAdapterRegistry,
-    private val crdtKeyResolver: CrdtKeyResolver
+    private val crdtKeyResolver: CrdtKeyResolver,
+    private val synk: Synk,
 ) {
     companion object {
         private const val TAG = "SyncManager"
@@ -145,12 +147,16 @@ class SyncManager @Inject constructor(
      * @param userId 用户ID
      * @param entity 实体对象
      */
-    suspend fun createAndSaveSyncMessage(
+    /**
+     * @param oldEntity 旧版本实体；若是新增则传 null
+     */
+    suspend fun <T : Syncable> createAndSaveSyncMessage(
         crdtKey: String,
         entityType: SyncConstants.EntityType,
         operationType: String,
         userId: Int,
-        entity: Any
+        entity: T,
+        oldEntity: T? = null,
     ) {
         try {
             // 获取实体类型对应的适配器
@@ -187,8 +193,11 @@ class SyncManager @Inject constructor(
                 }
             }
 
-            // 将Map转换为JSON字符串
-            val jsonPayload = serializeMapToJson(serializedMap)
+            /* ---------------------------------------------------
+             * 1️⃣ 使用 Synk 生成 Message 并序列化
+             * --------------------------------------------------- */
+            val message = synk.outbound(entity, oldEntity)
+            val encodedMessage = synk.serializeOne(message)
 
             // 创建同步消息
             val messageEntity = createSyncMessage(
@@ -196,7 +205,7 @@ class SyncManager @Inject constructor(
                 entityType = entityType,
                 operationType = operationType,
                 userId = userId,
-                payload = jsonPayload
+                payload = encodedMessage
             )
 
             // 将消息保存到本地数据库
