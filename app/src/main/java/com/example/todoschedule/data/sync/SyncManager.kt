@@ -17,7 +17,7 @@ import com.tap.hlc.HybridLogicalClock
 import com.tap.hlc.NodeID
 import com.tap.hlc.Timestamp
 import com.tap.synk.Synk
-import com.tap.synk.serializeOne
+import com.tap.synk.encodeOne
 import com.tap.synk.outbound
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -141,7 +141,7 @@ class SyncManager @Inject constructor(
     /**
      * @param oldEntity 旧版本实体；若是新增则传 null
      */
-    suspend fun <T : Syncable> createAndSaveSyncMessage(
+    internal suspend inline fun <reified T : Syncable> createAndSaveSyncMessage(
         crdtKey: String,
         entityType: SyncConstants.EntityType,
         operationType: String,
@@ -170,7 +170,7 @@ class SyncManager @Inject constructor(
              * 1️⃣ 使用 Synk 生成 Message 并序列化
              * --------------------------------------------------- */
             val message = synk.outbound(entity, oldEntity)
-            val encodedMessage = synk.serializeOne(message)
+            val encodedMessage = synk.encodeOne<T>(message)
 
             // 创建同步消息
             val messageEntity = createSyncMessage(
