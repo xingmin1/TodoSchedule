@@ -2,6 +2,7 @@ package com.example.todoschedule.data.sync.adapter
 
 import com.example.todoschedule.data.database.entity.TableEntity
 import com.tap.hlc.Timestamp
+import com.tap.synk.adapter.SynkAdapter as CoreSynkAdapter
 import kotlinx.datetime.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -10,7 +11,9 @@ import javax.inject.Singleton
  * 课表实体的SynkAdapter实现
  */
 @Singleton
-class TableAdapter @Inject constructor() : AbstractSynkAdapter<TableEntity>() {
+class TableAdapter @Inject constructor() :
+    AbstractSynkAdapter<TableEntity>(),
+    CoreSynkAdapter<TableEntity> {
 
     override fun key(value: TableEntity): String {
         return value.crdtKey

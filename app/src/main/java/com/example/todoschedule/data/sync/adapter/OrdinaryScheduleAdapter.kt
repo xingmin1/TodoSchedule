@@ -3,6 +3,7 @@ package com.example.todoschedule.data.sync.adapter
 import com.example.todoschedule.data.database.converter.ScheduleStatus
 import com.example.todoschedule.data.database.entity.OrdinaryScheduleEntity
 import com.tap.hlc.Timestamp
+import com.tap.synk.adapter.SynkAdapter as CoreSynkAdapter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,7 +12,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class OrdinaryScheduleAdapter @Inject constructor() :
-    AbstractSynkAdapter<OrdinaryScheduleEntity>() {
+    AbstractSynkAdapter<OrdinaryScheduleEntity>(),
+    CoreSynkAdapter<OrdinaryScheduleEntity> {
 
     override fun key(value: OrdinaryScheduleEntity): String {
         return value.crdtKey
@@ -67,6 +69,15 @@ class OrdinaryScheduleAdapter @Inject constructor() :
             updateTimestamp = null // 在合并过程中设置
         )
     }
+
+    /* Synk-Adapter 接口映射 */
+    override fun resolveId(crdt: CourseEntity): String = key(crdt)
+
+    override fun encode(crdt: CourseEntity): Map<String, String> =
+        serialize(crdt).mapValues { it.value?.toString() ?: "" }
+
+    override fun decode(map: Map<String, String>): CourseEntity =
+        deserialize(map as Map<String, Any?>)
 
     override fun merge(
         local: OrdinaryScheduleEntity,

@@ -173,25 +173,7 @@ class SyncManager @Inject constructor(
                 throw IllegalArgumentException("实体必须实现Syncable接口")
             }
 
-            // 类型安全的序列化
-            val serializedMap: Map<String, Any?> = when (entity) {
-                is CourseEntity -> (adapter as SynkAdapter<CourseEntity>).serialize(entity)
-                is CourseNodeEntity -> (adapter as SynkAdapter<CourseNodeEntity>).serialize(entity)
-                is TableEntity -> (adapter as SynkAdapter<TableEntity>).serialize(entity)
-                is OrdinaryScheduleEntity -> (adapter as SynkAdapter<OrdinaryScheduleEntity>).serialize(
-                    entity
-                )
-
-                is TimeSlotEntity -> (adapter as SynkAdapter<TimeSlotEntity>).serialize(entity)
-                else -> {
-                    if (entity is Syncable) {
-                        @Suppress("UNCHECKED_CAST")
-                        (adapter as SynkAdapter<Syncable>).serialize(entity as Syncable)
-                    } else {
-                        throw IllegalArgumentException("实体必须实现Syncable接口")
-                    }
-                }
-            }
+            // 已由 Synk 直接处理序列化
 
             /* ---------------------------------------------------
              * 1️⃣ 使用 Synk 生成 Message 并序列化

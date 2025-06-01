@@ -3,6 +3,7 @@ package com.example.todoschedule.data.sync.adapter
 import com.example.todoschedule.data.database.converter.ReminderType
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.data.database.entity.TimeSlotEntity
+import com.tap.synk.adapter.SynkAdapter as CoreSynkAdapter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -10,7 +11,9 @@ import javax.inject.Singleton
  * 时间槽同步适配器
  */
 @Singleton
-class TimeSlotAdapter @Inject constructor() : AbstractSynkAdapter<TimeSlotEntity>() {
+class TimeSlotAdapter @Inject constructor() :
+    AbstractSynkAdapter<TimeSlotEntity>(),
+    CoreSynkAdapter<TimeSlotEntity> {
 
     override fun key(value: TimeSlotEntity): String {
         return value.crdtKey

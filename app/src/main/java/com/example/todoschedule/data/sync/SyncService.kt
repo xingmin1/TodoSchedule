@@ -8,6 +8,7 @@ import android.util.Log
 import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.repository.SyncRepository
 import com.example.todoschedule.domain.repository.SessionRepository
+import com.tap.synk.Synk
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +35,10 @@ class SyncService : Service() {
 
     @Inject
     lateinit var sessionRepository: SessionRepository
+
+    /* Synk 实例 */
+    @Inject
+    lateinit var synk: Synk
 
     private val binder = SyncBinder()
     private var syncJob: Job? = null
@@ -72,6 +77,13 @@ class SyncService : Service() {
             Log.d(TAG, "SessionRepository successfully injected")
         } else {
             Log.e(TAG, "SessionRepository not injected")
+        }
+
+        // ---- Synk ready? ----
+        if (::synk.isInitialized) {
+            Log.d(TAG, "Synk initialized – node id = ${synk.hlc.value.node}")
+        } else {
+            Log.e(TAG, "Synk not injected")
         }
     }
 
@@ -133,6 +145,7 @@ class SyncService : Service() {
         super.onDestroy()
         timer?.cancel()
         syncJob?.cancel()
+        synk.finish()
         Log.d(TAG, "SyncService destroyed")
     }
 

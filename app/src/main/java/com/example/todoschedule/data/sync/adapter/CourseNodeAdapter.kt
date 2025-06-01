@@ -2,6 +2,7 @@ package com.example.todoschedule.data.sync.adapter
 
 import com.example.todoschedule.data.database.entity.CourseNodeEntity
 import com.tap.hlc.Timestamp
+import com.tap.synk.adapter.SynkAdapter as CoreSynkAdapter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -9,7 +10,9 @@ import javax.inject.Singleton
  * 课程节点实体的SynkAdapter实现
  */
 @Singleton
-class CourseNodeAdapter @Inject constructor() : AbstractSynkAdapter<CourseNodeEntity>() {
+class CourseNodeAdapter @Inject constructor() :
+    AbstractSynkAdapter<CourseNodeEntity>(),
+    CoreSynkAdapter<CourseNodeEntity> {
 
     override fun key(value: CourseNodeEntity): String {
         return value.crdtKey
