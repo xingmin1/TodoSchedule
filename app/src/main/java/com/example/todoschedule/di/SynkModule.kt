@@ -1,12 +1,12 @@
 package com.example.todoschedule.di
 
 import android.content.Context
-import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.example.todoschedule.data.sync.adapter.CourseAdapter
 import com.example.todoschedule.data.sync.adapter.CourseNodeAdapter
 import com.example.todoschedule.data.sync.adapter.OrdinaryScheduleAdapter
 import com.example.todoschedule.data.sync.adapter.TableAdapter
 import com.example.todoschedule.data.sync.adapter.TimeSlotAdapter
+import com.squareup.sqldelight.android.AndroidSqliteDriver
 import com.tap.delight.metastore.DelightfulDatabase
 import com.tap.delight.metastore.DelightfulMetastoreFactory
 import com.tap.delight.metastore.config.MetastoreConfig

@@ -21,6 +21,7 @@ import com.example.todoschedule.data.sync.adapter.TimeSlotAdapter
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
 import com.example.todoschedule.domain.repository.GlobalSettingRepository
 import com.example.todoschedule.domain.repository.SessionRepository
+import com.tap.synk.Synk
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -277,13 +278,15 @@ object SyncModule {
         syncRepository: SyncRepository,
         deviceIdManager: DeviceIdManager,
         synkAdapterRegistry: SynkAdapterRegistry,
-        crdtKeyResolver: CrdtKeyResolver
+        crdtKeyResolver: CrdtKeyResolver,
+        synk: Synk,
     ): SyncManager {
         return SyncManager(
             syncRepository,
             deviceIdManager,
             synkAdapterRegistry,
             crdtKeyResolver,
+            synk,
         )
     }
 }

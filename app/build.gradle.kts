@@ -153,6 +153,7 @@ dependencies {
     // SQLDelight - 用于数据库访问
     implementation("app.cash.sqldelight:android-driver:2.0.1")
     implementation("app.cash.sqldelight:coroutines-extensions:2.0.1")
+    implementation("com.squareup.sqldelight:android-driver:1.5.4")
 
     // WorkManager - 用于后台任务
     implementation("androidx.work:work-runtime-ktx:2.9.0")
