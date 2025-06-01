@@ -507,9 +507,11 @@ class SyncManager @Inject constructor(
             // 类型转换
             val typedAdapter = adapter as SynkAdapter<CourseEntity>
 
-            // 解析消息负载
-            val serializedMap = deserializeJsonToMap(messageDto.payload)
-            val remoteEntity = typedAdapter.deserialize(serializedMap)
+            /* ① 将 payload 字符串 -> Message<CourseEntity> */
+            val message = synk.deserializeOne<CourseEntity>(messageDto.payload)
+
+            /* ② 取出 CRDT */
+            val remoteEntity = message.crdt
 
             Log.d(
                 TAG,
@@ -626,9 +628,11 @@ class SyncManager @Inject constructor(
             // 类型转换
             val typedAdapter = adapter as SynkAdapter<CourseNodeEntity>
 
-            // 解析消息负载
-            val serializedMap = deserializeJsonToMap(messageDto.payload)
-            val remoteEntity = typedAdapter.deserialize(serializedMap)
+            /* ① 将 payload 字符串 -> Message<CourseNodeEntity> */
+            val message = synk.deserializeOne<CourseNodeEntity>(messageDto.payload)
+
+            /* ② 取出 CRDT */
+            val remoteEntity = message.crdt
 
             Log.d(
                 TAG,
@@ -734,9 +738,11 @@ class SyncManager @Inject constructor(
             // 类型转换
             val typedAdapter = adapter as SynkAdapter<TableEntity>
 
-            // 解析消息负载
-            val serializedMap = deserializeJsonToMap(messageDto.payload)
-            val remoteEntity = typedAdapter.deserialize(serializedMap)
+            /* ① 将 payload 字符串 -> Message<TableEntity> */
+            val message = synk.deserializeOne<TableEntity>(messageDto.payload)
+
+            /* ② 取出 CRDT */
+            val remoteEntity = message.crdt
 
             Log.d(TAG, "【解析表】表名称=${remoteEntity.tableName}")
 
@@ -803,9 +809,11 @@ class SyncManager @Inject constructor(
             // 类型转换
             val typedAdapter = adapter as SynkAdapter<OrdinaryScheduleEntity>
 
-            // 解析消息负载
-            val serializedMap = deserializeJsonToMap(messageDto.payload)
-            val remoteEntity = typedAdapter.deserialize(serializedMap)
+            /* ① 将 payload 字符串 -> Message<OrdinaryScheduleEntity> */
+            val message = synk.deserializeOne<OrdinaryScheduleEntity>(messageDto.payload)
+
+            /* ② 取出 CRDT */
+            val remoteEntity = message.crdt
 
             Log.d(TAG, "【解析日程】日程标题=${remoteEntity.title}, 用户ID=${remoteEntity.userId}")
 
@@ -873,9 +881,11 @@ class SyncManager @Inject constructor(
             // 类型转换
             val typedAdapter = adapter as SynkAdapter<TimeSlotEntity>
 
-            // 解析消息负载
-            val serializedMap = deserializeJsonToMap(messageDto.payload)
-            val remoteEntity = typedAdapter.deserialize(serializedMap)
+            /* ① 将 payload 字符串 -> Message<TimeSlotEntity> */
+            val message = synk.deserializeOne<TimeSlotEntity>(messageDto.payload)
+
+            /* ② 取出 CRDT */
+            val remoteEntity = message.crdt
 
             Log.d(
                 TAG,
