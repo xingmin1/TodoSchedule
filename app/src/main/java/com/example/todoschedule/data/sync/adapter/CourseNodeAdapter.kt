@@ -64,6 +64,15 @@ class CourseNodeAdapter @Inject constructor() :
         )
     }
 
+    /* Synk-Adapter 接口映射 */
+    override fun resolveId(crdt: CourseNodeEntity): String = key(crdt)
+
+    override fun encode(crdt: CourseNodeEntity): Map<String, String> =
+        serialize(crdt).mapValues { it.value?.toString() ?: "" }
+
+    override fun decode(map: Map<String, String>): CourseNodeEntity =
+        deserialize(map as Map<String, Any?>)
+
     override fun merge(local: CourseNodeEntity, remote: CourseNodeEntity): CourseNodeEntity {
         // 如果本地实体没有更新时间戳，或远程实体的时间戳更新，则使用远程实体
         if (local.updateTimestamp == null ||
