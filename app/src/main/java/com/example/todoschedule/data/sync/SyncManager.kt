@@ -13,12 +13,13 @@ import com.example.todoschedule.data.repository.SyncRepository
 import com.example.todoschedule.data.sync.adapter.SynkAdapter
 import com.example.todoschedule.data.sync.adapter.SynkAdapterRegistry
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
+import com.github.michaelbull.result.getOrThrow
 import com.tap.hlc.HybridLogicalClock
 import com.tap.hlc.NodeID
 import com.tap.hlc.Timestamp
 import com.tap.synk.Synk
+import com.tap.synk.encodeOne
 import com.tap.synk.outbound
-import com.tap.synk.serializeOne
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -102,10 +103,9 @@ class SyncManager @Inject constructor(
         entityType: SyncConstants.EntityType,
         operationType: String,
         userId: Int,
-        payload: String
+        payload: String,
+        updatedClock: HybridLogicalClock,
     ): SyncMessageEntity {
-        // 获取并更新混合逻辑时钟
-        val updatedClock = synk.hlc.value
 
         // 创建带有时间戳的同步消息
         val messageEntity = SyncMessageEntity(
@@ -171,15 +171,23 @@ class SyncManager @Inject constructor(
              * 1️⃣ 使用 Synk 生成 Message 并序列化
              * --------------------------------------------------- */
             val message = synk.outbound(entity, oldEntity)
-            val encodedMessage = synk.serializeOne(message)
+            val encodedMessage = synk.encodeOne(message)
 
+            val clock = message.meta.timestampMeta.values.maxOfOrNull { timestampMeta ->
+                HybridLogicalClock
+                    .decodeFromString(timestampMeta)   // 返回 Result<HybridLogicalClock, Throwable>
+                    .getOrThrow {
+                        IllegalStateException("无法解码 HybridLogicalClock: $timestampMeta")
+                    }                // 或者 getOr(defaultValue)
+            } ?: throw IllegalStateException("无法获取有效的逻辑时钟")
             // 创建同步消息
             val messageEntity = createSyncMessage(
                 crdtKey = crdtKey,
                 entityType = entityType,
                 operationType = operationType,
                 userId = userId,
-                payload = encodedMessage
+                payload = encodedMessage,
+                updatedClock = clock,
             )
 
             // 将消息保存到本地数据库

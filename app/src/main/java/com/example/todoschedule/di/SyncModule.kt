@@ -1,39 +1,36 @@
 package com.example.todoschedule.di
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStoreFile
+import android.util.Log
+import androidx.work.WorkManager
 import com.example.todoschedule.data.database.AppDatabase
-import com.example.todoschedule.data.remote.api.SyncApi as RemoteSyncApi
 import com.example.todoschedule.data.repository.SyncRepository
 import com.example.todoschedule.data.repository.SyncRepositoryImpl
+import com.example.todoschedule.data.sync.CrdtKeyResolver
 import com.example.todoschedule.data.sync.DeviceIdManager
-import com.example.todoschedule.data.sync.dto.ApiSyncMessageDto
-import com.example.todoschedule.data.sync.dto.SyncMessageDto
 import com.example.todoschedule.data.sync.SyncApi
+import com.example.todoschedule.data.sync.SyncManager
 import com.example.todoschedule.data.sync.SyncMessageUploader
 import com.example.todoschedule.data.sync.SyncResult
 import com.example.todoschedule.data.sync.adapter.CourseAdapter
 import com.example.todoschedule.data.sync.adapter.CourseNodeAdapter
 import com.example.todoschedule.data.sync.adapter.OrdinaryScheduleAdapter
-import com.example.todoschedule.data.sync.adapter.SynkAdapter
 import com.example.todoschedule.data.sync.adapter.SynkAdapterRegistry
 import com.example.todoschedule.data.sync.adapter.TableAdapter
 import com.example.todoschedule.data.sync.adapter.TimeSlotAdapter
-import com.example.todoschedule.data.sync.SyncManager
-import com.example.todoschedule.data.sync.CrdtKeyResolver
-import androidx.work.WorkManager
+import com.example.todoschedule.data.sync.dto.SyncMessageDto
+import com.example.todoschedule.domain.repository.GlobalSettingRepository
+import com.example.todoschedule.domain.repository.SessionRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import retrofit2.Retrofit
-import javax.inject.Singleton
-import javax.inject.Qualifier
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.serializer
 import javax.inject.Provider
+import javax.inject.Singleton
+import com.example.todoschedule.data.remote.api.SyncApi as RemoteSyncApi
 
 /**
  * 同步模块依赖注入
@@ -71,9 +68,9 @@ object SyncModule {
         database: AppDatabase,
         remoteSyncApi: RemoteSyncApi,
         deviceIdManager: DeviceIdManager,
-        sessionRepository: com.example.todoschedule.domain.repository.SessionRepository,
+        sessionRepository: SessionRepository,
         syncManagerProvider: Provider<SyncManager>,
-        globalSettingRepository: com.example.todoschedule.domain.repository.GlobalSettingRepository
+        globalSettingRepository: GlobalSettingRepository
     ): SyncRepository {
         return SyncRepositoryImpl(
             syncMessageDao = database.syncMessageDao(),
@@ -99,17 +96,17 @@ object SyncModule {
     ): SyncApi {
         return object : SyncApi {
             override suspend fun sendMessages(
-                messages: List<com.example.todoschedule.data.sync.dto.SyncMessageDto>,
+                messages: List<SyncMessageDto>,
                 userId: Int
-            ): com.example.todoschedule.data.sync.SyncResult {
-                android.util.Log.d(
+            ): SyncResult {
+                Log.d(
                     "SyncModule",
                     "准备发送" + messages.size + "条消息到服务器，用户ID: " + userId
                 )
 
                 // 实际调用remoteSyncApi发送消息
                 val deviceId = deviceIdManager.getOrCreateDeviceId()
-                val json = kotlinx.serialization.json.Json { encodeDefaults = true }
+                val json = Json { encodeDefaults = true }
 
                 try {
                     // 将每个消息逐个上传到指定实体类型的端点
@@ -122,12 +119,12 @@ object SyncModule {
                     for ((entityType, typeMessages) in messagesByType) {
                         val serialized = typeMessages.map {
                             json.encodeToString(
-                                kotlinx.serialization.serializer<com.example.todoschedule.data.sync.dto.SyncMessageDto>(),
+                                serializer<SyncMessageDto>(),
                                 it
                             )
                         }
 
-                        android.util.Log.d(
+                        Log.d(
                             "SyncModule",
                             "开始上传" + serialized.size + "条" + entityType + "类型的消息，第一条: " + (serialized.firstOrNull()
                                 ?.take(100) ?: "") + "..."
@@ -143,14 +140,14 @@ object SyncModule {
                             val apiResponse = response.body()!!
                             // 检查API响应码
                             if (apiResponse.code == 200) {
-                                android.util.Log.d(
+                                Log.d(
                                     "SyncModule",
                                     "成功上传 " + serialized.size + " 条 " + entityType + " 类型的消息，响应: " + apiResponse.message
                                 )
                                 successCount += serialized.size
                             } else {
                                 val error = apiResponse.message
-                                android.util.Log.e(
+                                Log.e(
                                     "SyncModule",
                                     "上传 " + entityType + " 类型的消息失败: " + error + "，响应码：" + apiResponse.code
                                 )
@@ -158,7 +155,7 @@ object SyncModule {
                             }
                         } else {
                             val error = response.errorBody()?.string() ?: "Unknown error"
-                            android.util.Log.e(
+                            Log.e(
                                 "SyncModule",
                                 "上传" + entityType + "类型的消息失败: " + error
                             )
@@ -166,14 +163,14 @@ object SyncModule {
                         }
                     }
 
-                    return com.example.todoschedule.data.sync.SyncResult(
+                    return SyncResult(
                         isSuccess = failureMessages.isEmpty(),
                         message = if (failureMessages.isEmpty()) "成功同步" + successCount + "条消息" else failureMessages.joinToString(),
                         syncedCount = successCount
                     )
                 } catch (e: Exception) {
-                    android.util.Log.e("SyncModule", "发送消息过程中发生异常: " + e.message, e)
-                    return com.example.todoschedule.data.sync.SyncResult(
+                    Log.e("SyncModule", "发送消息过程中发生异常: " + e.message, e)
+                    return SyncResult(
                         isSuccess = false,
                         message = "Error: " + e.message,
                         syncedCount = 0
@@ -181,25 +178,25 @@ object SyncModule {
                 }
             }
 
-            override suspend fun getMessages(userId: Int): List<com.example.todoschedule.data.sync.dto.SyncMessageDto> {
-                android.util.Log.d("SyncModule", "尝试获取用户ID " + userId + " 的所有消息")
+            override suspend fun getMessages(userId: Int): List<SyncMessageDto> {
+                Log.d("SyncModule", "尝试获取用户ID " + userId + " 的所有消息")
                 val deviceId = deviceIdManager.getOrCreateDeviceId()
                 try {
                     val response = remoteSyncApi.getAllMessages(deviceId)
                     return if (response.isSuccessful) {
                         val apiMessages = response.body() ?: emptyList()
-                        android.util.Log.d("SyncModule", "成功获取" + apiMessages.size + "条消息")
+                        Log.d("SyncModule", "成功获取" + apiMessages.size + "条消息")
                         // 将API消息转换为应用内使用的SyncMessageDto
                         apiMessages.mapNotNull { it.toSyncMessageDto() }
                     } else {
-                        android.util.Log.e(
+                        Log.e(
                             "SyncModule",
                             "获取消息失败: " + (response.errorBody()?.string() ?: "")
                         )
                         emptyList()
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("SyncModule", "获取消息过程中发生异常: " + e.message, e)
+                    Log.e("SyncModule", "获取消息过程中发生异常: " + e.message, e)
                     return emptyList()
                 }
             }
@@ -286,7 +283,7 @@ object SyncModule {
             syncRepository,
             deviceIdManager,
             synkAdapterRegistry,
-            crdtKeyResolver
+            crdtKeyResolver,
         )
     }
 }
