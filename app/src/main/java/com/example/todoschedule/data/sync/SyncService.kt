@@ -14,7 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Timer
@@ -151,7 +150,7 @@ class SyncService : Service() {
             "启动周期性同步，间隔: ${AppConstants.Sync.SYNC_INTERVAL}ms (${AppConstants.Sync.SYNC_INTERVAL / 1000}秒)"
         )
         timer = Timer()
-        timer?.scheduleAtFixedRate(object : TimerTask() {
+        timer?.schedule(object : TimerTask() {
             override fun run() {
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
