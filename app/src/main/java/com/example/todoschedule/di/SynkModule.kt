@@ -34,7 +34,7 @@ object SynkModule {
     ): Synk {
 
         // ① 时钟文件配置
-        val clockConfig = Synk.Builder.Presets.Android(context).clockStorageConfiguration
+        val clockConfig = ClockStorageConfiguration.Presets.Android(context)
 
         // ② Delightful-Metastore
         val driver = AndroidSqliteDriver(

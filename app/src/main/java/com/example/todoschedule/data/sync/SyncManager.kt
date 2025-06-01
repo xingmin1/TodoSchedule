@@ -17,7 +17,6 @@ import com.tap.hlc.HybridLogicalClock
 import com.tap.hlc.NodeID
 import com.tap.hlc.Timestamp
 import com.tap.synk.Synk
-import com.tap.synk.outbound
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,7 +1,6 @@
 package com.example.todoschedule.data.sync.adapter
 
 import com.example.todoschedule.data.database.entity.TableEntity
-import com.tap.hlc.Timestamp
 import com.tap.synk.adapter.SynkAdapter as CoreSynkAdapter
 import kotlinx.datetime.LocalDate
 import javax.inject.Inject

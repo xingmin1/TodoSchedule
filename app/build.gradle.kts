@@ -8,6 +8,10 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions.jvmTarget = "11"
+}
+
 android {
     namespace = "com.example.todoschedule"
     compileSdk = 35

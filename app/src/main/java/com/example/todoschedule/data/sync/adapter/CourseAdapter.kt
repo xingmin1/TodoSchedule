@@ -1,7 +1,6 @@
 package com.example.todoschedule.data.sync.adapter
 
 import com.example.todoschedule.data.database.entity.CourseEntity
-import com.tap.hlc.Timestamp
 import com.tap.synk.adapter.SynkAdapter as CoreSynkAdapter
 import javax.inject.Inject
 import javax.inject.Singleton
