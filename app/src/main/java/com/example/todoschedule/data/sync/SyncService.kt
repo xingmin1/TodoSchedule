@@ -81,7 +81,7 @@ class SyncService : Service() {
 
         // ---- Synk ready? ----
         if (::synk.isInitialized) {
-            Log.d(TAG, "Synk initialized – node id = ${synk.hlc.value.node}")
+            Log.d(TAG, "Synk initialized")
         } else {
             Log.e(TAG, "Synk not injected")
         }
