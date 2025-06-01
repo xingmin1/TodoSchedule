@@ -1,42 +1,33 @@
 package com.example.todoschedule.data.sync
 
-import com.example.todoschedule.data.sync.SyncConstants
 import android.util.Log
-import com.github.michaelbull.result.Result
-import com.github.michaelbull.result.getOr
-import com.github.michaelbull.result.Ok
-import com.github.michaelbull.result.Err
-import com.tap.hlc.Timestamp
-import com.tap.hlc.HybridLogicalClock
-import com.tap.hlc.NodeID
+import com.example.todoschedule.data.database.entity.CourseEntity
+import com.example.todoschedule.data.database.entity.CourseNodeEntity
+import com.example.todoschedule.data.database.entity.OrdinaryScheduleEntity
 import com.example.todoschedule.data.database.entity.SyncMessageEntity
+import com.example.todoschedule.data.database.entity.Syncable
+import com.example.todoschedule.data.database.entity.TableEntity
+import com.example.todoschedule.data.database.entity.TimeSlotEntity
 import com.example.todoschedule.data.database.entity.toEntity
 import com.example.todoschedule.data.repository.SyncRepository
+import com.example.todoschedule.data.sync.adapter.SynkAdapter
+import com.example.todoschedule.data.sync.adapter.SynkAdapterRegistry
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
-import com.example.todoschedule.data.sync.dto.TimestampDto
+import com.tap.hlc.HybridLogicalClock
+import com.tap.hlc.NodeID
+import com.tap.hlc.Timestamp
+import com.tap.synk.Synk
+import com.tap.synk.encodeOne
+import com.tap.synk.outbound
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.example.todoschedule.data.sync.adapter.SynkAdapter
-import com.example.todoschedule.data.database.entity.Syncable
-import com.example.todoschedule.data.database.entity.CourseEntity
-import com.example.todoschedule.data.database.entity.CourseNodeEntity
-import com.example.todoschedule.data.database.entity.OrdinaryScheduleEntity
-import com.example.todoschedule.data.database.entity.TableEntity
-import com.example.todoschedule.data.database.entity.TimeSlotEntity
-import com.example.todoschedule.data.sync.CrdtKeyResolver
-import com.example.todoschedule.data.sync.adapter.SynkAdapterRegistry
-import org.json.JSONObject
-import java.util.UUID
-import com.tap.synk.Synk
 
 /**
  * 同步管理器
@@ -179,7 +170,7 @@ class SyncManager @Inject constructor(
              * 1️⃣ 使用 Synk 生成 Message 并序列化
              * --------------------------------------------------- */
             val message = synk.outbound(entity, oldEntity)
-            val encodedMessage = synk.serializeOne(message)
+            val encodedMessage = synk.encodeOne(message)
 
             // 创建同步消息
             val messageEntity = createSyncMessage(
