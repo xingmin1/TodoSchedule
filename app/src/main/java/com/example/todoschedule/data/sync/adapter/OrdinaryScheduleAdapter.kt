@@ -2,7 +2,6 @@ package com.example.todoschedule.data.sync.adapter
 
 import com.example.todoschedule.data.database.converter.ScheduleStatus
 import com.example.todoschedule.data.database.entity.OrdinaryScheduleEntity
-import com.tap.hlc.Timestamp
 import com.tap.synk.adapter.SynkAdapter as CoreSynkAdapter
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -71,12 +70,12 @@ class OrdinaryScheduleAdapter @Inject constructor() :
     }
 
     /* Synk-Adapter 接口映射 */
-    override fun resolveId(crdt: CourseEntity): String = key(crdt)
+    override fun resolveId(crdt: OrdinaryScheduleEntity): String = key(crdt)
 
-    override fun encode(crdt: CourseEntity): Map<String, String> =
+    override fun encode(crdt: OrdinaryScheduleEntity): Map<String, String> =
         serialize(crdt).mapValues { it.value?.toString() ?: "" }
 
-    override fun decode(map: Map<String, String>): CourseEntity =
+    override fun decode(map: Map<String, String>): OrdinaryScheduleEntity =
         deserialize(map as Map<String, Any?>)
 
     override fun merge(
