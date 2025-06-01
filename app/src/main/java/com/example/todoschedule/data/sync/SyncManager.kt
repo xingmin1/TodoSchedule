@@ -17,6 +17,8 @@ import com.tap.hlc.HybridLogicalClock
 import com.tap.hlc.NodeID
 import com.tap.hlc.Timestamp
 import com.tap.synk.Synk
+import com.tap.synk.outbound
+import com.tap.synk.serializeOne
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +46,9 @@ class SyncManager @Inject constructor(
     companion object {
         private const val TAG = "SyncManager"
     }
+
+    // 占位的旧版 HLC 字段（当前逻辑已交由 Synk 管理）
+    private var hlcClock: HybridLogicalClock? = null
 
     private val _syncState = MutableStateFlow(SyncState.IDLE)
     val syncState: StateFlow<SyncState> = _syncState
