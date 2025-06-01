@@ -54,8 +54,6 @@ class SyncManager @Inject constructor(
         encodeDefaults = true
     }
 
-    // 混合逻辑时钟(HLC)实例，用于生成时间戳和解决冲突
-    private var hlcClock: HybridLogicalClock? = null
 
     /**
      * 初始化同步管理器
@@ -103,7 +101,7 @@ class SyncManager @Inject constructor(
         payload: String
     ): SyncMessageEntity {
         // 获取并更新混合逻辑时钟
-        val updatedClock = getAndUpdateClock()
+        val updatedClock = synk.hlc.value
 
         // 创建带有时间戳的同步消息
         val messageEntity = SyncMessageEntity(
@@ -431,12 +429,6 @@ class SyncManager @Inject constructor(
                 "消息负载: ${messageDto.payload.take(100)}${if (messageDto.payload.length > 100) "..." else ""}"
             )
 
-            // 更新本地时钟与远程消息同步
-            updateClockWithRemote(
-                remoteTimestamp = messageDto.timestamp.wallClockTime,
-                remoteCounter = messageDto.timestamp.logicalTime.toInt(),
-                remoteNodeId = messageDto.timestamp.nodeId
-            )
 
             // 根据实体类型获取对应的适配器
             val entityType = getEntityTypeFromString(messageDto.entityType)

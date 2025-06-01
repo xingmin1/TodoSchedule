@@ -11,7 +11,6 @@ import com.tap.delight.metastore.DelightfulDatabase
 import com.tap.delight.metastore.DelightfulMetastoreFactory
 import com.tap.delight.metastore.config.MetastoreConfig
 import com.tap.synk.Synk
-import com.tap.synk.config.Android
 import com.tap.synk.config.ClockStorageConfiguration
 import dagger.Module
 import dagger.Provides
@@ -35,7 +34,7 @@ object SynkModule {
     ): Synk {
 
         // ① 时钟文件配置
-        val clockConfig = ClockStorageConfiguration.Presets.Android(context)
+        val clockConfig = Synk.Builder.Presets.Android(context).clockStorageConfiguration
 
         // ② Delightful-Metastore
         val driver = AndroidSqliteDriver(
