@@ -18,7 +18,9 @@ import com.tap.hlc.HybridLogicalClock
 import com.tap.hlc.NodeID
 import com.tap.hlc.Timestamp
 import com.tap.synk.Synk
+import com.tap.synk.decodeOne
 import com.tap.synk.encodeOne
+import com.tap.synk.inbound
 import com.tap.synk.outbound
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -151,14 +153,6 @@ class SyncManager @Inject constructor(
         oldEntity: T? = null,
     ) {
         try {
-            // 获取实体类型对应的适配器
-            val adapter = try {
-                synkAdapterRegistry.getAdapter(entityType.value)
-            } catch (e: Exception) {
-                Log.e(TAG, "找不到实体类型的适配器: ${entityType.value}", e)
-                return
-            }
-
             // 序列化实体对象为Map
             // 使用两步转换来解决类型问题
             if (entity !is Syncable) {
@@ -508,7 +502,7 @@ class SyncManager @Inject constructor(
             val typedAdapter = adapter as SynkAdapter<CourseEntity>
 
             /* ① 将 payload 字符串 -> Message<CourseEntity> */
-            val message = synk.deserializeOne<CourseEntity>(messageDto.payload)
+            val message = synk.decodeOne<CourseEntity>(messageDto.payload)
 
             /* ② 取出 CRDT */
             val remoteEntity = message.crdt
@@ -621,7 +615,7 @@ class SyncManager @Inject constructor(
             val typedAdapter = adapter as SynkAdapter<CourseNodeEntity>
 
             /* ① 将 payload 字符串 -> Message<CourseNodeEntity> */
-            val message = synk.deserializeOne<CourseNodeEntity>(messageDto.payload)
+            val message = synk.decodeOne<CourseNodeEntity>(messageDto.payload)
 
             /* ② 取出 CRDT */
             val remoteEntity = message.crdt
@@ -723,7 +717,7 @@ class SyncManager @Inject constructor(
             val typedAdapter = adapter as SynkAdapter<TableEntity>
 
             /* ① 将 payload 字符串 -> Message<TableEntity> */
-            val message = synk.deserializeOne<TableEntity>(messageDto.payload)
+            val message = synk.decodeOne<TableEntity>(messageDto.payload)
 
             /* ② 取出 CRDT */
             val remoteEntity = message.crdt
@@ -786,7 +780,7 @@ class SyncManager @Inject constructor(
             val typedAdapter = adapter as SynkAdapter<OrdinaryScheduleEntity>
 
             /* ① 将 payload 字符串 -> Message<OrdinaryScheduleEntity> */
-            val message = synk.deserializeOne<OrdinaryScheduleEntity>(messageDto.payload)
+            val message = synk.decodeOne<OrdinaryScheduleEntity>(messageDto.payload)
 
             /* ② 取出 CRDT */
             val remoteEntity = message.crdt
@@ -850,7 +844,7 @@ class SyncManager @Inject constructor(
             val typedAdapter = adapter as SynkAdapter<TimeSlotEntity>
 
             /* ① 将 payload 字符串 -> Message<TimeSlotEntity> */
-            val message = synk.deserializeOne<TimeSlotEntity>(messageDto.payload)
+            val message = synk.decodeOne<TimeSlotEntity>(messageDto.payload)
 
             /* ② 取出 CRDT */
             val remoteEntity = message.crdt

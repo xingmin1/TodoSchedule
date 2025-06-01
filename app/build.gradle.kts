@@ -6,6 +6,7 @@ plugins {
     id("kotlin-parcelize")
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    id("com.google.devtools.ksp")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
@@ -149,6 +150,7 @@ dependencies {
     // Synk CRDT 数据同步库
     implementation("com.github.charlietap.synk:delightful-metastore:0.38")
     implementation("com.github.charlietap.synk:synk:0.38")
+    ksp("com.github.charlietap.synk:adapter-codegen:0.38")
 
     // SQLDelight - 用于数据库访问
     implementation("app.cash.sqldelight:android-driver:2.0.1")
