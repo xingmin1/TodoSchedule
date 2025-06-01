@@ -571,16 +571,8 @@ class SyncManager @Inject constructor(
             Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.crdtKey} 查找本地实体")
             val localEntity = syncRepository.getEntityByCrdtKey<CourseEntity>(messageDto.crdtKey)
 
-            // 应用CRDT合并逻辑
-            val mergedEntity = if (localEntity != null) {
-                // 如果本地存在，执行冲突解决
-                Log.d(TAG, "【合并实体】发现本地现有实体，执行CRDT合并")
-                typedAdapter.merge(localEntity, fixedEntity)
-            } else {
-                // 如果本地不存在，直接使用修复后的实体
-                Log.d(TAG, "【新建实体】本地不存在此实体，直接使用修复后的远程版本")
-                fixedEntity
-            }
+            // 应用CRDT合并逻辑（交由 Synk 处理）
+            val mergedEntity = synk.inbound(message, localEntity)
 
             // 保存合并后的实体
             Log.d(TAG, "【保存实体】开始保存${messageDto.entityType}类型的实体到数据库")
@@ -687,16 +679,8 @@ class SyncManager @Inject constructor(
             val localEntity =
                 syncRepository.getEntityByCrdtKey<CourseNodeEntity>(messageDto.crdtKey)
 
-            // 应用CRDT合并逻辑
-            val mergedEntity = if (localEntity != null) {
-                // 如果本地存在，执行冲突解决
-                Log.d(TAG, "【合并实体】发现本地现有实体，执行CRDT合并")
-                typedAdapter.merge(localEntity, fixedEntity)
-            } else {
-                // 如果本地不存在，直接使用修复后的实体
-                Log.d(TAG, "【新建实体】本地不存在此实体，直接使用修复后的远程版本")
-                fixedEntity
-            }
+            // 应用CRDT合并逻辑（交由 Synk 处理）
+            val mergedEntity = synk.inbound(message, localEntity)
 
             // 保存合并后的实体
             Log.d(TAG, "【保存实体】开始保存${messageDto.entityType}类型的实体到数据库")
@@ -758,16 +742,8 @@ class SyncManager @Inject constructor(
             Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.crdtKey} 查找本地实体")
             val localEntity = syncRepository.getEntityByCrdtKey<TableEntity>(messageDto.crdtKey)
 
-            // 应用CRDT合并逻辑
-            val mergedEntity = if (localEntity != null) {
-                // 如果本地存在，执行冲突解决
-                Log.d(TAG, "【合并实体】发现本地现有实体，执行CRDT合并")
-                typedAdapter.merge(localEntity, fixedEntity)
-            } else {
-                // 如果本地不存在，直接使用修复后的实体
-                Log.d(TAG, "【新建实体】本地不存在此实体，直接使用修复后的远程版本")
-                fixedEntity
-            }
+            // 应用CRDT合并逻辑（交由 Synk 处理）
+            val mergedEntity = synk.inbound(message, localEntity)
 
             // 保存合并后的实体
             Log.d(TAG, "【保存实体】开始保存${messageDto.entityType}类型的实体到数据库")
@@ -830,16 +806,8 @@ class SyncManager @Inject constructor(
             val localEntity =
                 syncRepository.getEntityByCrdtKey<OrdinaryScheduleEntity>(messageDto.crdtKey)
 
-            // 应用CRDT合并逻辑
-            val mergedEntity = if (localEntity != null) {
-                // 如果本地存在，执行冲突解决
-                Log.d(TAG, "【合并实体】发现本地现有实体，执行CRDT合并")
-                typedAdapter.merge(localEntity, fixedEntity)
-            } else {
-                // 如果本地不存在，直接使用修复后的实体
-                Log.d(TAG, "【新建实体】本地不存在此实体，直接使用修复后的远程版本")
-                fixedEntity
-            }
+            // 应用CRDT合并逻辑（交由 Synk 处理）
+            val mergedEntity = synk.inbound(message, localEntity)
 
             // 保存合并后的实体
             Log.d(TAG, "【保存实体】开始保存${messageDto.entityType}类型的实体到数据库")
@@ -949,16 +917,8 @@ class SyncManager @Inject constructor(
             Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.crdtKey} 查找本地实体")
             val localEntity = syncRepository.getEntityByCrdtKey<TimeSlotEntity>(messageDto.crdtKey)
 
-            // 应用CRDT合并逻辑
-            val mergedEntity = if (localEntity != null) {
-                // 如果本地存在，执行冲突解决
-                Log.d(TAG, "【合并实体】发现本地现有实体，执行CRDT合并")
-                typedAdapter.merge(localEntity, fixedEntity)
-            } else {
-                // 如果本地不存在，直接使用修复后的实体
-                Log.d(TAG, "【新建实体】本地不存在此实体，直接使用修复后的远程版本")
-                fixedEntity
-            }
+            // 应用CRDT合并逻辑（交由 Synk 处理）
+            val mergedEntity = synk.inbound(message, localEntity)
 
             // 保存合并后的实体
             Log.d(TAG, "【保存实体】开始保存${messageDto.entityType}类型的实体到数据库")
