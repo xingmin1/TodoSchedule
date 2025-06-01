@@ -12,7 +12,7 @@ import javax.inject.Singleton
 @Singleton
 class SynkAdapterRegistry @Inject constructor(
     private val courseAdapter: CourseAdapter,
-    private val tableAdapter: TableAdapter,
+    private val tableAdapter: TableEntitySynkAdapter,
     private val courseNodeAdapter: CourseNodeAdapter,
     private val ordinaryScheduleAdapter: OrdinaryScheduleAdapter,
     private val timeSlotAdapter: TimeSlotAdapter
