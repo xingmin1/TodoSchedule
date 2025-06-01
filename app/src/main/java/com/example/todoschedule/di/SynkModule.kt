@@ -1,18 +1,23 @@
 package com.example.todoschedule.di
 
 import android.content.Context
-import com.example.todoschedule.data.sync.adapter.*
+import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.example.todoschedule.data.sync.adapter.CourseAdapter
+import com.example.todoschedule.data.sync.adapter.CourseNodeAdapter
+import com.example.todoschedule.data.sync.adapter.OrdinaryScheduleAdapter
+import com.example.todoschedule.data.sync.adapter.TableAdapter
+import com.example.todoschedule.data.sync.adapter.TimeSlotAdapter
+import com.tap.delight.metastore.DelightfulDatabase
 import com.tap.delight.metastore.DelightfulMetastoreFactory
 import com.tap.delight.metastore.config.MetastoreConfig
 import com.tap.synk.Synk
+import com.tap.synk.config.Android
 import com.tap.synk.config.ClockStorageConfiguration
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-import app.cash.sqldelight.driver.android.AndroidSqliteDriver
-import com.tap.delight.metastore.DelightfulDatabase
 
 @Module
 @InstallIn(SingletonComponent::class)
