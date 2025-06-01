@@ -11,8 +11,8 @@ import com.tap.delight.metastore.DelightfulDatabase
 import com.tap.delight.metastore.DelightfulMetastoreFactory
 import com.tap.delight.metastore.config.MetastoreConfig
 import com.tap.synk.Synk
-import com.tap.synk.config.Android
 import com.tap.synk.config.ClockStorageConfiguration
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,7 +26,7 @@ object SynkModule {
     @Provides
     @Singleton
     fun provideSynk(
-        context: Context,
+        @ApplicationContext context: Context,
         courseAdapter: CourseAdapter,
         tableAdapter: TableAdapter,
         courseNodeAdapter: CourseNodeAdapter,
