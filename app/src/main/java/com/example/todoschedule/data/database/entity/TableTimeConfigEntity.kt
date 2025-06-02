@@ -15,7 +15,7 @@ import androidx.room.PrimaryKey
     foreignKeys = [
         ForeignKey(
             entity = TableEntity::class, // 关联到课表表
-            parentColumns = ["crdtKey"],
+            parentColumns = ["id"],
             childColumns = ["table_id"],
             onDelete = ForeignKey.CASCADE // 如果课表删除，其时间配置也删除
         )

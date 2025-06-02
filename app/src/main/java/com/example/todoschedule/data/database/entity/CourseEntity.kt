@@ -15,14 +15,16 @@ import java.util.UUID
     foreignKeys = [
         ForeignKey(
             entity = TableEntity::class,
-            parentColumns = ["crdtKey"],
-            childColumns = ["tableCrdtKey"],
+            parentColumns = ["id"],
+            childColumns = ["tableId"],
             onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [Index("tableId"), Index("crdtKey"), Index("tableCrdtKey")]
 )
 data class CourseEntity(
+    @PrimaryKey val id: Int = UUID.randomUUID().hashCode(), // 本地ID，使用UUID的哈希值作为默认值
+    val tableId: Int, // 所属课表ID (本地ID，用于Room外键关系)
     val courseName: String, // 课程名称
     val color: String = "#FF4081", // 显示颜色，默认粉色
     val room: String? = null, // 教室位置
@@ -34,13 +36,11 @@ data class CourseEntity(
     val syllabusLink: String? = null, // 教学大纲链接
 
     // 同步字段
-    @PrimaryKey val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
+    val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
     val tableCrdtKey: String? = null, // 课表的CRDT唯一标识符
     @ColumnInfo(name = "update_timestamp")
     val updateTimestamp: Long? = null // 更新时间戳
 ) : Syncable {
     override val syncId: String
         get() = crdtKey
-    val id : Int
-        get() = crdtKey.toInt()
 } 

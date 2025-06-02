@@ -22,6 +22,7 @@ import java.util.UUID
     indices = [Index("userId"), Index("crdtKey"), Index("userCrdtKey")]
 )
 data class TableEntity(
+    @PrimaryKey val id: Int = UUID.randomUUID().hashCode(), // 本地ID，使用UUID的哈希值作为默认值
     val userId: Int, // 用户ID (本地ID，用于Room外键关系)
     val tableName: String, // 课表名称
     val background: String = "", // 背景颜色
@@ -31,13 +32,11 @@ data class TableEntity(
     val totalWeeks: Int = 20, // 总周数
 
     // 同步字段
-    @PrimaryKey val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
+    val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
     val userCrdtKey: String? = null, // 用户的CRDT唯一标识符
     @ColumnInfo(name = "update_timestamp")
     val updateTimestamp: Long? = null // 更新时间戳
 ) : Syncable {
     override val syncId: String
         get() = crdtKey
-    val id : Int
-        get() = crdtKey.toInt()
 }
