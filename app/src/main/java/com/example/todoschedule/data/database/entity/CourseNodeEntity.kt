@@ -5,7 +5,6 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.tap.hlc.Timestamp
 import java.util.UUID
 
 /**
@@ -16,15 +15,14 @@ import java.util.UUID
     foreignKeys = [
         ForeignKey(
             entity = CourseEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["courseId"],
+            parentColumns = ["crdtKey"],
+            childColumns = ["courseCrdtKey"],
             onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [Index("courseId"), Index("crdtKey"), Index("courseCrdtKey")]
 )
 data class CourseNodeEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val courseId: Int, // 所属课程ID (本地ID，用于Room外键关系)
     val courseNodeName: String? = null, // 课程节点名称
     val color: String? = null, // 显示颜色
@@ -38,11 +36,13 @@ data class CourseNodeEntity(
     val weekType: Int = 0, // 周类型(0-全部，1-单周，2-双周)
 
     // 同步字段
-    val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
+    @PrimaryKey val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
     val courseCrdtKey: String? = null, // 课程的CRDT唯一标识符
     @ColumnInfo(name = "update_timestamp")
     val updateTimestamp: Long? = null // 更新时间戳
 ) : Syncable {
     override val syncId: String
         get() = crdtKey
+    val id : Int
+        get() = crdtKey.toInt()
 } 

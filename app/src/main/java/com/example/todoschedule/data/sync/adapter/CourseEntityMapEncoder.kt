@@ -5,42 +5,37 @@ import com.example.todoschedule.data.database.entity.CourseEntity
 import com.tap.synk.encode.MapEncoder
 
 public class CourseEntityMapEncoder : MapEncoder<CourseEntity> {
-    public override fun encode(crdt: CourseEntity): Map<String, String> {
-        val map = mutableMapOf<String, String>()
-        map["id"] = crdt.id.toString()
-        map["tableId"] = crdt.tableId.toString()
-        map["courseName"] = crdt.courseName
-        map["color"] = crdt.color
-        map["room"] = crdt.room.toString()
-        map["teacher"] = crdt.teacher.toString()
-        map["startWeek"] = crdt.startWeek.toString()
-        map["endWeek"] = crdt.endWeek.toString()
-        map["credit"] = crdt.credit.toString()
-        map["courseCode"] = crdt.courseCode.toString()
-        map["syllabusLink"] = crdt.syllabusLink.toString()
-        map["crdtKey"] = crdt.crdtKey
-        map["tableCrdtKey"] = crdt.tableCrdtKey.toString()
-        map["updateTimestamp"] = crdt.updateTimestamp.toString()
-        return map
+    override fun encode(crdt: CourseEntity): Map<String, String> = buildMap {
+        put("id", crdt.id.toString())
+        put("tableId", crdt.tableId.toString())
+        put("courseName", crdt.courseName)
+        put("color", crdt.color)
+        put("room", crdt.room.orEmpty())
+        put("teacher", crdt.teacher.orEmpty())
+        put("startWeek", crdt.startWeek.toString())
+        put("endWeek", crdt.endWeek.toString())
+        put("credit", crdt.credit?.toString() ?: "")
+        put("courseCode", crdt.courseCode.orEmpty())
+        put("syllabusLink", crdt.syllabusLink.orEmpty())
+        put("crdtKey", crdt.crdtKey)
+        put("tableCrdtKey", crdt.tableCrdtKey.orEmpty())
+        put("updateTimestamp", crdt.updateTimestamp?.toString() ?: "")
     }
 
-    public override fun decode(map: Map<String, String>): CourseEntity {
-        val crdt = CourseEntity(
-            map["id"]!!.toInt(),
-            map["tableId"]!!.toInt(),
-            map["courseName"]!!,
-            map["color"]!!,
-            map["room"],
-            map["teacher"],
-            map["startWeek"]!!.toInt(),
-            map["endWeek"]!!.toInt(),
-            map["credit"]?.toFloat(),
-            map["courseCode"],
-            map["syllabusLink"],
-            map["crdtKey"]!!,
-            map["tableCrdtKey"],
-            map["updateTimestamp"]?.toLong(),
-        )
-        return crdt
-    }
+    override fun decode(map: Map<String, String>): CourseEntity = CourseEntity(
+        id = map.getValue("id").toInt(),
+        tableId = map.getValue("tableId").toInt(),
+        courseName = map.getValue("courseName"),
+        color = map.getValue("color"),
+        room = map["room"].takeUnless { it.isNullOrBlank() },
+        teacher = map["teacher"].takeUnless { it.isNullOrBlank() },
+        startWeek = map.getValue("startWeek").toInt(),
+        endWeek = map.getValue("endWeek").toInt(),
+        credit = map["credit"].takeUnless { it.isNullOrBlank() }?.toFloatOrNull(),
+        courseCode = map["courseCode"].takeUnless { it.isNullOrBlank() },
+        syllabusLink = map["syllabusLink"].takeUnless { it.isNullOrBlank() },
+        crdtKey = map.getValue("crdtKey"),
+        tableCrdtKey = map["tableCrdtKey"].takeUnless { it.isNullOrBlank() },
+        updateTimestamp = map["updateTimestamp"].takeUnless { it.isNullOrBlank() }?.toLongOrNull()
+    )
 }

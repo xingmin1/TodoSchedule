@@ -20,7 +20,7 @@ interface CourseDao {
      * 获取指定课表的所有课程
      */
     @Transaction
-    @Query("SELECT * FROM course WHERE tableId = :tableId")
+    @Query("SELECT * FROM course WHERE tableCrdtKey = :tableId")
     fun getCoursesByTableId(tableId: Int): Flow<List<CourseWithNodes>>
 
     /**
@@ -30,8 +30,8 @@ interface CourseDao {
     @Query(
         """
         SELECT DISTINCT c.* FROM course c
-        JOIN course_node cn ON c.id = cn.courseId
-        WHERE c.tableId = :tableId
+        JOIN course_node cn ON c.crdtKey = cn.courseCrdtKey
+        WHERE c.tableCrdtKey = :tableId
         AND cn.startWeek <= :week AND cn.endWeek >= :week
         AND (cn.weekType = 0 OR (cn.weekType = 1 AND :week % 2 = 1) OR (cn.weekType = 2 AND :week % 2 = 0))
     """
@@ -44,7 +44,7 @@ interface CourseDao {
     @Query(
         """
         SELECT * FROM course_node
-        WHERE courseId IN (SELECT id FROM course WHERE tableId = :tableId)
+        WHERE courseId IN (SELECT crdtKey FROM course WHERE tableCrdtKey = :tableId)
         AND day = :day
         AND startWeek <= :week AND endWeek >= :week
         AND (weekType = 0 OR (weekType = 1 AND :week % 2 = 1) OR (weekType = 2 AND :week % 2 = 0))
@@ -56,7 +56,7 @@ interface CourseDao {
      * 获取课程详情
      */
     @Transaction
-    @Query("SELECT * FROM course WHERE id = :courseId")
+    @Query("SELECT * FROM course WHERE crdtKey = :courseId")
     suspend fun getCourseWithNodesById(courseId: Int): CourseWithNodes?
 
     /**

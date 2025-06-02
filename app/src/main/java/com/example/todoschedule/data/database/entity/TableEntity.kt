@@ -5,7 +5,6 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.tap.hlc.Timestamp
 import kotlinx.datetime.LocalDate
 import java.util.UUID
 
@@ -23,7 +22,6 @@ import java.util.UUID
     indices = [Index("userId"), Index("crdtKey"), Index("userCrdtKey")]
 )
 data class TableEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val userId: Int, // 用户ID (本地ID，用于Room外键关系)
     val tableName: String, // 课表名称
     val background: String = "", // 背景颜色
@@ -33,11 +31,13 @@ data class TableEntity(
     val totalWeeks: Int = 20, // 总周数
 
     // 同步字段
-    val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
+    @PrimaryKey val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
     val userCrdtKey: String? = null, // 用户的CRDT唯一标识符
     @ColumnInfo(name = "update_timestamp")
     val updateTimestamp: Long? = null // 更新时间戳
 ) : Syncable {
     override val syncId: String
         get() = crdtKey
+    val id : Int
+        get() = crdtKey.toInt()
 }

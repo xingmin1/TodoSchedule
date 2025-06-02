@@ -13,47 +13,41 @@ public class TimeSlotEntityMapEncoder(
     private val reminderTypeSerializer: EnumStringSerializer<ReminderType> =
             EnumStringSerializer<ReminderType>(),
 ) : MapEncoder<TimeSlotEntity> {
-    public override fun encode(crdt: TimeSlotEntity): Map<String, String> {
-        val map = mutableMapOf<String, String>()
-        map["id"] = crdt.id.toString()
-        map["userId"] = crdt.userId.toString()
-        map["startTime"] = crdt.startTime.toString()
-        map["endTime"] = crdt.endTime.toString()
-        map["scheduleId"] = crdt.scheduleId.toString()
-        map["head"] = crdt.head.toString()
-        map["priority"] = crdt.priority.toString()
-        map["isCompleted"] = crdt.isCompleted.toString()
-        map["isRepeated"] = crdt.isRepeated.toString()
-        map["repeatPattern"] = crdt.repeatPattern.toString()
-        map["reminderOffset"] = crdt.reminderOffset.toString()
-        map["crdtKey"] = crdt.crdtKey
-        map["scheduleCrdtKey"] = crdt.scheduleCrdtKey.toString()
-        map["updateTimestamp"] = crdt.updateTimestamp.toString()
-        map["scheduleType"] = scheduleTypeSerializer.serialize(crdt.scheduleType)
-        crdt.reminderType?.let { map["reminderType"] =
-                reminderTypeSerializer.serialize(crdt.reminderType) }
-        return map
+    override fun encode(crdt: TimeSlotEntity): Map<String, String> = buildMap {
+        put("id", crdt.id.toString())
+        put("userId", crdt.userId.toString())
+        put("startTime", crdt.startTime.toString())
+        put("endTime", crdt.endTime.toString())
+        put("scheduleType", scheduleTypeSerializer.serialize(crdt.scheduleType))
+        put("scheduleId", crdt.scheduleId.toString())
+        crdt.head?.let { put("head", it) }
+        crdt.priority?.let { put("priority", it.toString()) }
+        put("isCompleted", crdt.isCompleted.toString())
+        put("isRepeated", crdt.isRepeated.toString())
+        crdt.repeatPattern?.let { put("repeatPattern", it) }
+        crdt.reminderOffset?.let { put("reminderOffset", it.toString()) }
+        put("crdtKey", crdt.crdtKey)
+        crdt.scheduleCrdtKey?.let { put("scheduleCrdtKey", it) }
+        crdt.updateTimestamp?.let { put("updateTimestamp", it.toString()) }
+        crdt.reminderType?.let { put("reminderType", reminderTypeSerializer.serialize(it)) }
     }
 
-    public override fun decode(map: Map<String, String>): TimeSlotEntity {
-        val crdt = TimeSlotEntity(
-            map["id"]!!.toInt(),
-            map["userId"]!!.toInt(),
-            map["startTime"]!!.toLong(),
-            map["endTime"]!!.toLong(),
-            scheduleTypeSerializer.deserialize(map["scheduleType"]!!),
-            map["scheduleId"]!!.toInt(),
-            map["head"],
-            map["priority"]?.toInt(),
-            map["isCompleted"]!!.toBoolean(),
-            map["isRepeated"]!!.toBoolean(),
-            map["repeatPattern"],
-            map["reminderType"]?.let { reminderTypeSerializer.deserialize(it) },
-            map["reminderOffset"]?.toLong(),
-            map["crdtKey"]!!,
-            map["scheduleCrdtKey"],
-            map["updateTimestamp"]?.toLong(),
-        )
-        return crdt
-    }
+    override fun decode(map: Map<String, String>): TimeSlotEntity = TimeSlotEntity(
+        id = map.getValue("id").toInt(),
+        userId = map.getValue("userId").toInt(),
+        startTime = map.getValue("startTime").toLong(),
+        endTime = map.getValue("endTime").toLong(),
+        scheduleType = scheduleTypeSerializer.deserialize(map.getValue("scheduleType")),
+        scheduleId = map.getValue("scheduleId").toInt(),
+        head = map["head"],
+        priority = map["priority"]?.toIntOrNull(),
+        isCompleted = map.getValue("isCompleted").toBoolean(),
+        isRepeated = map.getValue("isRepeated").toBoolean(),
+        repeatPattern = map["repeatPattern"],
+        reminderType = map["reminderType"]?.let { reminderTypeSerializer.deserialize(it) },
+        reminderOffset = map["reminderOffset"]?.toLongOrNull(),
+        crdtKey = map.getValue("crdtKey"),
+        scheduleCrdtKey = map["scheduleCrdtKey"],
+        updateTimestamp = map["updateTimestamp"]?.toLongOrNull()
+    )
 }

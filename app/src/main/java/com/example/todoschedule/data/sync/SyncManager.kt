@@ -428,7 +428,7 @@ class SyncManager @Inject constructor(
             )
             Log.d(
                 TAG,
-                "消息负载: ${messageDto.payload.take(100)}${if (messageDto.payload.length > 100) "..." else ""}"
+                "消息负载: ${messageDto.payload}}"
             )
 
 

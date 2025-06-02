@@ -3,38 +3,34 @@ package com.example.todoschedule.data.sync.adapter
 
 import com.example.todoschedule.data.database.entity.TableEntity
 import com.tap.synk.encode.MapEncoder
+import kotlinx.datetime.LocalDate
 
 public class TableEntityMapEncoder : MapEncoder<TableEntity> {
-    public override fun encode(crdt: TableEntity): Map<String, String> {
-        val map = mutableMapOf<String, String>()
-        map["id"] = crdt.id.toString()
-        map["userId"] = crdt.userId.toString()
-        map["tableName"] = crdt.tableName
-        map["background"] = crdt.background
-        map["listPosition"] = crdt.listPosition.toString()
-        map["terms"] = crdt.terms
-        map["startDate"] = crdt.startDate.toString()
-        map["totalWeeks"] = crdt.totalWeeks.toString()
-        map["crdtKey"] = crdt.crdtKey
-        map["userCrdtKey"] = crdt.userCrdtKey.toString()
-        map["updateTimestamp"] = crdt.updateTimestamp.toString()
-        return map
+    override fun encode(crdt: TableEntity): Map<String, String> = buildMap {
+        put("id", crdt.id.toString())
+        put("userId", crdt.userId.toString())
+        put("tableName", crdt.tableName)
+        put("background", crdt.background)
+        put("listPosition", crdt.listPosition.toString())
+        put("terms", crdt.terms)
+        put("startDate", crdt.startDate.toString())
+        put("totalWeeks", crdt.totalWeeks.toString())
+        put("crdtKey", crdt.crdtKey)
+        put("userCrdtKey", crdt.userCrdtKey.orEmpty())
+        put("updateTimestamp", crdt.updateTimestamp?.toString() ?: "")
     }
 
-    public override fun decode(map: Map<String, String>): TableEntity {
-        val crdt = TableEntity(
-            map["id"]!!.toInt(),
-            map["userId"]!!.toInt(),
-            map["tableName"]!!,
-            map["background"]!!,
-            map["listPosition"]!!.toInt(),
-            map["terms"]!!,
-            kotlinx.datetime.LocalDate.parse(map["startDate"]!!),
-            map["totalWeeks"]!!.toInt(),
-            map["crdtKey"]!!,
-            map["userCrdtKey"],
-            map["updateTimestamp"]?.toLong(),
-        )
-        return crdt
-    }
+    override fun decode(map: Map<String, String>): TableEntity = TableEntity(
+        id = map.getValue("id").toInt(),
+        userId = map.getValue("userId").toInt(),
+        tableName = map.getValue("tableName"),
+        background = map.getValue("background"),
+        listPosition = map.getValue("listPosition").toInt(),
+        terms = map.getValue("terms"),
+        startDate = LocalDate.parse(map.getValue("startDate")),
+        totalWeeks = map.getValue("totalWeeks").toInt(),
+        crdtKey = map.getValue("crdtKey"),
+        userCrdtKey = map["userCrdtKey"].takeUnless { it.isNullOrBlank() },
+        updateTimestamp = map["updateTimestamp"].takeUnless { it.isNullOrBlank() }?.toLongOrNull()
+    )
 }

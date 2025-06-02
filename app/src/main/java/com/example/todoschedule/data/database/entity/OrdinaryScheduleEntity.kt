@@ -6,7 +6,6 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.example.todoschedule.data.database.converter.ScheduleStatus
-import com.tap.hlc.Timestamp
 import java.util.UUID
 
 @Entity(
@@ -22,7 +21,6 @@ import java.util.UUID
     indices = [Index(value = ["userId"]), Index("crdtKey"), Index("userCrdtKey")]
 )
 data class OrdinaryScheduleEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val userId: Int, // 用户ID (本地ID，用于Room外键关系)
     val title: String,
     val description: String? = null,
@@ -33,11 +31,13 @@ data class OrdinaryScheduleEntity(
     val status: ScheduleStatus? = ScheduleStatus.TODO,
 
     // 同步字段
-    val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
+    @PrimaryKey val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
     val userCrdtKey: String? = null, // 用户的CRDT唯一标识符
     @ColumnInfo(name = "update_timestamp")
     val updateTimestamp: Long? = null // 更新时间戳
 ) : Syncable {
     override val syncId: String
         get() = crdtKey
+    val id : Int
+        get() = crdtKey.toInt()
 } 

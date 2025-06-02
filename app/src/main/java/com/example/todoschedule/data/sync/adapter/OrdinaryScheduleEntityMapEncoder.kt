@@ -10,38 +10,34 @@ public class OrdinaryScheduleEntityMapEncoder(
     private val statusSerializer: EnumStringSerializer<ScheduleStatus> =
             EnumStringSerializer<ScheduleStatus>(),
 ) : MapEncoder<OrdinaryScheduleEntity> {
-    public override fun encode(crdt: OrdinaryScheduleEntity): Map<String, String> {
-        val map = mutableMapOf<String, String>()
-        map["id"] = crdt.id.toString()
-        map["userId"] = crdt.userId.toString()
-        map["title"] = crdt.title
-        map["description"] = crdt.description.toString()
-        map["location"] = crdt.location.toString()
-        map["category"] = crdt.category.toString()
-        map["color"] = crdt.color.toString()
-        map["isAllDay"] = crdt.isAllDay.toString()
-        map["crdtKey"] = crdt.crdtKey
-        map["userCrdtKey"] = crdt.userCrdtKey.toString()
-        map["updateTimestamp"] = crdt.updateTimestamp.toString()
-        crdt.status?.let { map["status"] = statusSerializer.serialize(it) }
-        return map
+    override fun encode(crdt: OrdinaryScheduleEntity): Map<String, String> = buildMap {
+        put("id", crdt.id.toString())
+        put("userId", crdt.userId.toString())
+        put("title", crdt.title)
+        put("description", crdt.description.orEmpty())
+        put("location", crdt.location.orEmpty())
+        put("category", crdt.category.orEmpty())
+        put("color", crdt.color.orEmpty())
+        put("isAllDay", crdt.isAllDay.toString())
+        put("status", crdt.status?.let { statusSerializer.serialize(it) } ?: "")
+        put("crdtKey", crdt.crdtKey)
+        put("userCrdtKey", crdt.userCrdtKey.orEmpty())
+        put("updateTimestamp", crdt.updateTimestamp?.toString() ?: "")
     }
 
-    public override fun decode(map: Map<String, String>): OrdinaryScheduleEntity {
-        val crdt = OrdinaryScheduleEntity(
-            map["id"]!!.toInt(),
-            map["userId"]!!.toInt(),
-            map["title"]!!,
-            map["description"],
-            map["location"],
-            map["category"],
-            map["color"],
-            map["isAllDay"]!!.toBoolean(),
-            map["status"]?.let { statusSerializer.deserialize(it) },
-            map["crdtKey"]!!,
-            map["userCrdtKey"],
-            map["updateTimestamp"]?.toLong(),
-        )
-        return crdt
-    }
+    override fun decode(map: Map<String, String>): OrdinaryScheduleEntity = OrdinaryScheduleEntity(
+        id = map.getValue("id").toInt(),
+        userId = map.getValue("userId").toInt(),
+        title = map.getValue("title"),
+        description = map["description"].takeUnless { it.isNullOrBlank() },
+        location = map["location"].takeUnless { it.isNullOrBlank() },
+        category = map["category"].takeUnless { it.isNullOrBlank() },
+        color = map["color"].takeUnless { it.isNullOrBlank() },
+        isAllDay = map.getValue("isAllDay").toBoolean(),
+        status = map["status"].takeUnless { it.isNullOrBlank() }?.let { statusSerializer.deserialize(it) },
+        crdtKey = map.getValue("crdtKey"),
+        userCrdtKey = map["userCrdtKey"].takeUnless { it.isNullOrBlank() },
+        updateTimestamp = map["updateTimestamp"].takeUnless { it.isNullOrBlank() }?.toLongOrNull()
+    )
+
 }
