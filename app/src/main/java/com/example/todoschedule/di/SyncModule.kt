@@ -6,18 +6,11 @@ import androidx.work.WorkManager
 import com.example.todoschedule.data.database.AppDatabase
 import com.example.todoschedule.data.repository.SyncRepository
 import com.example.todoschedule.data.repository.SyncRepositoryImpl
-import com.example.todoschedule.data.sync.CrdtKeyResolver
 import com.example.todoschedule.data.sync.DeviceIdManager
 import com.example.todoschedule.data.sync.SyncApi
 import com.example.todoschedule.data.sync.SyncManager
 import com.example.todoschedule.data.sync.SyncMessageUploader
 import com.example.todoschedule.data.sync.SyncResult
-import com.example.todoschedule.data.sync.adapter.CourseAdapter
-import com.example.todoschedule.data.sync.adapter.CourseNodeAdapter
-import com.example.todoschedule.data.sync.adapter.OrdinaryScheduleAdapter
-import com.example.todoschedule.data.sync.adapter.SynkAdapterRegistry
-import com.example.todoschedule.data.sync.adapter.TableAdapter
-import com.example.todoschedule.data.sync.adapter.TimeSlotAdapter
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
 import com.example.todoschedule.domain.repository.GlobalSettingRepository
 import com.example.todoschedule.domain.repository.SessionRepository
@@ -221,53 +214,32 @@ object SyncModule {
         )
     }
 
-    /**
-     * 提供课程适配器
-     */
-    @Provides
-    @Singleton
-    fun provideCourseAdapter(): CourseAdapter {
-        return CourseAdapter()
-    }
-
-    @Provides
-    @Singleton
-    fun provideTableAdapter(): TableAdapter {
-        return TableAdapter()
-    }
-
-    @Provides
-    @Singleton
-    fun provideCourseNodeAdapter(): CourseNodeAdapter {
-        return CourseNodeAdapter()
-    }
-
-    @Provides
-    @Singleton
-    fun provideOrdinaryScheduleAdapter(): OrdinaryScheduleAdapter {
-        return OrdinaryScheduleAdapter()
-    }
-
-    /**
-     * 提供Synk适配器注册表
-     */
-    @Provides
-    @Singleton
-    fun provideSynkAdapterRegistry(
-        courseAdapter: CourseAdapter,
-        tableAdapter: TableAdapter,
-        courseNodeAdapter: CourseNodeAdapter,
-        ordinaryScheduleAdapter: OrdinaryScheduleAdapter,
-        timeSlotAdapter: TimeSlotAdapter
-    ): SynkAdapterRegistry {
-        return SynkAdapterRegistry(
-            courseAdapter,
-            tableAdapter,
-            courseNodeAdapter,
-            ordinaryScheduleAdapter,
-            timeSlotAdapter
-        )
-    }
+//    /**
+//     * 提供课程适配器
+//     */
+//    @Provides
+//    @Singleton
+//    fun provideCourseAdapter(): CourseEntitySynkAdapter {
+//        return CourseEntitySynkAdapter()
+//    }
+//
+//    @Provides
+//    @Singleton
+//    fun provideTableAdapter(): TableEntitySynkAdapter {
+//        return TableEntitySynkAdapter()
+//    }
+//
+//    @Provides
+//    @Singleton
+//    fun provideCourseNodeAdapter(): CourseNodeEntitySynkAdapter {
+//        return CourseNodeEntitySynkAdapter()
+//    }
+//
+//    @Provides
+//    @Singleton
+//    fun provideOrdinaryScheduleAdapter(): OrdinaryScheduleEntitySynkAdapter {
+//        return OrdinaryScheduleEntitySynkAdapter()
+//    }
 
     /**
      * 提供SyncManager实例
@@ -277,15 +249,11 @@ object SyncModule {
     fun provideSyncManager(
         syncRepository: SyncRepository,
         deviceIdManager: DeviceIdManager,
-        synkAdapterRegistry: SynkAdapterRegistry,
-        crdtKeyResolver: CrdtKeyResolver,
         synk: Synk,
     ): SyncManager {
         return SyncManager(
             syncRepository,
             deviceIdManager,
-            synkAdapterRegistry,
-            crdtKeyResolver,
             synk,
         )
     }

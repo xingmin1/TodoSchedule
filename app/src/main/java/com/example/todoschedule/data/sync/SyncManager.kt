@@ -10,8 +10,6 @@ import com.example.todoschedule.data.database.entity.TableEntity
 import com.example.todoschedule.data.database.entity.TimeSlotEntity
 import com.example.todoschedule.data.database.entity.toEntity
 import com.example.todoschedule.data.repository.SyncRepository
-import com.tap.synk.adapter.SynkAdapter
-import com.example.todoschedule.data.sync.adapter.SynkAdapterRegistry
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
 import com.github.michaelbull.result.getOrThrow
 import com.tap.hlc.HybridLogicalClock
@@ -42,8 +40,6 @@ import javax.inject.Singleton
 class SyncManager @Inject constructor(
     private val syncRepository: SyncRepository,
     private val deviceIdManager: DeviceIdManager,
-    private val synkAdapterRegistry: SynkAdapterRegistry,
-    private val crdtKeyResolver: CrdtKeyResolver,
     private val synk: Synk,
 ) {
     companion object {
@@ -443,26 +439,16 @@ class SyncManager @Inject constructor(
                 return
             }
 
-            val adapter = try {
-                synkAdapterRegistry.getAdapter(entityType.value)
-            } catch (e: Exception) {
-                Log.e(TAG, "【处理失败】找不到实体类型的适配器: ${entityType.value}", e)
-                return
-            }
-
             Log.d(TAG, "【处理消息】开始处理${entityType.value}类型的消息")
 
             // 根据实体类型分发处理
             when (entityType) {
-                SyncConstants.EntityType.COURSE -> processCourseEntity(messageDto, adapter)
-                SyncConstants.EntityType.COURSE_NODE -> processCourseNodeEntity(messageDto, adapter)
-                SyncConstants.EntityType.ORDINARY_SCHEDULE -> processOrdinaryScheduleEntity(
-                    messageDto,
-                    adapter
-                )
+                SyncConstants.EntityType.COURSE -> processCourseEntity(messageDto, )
+                SyncConstants.EntityType.COURSE_NODE -> processCourseNodeEntity(messageDto, )
+                SyncConstants.EntityType.ORDINARY_SCHEDULE -> processOrdinaryScheduleEntity(messageDto,)
 
-                SyncConstants.EntityType.TABLE -> processTableEntity(messageDto, adapter)
-                SyncConstants.EntityType.TIME_SLOT -> processTimeSlotEntity(messageDto, adapter)
+                SyncConstants.EntityType.TABLE -> processTableEntity(messageDto, )
+                SyncConstants.EntityType.TIME_SLOT -> processTimeSlotEntity(messageDto, )
                 else -> Log.e(TAG, "【处理失败】无法处理的实体类型: ${entityType.value}")
             }
 
@@ -493,13 +479,9 @@ class SyncManager @Inject constructor(
      */
     private suspend fun processCourseEntity(
         messageDto: SyncMessageDto,
-        adapter: SynkAdapter<*>
     ) {
         try {
             Log.d(TAG, "【课程实体处理开始】CRDT键=${messageDto.crdtKey}")
-
-            // 类型转换
-            val typedAdapter = adapter as SynkAdapter<CourseEntity>
 
             /* ① 将 payload 字符串 -> Message<CourseEntity> */
             val message = synk.decodeOne<CourseEntity>(messageDto.payload)
@@ -606,13 +588,9 @@ class SyncManager @Inject constructor(
      */
     private suspend fun processCourseNodeEntity(
         messageDto: SyncMessageDto,
-        adapter: SynkAdapter<*>
     ) {
         try {
             Log.d(TAG, "【课程节点实体处理开始】CRDT键=${messageDto.crdtKey}")
-
-            // 类型转换
-            val typedAdapter = adapter as SynkAdapter<CourseNodeEntity>
 
             /* ① 将 payload 字符串 -> Message<CourseNodeEntity> */
             val message = synk.decodeOne<CourseNodeEntity>(messageDto.payload)
@@ -708,13 +686,9 @@ class SyncManager @Inject constructor(
 
     private suspend fun processTableEntity(
         messageDto: SyncMessageDto,
-        adapter: SynkAdapter<*>
     ) {
         try {
             Log.d(TAG, "【表实体处理开始】CRDT键=${messageDto.crdtKey}")
-
-            // 类型转换
-            val typedAdapter = adapter as SynkAdapter<TableEntity>
 
             /* ① 将 payload 字符串 -> Message<TableEntity> */
             val message = synk.decodeOne<TableEntity>(messageDto.payload)
@@ -771,13 +745,9 @@ class SyncManager @Inject constructor(
 
     private suspend fun processOrdinaryScheduleEntity(
         messageDto: SyncMessageDto,
-        adapter: SynkAdapter<*>
     ) {
         try {
             Log.d(TAG, "【日程实体处理开始】CRDT键=${messageDto.crdtKey}")
-
-            // 类型转换
-            val typedAdapter = adapter as SynkAdapter<OrdinaryScheduleEntity>
 
             /* ① 将 payload 字符串 -> Message<OrdinaryScheduleEntity> */
             val message = synk.decodeOne<OrdinaryScheduleEntity>(messageDto.payload)
@@ -835,13 +805,9 @@ class SyncManager @Inject constructor(
 
     private suspend fun processTimeSlotEntity(
         messageDto: SyncMessageDto,
-        adapter: SynkAdapter<*>
     ) {
         try {
             Log.d(TAG, "【时间段实体处理开始】CRDT键=${messageDto.crdtKey}")
-
-            // 类型转换
-            val typedAdapter = adapter as SynkAdapter<TimeSlotEntity>
 
             /* ① 将 payload 字符串 -> Message<TimeSlotEntity> */
             val message = synk.decodeOne<TimeSlotEntity>(messageDto.payload)

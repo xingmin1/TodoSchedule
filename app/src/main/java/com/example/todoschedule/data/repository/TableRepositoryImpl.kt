@@ -59,6 +59,7 @@ class TableRepositoryImpl @Inject constructor(
         try {
             val tableEntity = table.toEntity()
             val tableId = tableDao.insertTable(tableEntity)
+            val tableEntityWithId = tableEntity.copy(id = tableId.toInt())
 
             // 创建同步消息
             val userId = sessionRepository.currentUserIdFlow.first()?.toInt() ?: table.userId
@@ -67,7 +68,7 @@ class TableRepositoryImpl @Inject constructor(
                 entityType = SyncConstants.EntityType.TABLE,
                 operationType = SyncConstants.OperationType.ADD,
                 userId = userId,
-                entity = tableEntity
+                entity = tableEntityWithId
             )
 
             Log.d(TAG, "添加课表已创建同步消息: ${tableEntity.crdtKey}")
