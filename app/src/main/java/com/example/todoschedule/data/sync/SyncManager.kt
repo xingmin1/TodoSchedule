@@ -10,7 +10,7 @@ import com.example.todoschedule.data.database.entity.TableEntity
 import com.example.todoschedule.data.database.entity.TimeSlotEntity
 import com.example.todoschedule.data.database.entity.toEntity
 import com.example.todoschedule.data.repository.SyncRepository
-import com.example.todoschedule.data.sync.adapter.SynkAdapter
+import com.tap.synk.adapter.SynkAdapter
 import com.example.todoschedule.data.sync.adapter.SynkAdapterRegistry
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
 import com.github.michaelbull.result.getOrThrow

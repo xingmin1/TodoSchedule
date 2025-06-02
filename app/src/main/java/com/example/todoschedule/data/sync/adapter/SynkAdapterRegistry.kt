@@ -1,6 +1,7 @@
 package com.example.todoschedule.data.sync.adapter
 
 import com.example.todoschedule.data.sync.SyncConstants
+import com.tap.synk.adapter.SynkAdapter
 import javax.inject.Inject
 import javax.inject.Singleton
 
