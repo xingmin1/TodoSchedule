@@ -1,6 +1,7 @@
 package com.example.todoschedule.data.repository
 
 import android.util.Log
+import com.example.todoschedule.core.extensions.toUuid
 import com.example.todoschedule.data.remote.api.UserApiService
 import com.example.todoschedule.data.remote.dto.UserLoginRequest
 import com.example.todoschedule.data.remote.dto.UserRegisterRequest
@@ -34,7 +35,7 @@ class RemoteUserRepositoryImpl @Inject constructor(
 
                 // 转换为领域模型
                 val user = User(
-                    id = userData.id,
+                    id = userData.id.toUuid(),
                     username = userData.username,
                     token = userData.token,
                     lastOpen = if (userData.last_open != null) {
@@ -82,7 +83,7 @@ class RemoteUserRepositoryImpl @Inject constructor(
 
                 // 转换为领域模型
                 val user = User(
-                    id = userData.id,
+                    id = userData.id.toUuid(),
                     username = userData.username,
                     token = userData.token,
                     createdAt = if (userData.created_at != null) {

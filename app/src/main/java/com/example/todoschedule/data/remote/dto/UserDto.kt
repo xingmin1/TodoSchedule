@@ -1,7 +1,5 @@
 package com.example.todoschedule.data.remote.dto
 
-import java.util.UUID
-
 /**
  * 用户相关的数据传输对象(DTOs)
  *
@@ -40,7 +38,7 @@ data class UserRegisterRequest(
  * 用户响应数据
  */
 data class UserDto(
-    val id: UUID,
+    val id: String,
     val username: String,
     val token: String,
     val created_at: String? = null,

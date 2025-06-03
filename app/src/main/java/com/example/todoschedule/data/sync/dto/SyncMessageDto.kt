@@ -22,7 +22,7 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable
 data class SyncMessageDto(
     // 实体在分布式系统中的唯一标识符 (CRDT中的全局唯一ID)
-    @SerialName("id")
+    @SerialName("crdt_key")
     val id: String,
 
     // 实体类型
