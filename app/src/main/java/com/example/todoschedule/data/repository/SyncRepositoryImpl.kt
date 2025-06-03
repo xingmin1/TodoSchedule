@@ -25,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -841,29 +842,46 @@ override suspend fun downloadMessagesByEntityTypeExcludeOrigin(entityType: Strin
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
-    override suspend fun <T> getEntityById(crdtKey: String): T? {
-            try {
-                // 尝试在所有DAO中查找实体
-                val course = database.courseDao().getCourseById(crdtKey)
-                if (course != null) return course as T
+    override suspend fun <T> getEntityById(crdtKey: String): T? = try {
+        // 👉 先按 UUID 解析，便于直接给只接受 UUID 的 DAO
+        val uuid = runCatching { UUID.fromString(crdtKey) }.getOrNull()
 
-                val courseNode = database.courseNodeDao().getCourseNodeById(crdtKey)
-                if (courseNode != null) return courseNode as T
+        // 1. Course
+        uuid?.let { database.courseDao().getCourseById(it) }?.also {
+            Log.d(TAG, "获取到 Course 实体的类名为: ${it::class.qualifiedName}")
+            return it as T
+        }
 
-                val ordinarySchedule =
-                    database.ordinaryScheduleDao().getOrdinaryScheduleById(crdtKey)
-                if (ordinarySchedule != null) return ordinarySchedule as T
+        // 2. CourseNode
+        uuid?.let { database.courseNodeDao().getCourseNodeById(it) }?.also {
+            Log.d(TAG, "获取到 CourseNode 实体的类名为: ${it::class.qualifiedName}")
+            return it as T
+        }
 
-                val table = database.tableDao().getTableById(crdtKey)
-                if (table != null) return table as T
+        // 3. OrdinarySchedule
+        uuid?.let { database.ordinaryScheduleDao().getOrdinaryScheduleById(it) }?.also {
+            Log.d(TAG, "获取到 OrdinarySchedule 实体的类名为: ${it::class.qualifiedName}")
+            return it as T
+        }
 
-                // 没有找到匹配的实体
-                return null
-            } catch (e: Exception) {
-                Log.e(TAG, "根据CRDT键获取实体失败: ${e.message}", e)
-                return null
+        // 4. TimeSlot  🔧 新增
+        uuid?.let { database.timeSlotDao().getTimeSlotById(it.toString()).firstOrNull() }?.also {
+            Log.d(TAG, "获取到 TimeSlot 实体的类名为: ${it::class.qualifiedName}")
+            return it as T
+        }
+
+        // 5. Table（DAO 返回 Flow，需要 firstOrNull() 取实体）
+        database.tableDao()
+            .getTableById(crdtKey)
+            .firstOrNull()
+            ?.also {
+                return it as T
             }
+
+        null  // 都没找到
+    } catch (e: Exception) {
+        Log.e(TAG, "根据 CRDT 键获取实体失败: ${e.message}", e)
+        null
     }
 
     override suspend fun <T> saveEntity(entity: T): Boolean {
