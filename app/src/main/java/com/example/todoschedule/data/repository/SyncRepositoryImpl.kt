@@ -832,7 +832,7 @@ class SyncRepositoryImpl @Inject constructor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    suspend fun <T> getEntityByCrdtKey(crdtKey: String): T? {
+    override suspend fun <T> getEntityById(crdtKey: String): T? {
         return withContext(Dispatchers.IO) {
             try {
                 // 尝试在所有DAO中查找实体

@@ -21,7 +21,7 @@ import java.util.UUID
     indices = [Index(value = ["userId"]), Index("id")]
 )
 data class OrdinaryScheduleEntity(
-    @PrimaryKey val id: UUID = UUID.randomUUID(), // 本地ID，使用UUID的哈希值作为默认值
+    @PrimaryKey override val id: UUID = UUID.randomUUID(), // 本地ID，使用UUID的哈希值作为默认值
     val userId: UUID, // 用户ID (本地ID，用于Room外键关系)
     val title: String,
     val description: String? = null,
@@ -30,7 +30,4 @@ data class OrdinaryScheduleEntity(
     val color: String? = null,
     @ColumnInfo(name = "is_all_day") val isAllDay: Boolean = false,
     val status: ScheduleStatus? = ScheduleStatus.TODO,
-) : Syncable {
-    override val id: String
-        get() = id.toString()
-} 
+) : Syncable

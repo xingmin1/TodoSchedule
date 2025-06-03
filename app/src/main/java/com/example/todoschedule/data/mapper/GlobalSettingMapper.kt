@@ -1,5 +1,6 @@
 package com.example.todoschedule.data.mapper
 
+import com.example.todoschedule.core.extensions.toUuid
 import com.example.todoschedule.data.database.entity.GlobalTableSettingEntity
 import com.example.todoschedule.domain.model.GlobalTableSetting
 
@@ -11,7 +12,7 @@ fun GlobalTableSettingEntity.toGlobalTableSetting(): GlobalTableSetting {
         // 这里假设有一个TypeConverter已经处理了字符串转列表的过程
         // 在实际使用时，需要手动转换
         defaultTableIds =
-            defaultTableIds.split(",").filter { it.isNotEmpty() }.map { it.toInt() },
+            defaultTableIds.split(",").filter { it.isNotEmpty() }.map { it.toUuid() },
         showWeekend = showWeekend,
         courseNotificationStyle = courseNotificationStyle,
         notifyBeforeMinutes = notifyBeforeMinutes,

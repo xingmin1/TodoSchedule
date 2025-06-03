@@ -23,7 +23,7 @@ import java.util.UUID
     indices = [Index(value = ["user_id"], name = "idx_timeslot_userid")]
 )
 data class TimeSlotEntity(
-    @PrimaryKey val id: UUID = UUID.randomUUID(),
+    @PrimaryKey override val id: UUID = UUID.randomUUID(),
     @ColumnInfo(name = "user_id") val userId: UUID,
     @ColumnInfo(name = "start_time") val startTime: Long, // 开始时间 (时间戳)
     @ColumnInfo(name = "end_time") val endTime: Long, // 结束时间 (时间戳)
@@ -36,7 +36,4 @@ data class TimeSlotEntity(
     @ColumnInfo(name = "repeat_pattern") val repeatPattern: String? = null, // 重复模式
     @ColumnInfo(name = "reminder_type") val reminderType: ReminderType? = ReminderType.NONE,
     @ColumnInfo(name = "reminder_offset") val reminderOffset: Long? = null, // 提醒偏移量 (相对开始时间的毫秒数)
-) : Syncable {
-    override val id: String
-        get() = id.toString()
-}
+) : Syncable

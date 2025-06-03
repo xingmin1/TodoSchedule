@@ -39,7 +39,7 @@ class IdResolver @Inject constructor(
      * @param id 课表的CRDT键
      * @return 本地数据库中的ID，如果未找到则返回null
      */
-    suspend fun resolveTableId(id: String?): Int? = withContext(Dispatchers.IO) {
+    suspend fun resolveTableId(id: String?): UUID? = withContext(Dispatchers.IO) {
         if (id == null) return@withContext null
         return@withContext database.tableDao().getIdById(id)
     }

@@ -45,7 +45,7 @@ constructor(private val tableTimeConfigDao: TableTimeConfigDao) : TableTimeConfi
             // id is auto-generated
         )
         val defaultNodes =
-            createDefaultTimeDetails(0) // Pass 0 initially, DAO transaction will update ID
+            createDefaultTimeDetails()
 
         try {
             // Use the transaction to insert config and nodes together
@@ -145,75 +145,73 @@ constructor(private val tableTimeConfigDao: TableTimeConfigDao) : TableTimeConfi
 
 
     /** 创建默认时间节点详情列表。 */
-    private fun createDefaultTimeDetails(configId: UUID): List<TableTimeConfigNodeDetaileEntity> {
-        // 注意：这里使用了新的实体 TableTimeConfigNodeDetaileEntity
-        // configId 可以在 DAO 的事务中被正确设置，这里传入 0 或 实际 ID 均可
+    private fun createDefaultTimeDetails(): List<TableTimeConfigNodeDetaileEntity> {
         return listOf(
             TableTimeConfigNodeDetaileEntity(
-                tableTimeConfigId = configId,
+                tableTimeConfigId = UUID.randomUUID(),
                 node = 1,
                 name = "第一节",
                 startTime = LocalTime(8, 0),
                 endTime = LocalTime(8, 45)
             ),
             TableTimeConfigNodeDetaileEntity(
-                tableTimeConfigId = configId,
+                tableTimeConfigId = UUID.randomUUID(),
                 node = 2,
                 name = "第二节",
                 startTime = LocalTime(8, 55),
                 endTime = LocalTime(9, 40)
             ),
             TableTimeConfigNodeDetaileEntity(
-                tableTimeConfigId = configId,
+                tableTimeConfigId = UUID.randomUUID(),
                 node = 3,
                 name = "第三节",
                 startTime = LocalTime(10, 10),
                 endTime = LocalTime(10, 55)
             ),
             TableTimeConfigNodeDetaileEntity(
-                tableTimeConfigId = configId,
+                tableTimeConfigId = UUID.randomUUID(),
                 node = 4,
                 name = "第四节",
                 startTime = LocalTime(11, 5),
                 endTime = LocalTime(11, 50)
             ),
             TableTimeConfigNodeDetaileEntity(
-                tableTimeConfigId = configId,
+                tableTimeConfigId = UUID.randomUUID(),
                 node = 5,
                 name = "第五节",
                 startTime = LocalTime(14, 0),
                 endTime = LocalTime(14, 45)
             ),
             TableTimeConfigNodeDetaileEntity(
-                tableTimeConfigId = configId,
+                tableTimeConfigId = UUID.randomUUID(),
                 node = 6,
                 name = "第六节",
                 startTime = LocalTime(14, 55),
                 endTime = LocalTime(15, 40)
             ),
             TableTimeConfigNodeDetaileEntity(
-                tableTimeConfigId = configId,
+                tableTimeConfigId = UUID.randomUUID(),
                 node = 7,
                 name = "第七节",
                 startTime = LocalTime(16, 0),
                 endTime = LocalTime(16, 45)
             ),
             TableTimeConfigNodeDetaileEntity(
-                tableTimeConfigId = configId,
+                tableTimeConfigId = UUID.randomUUID(),
                 node = 8,
                 name = "第八节",
                 startTime = LocalTime(16, 55),
                 endTime = LocalTime(17, 40)
             ),
             TableTimeConfigNodeDetaileEntity(
-                tableTimeConfigId = configId,
+                tableTimeConfigId = UUID.randomUUID(),
                 node = 9,
                 name = "第九节",
                 startTime = LocalTime(19, 0),
                 endTime = LocalTime(19, 45)
             ),
             TableTimeConfigNodeDetaileEntity(
-                tableTimeConfigId = configId,
+                tableTimeConfigId = UUID.randomUUID(),
                 node = 10,
                 name = "第十节",
                 startTime = LocalTime(19, 55),
