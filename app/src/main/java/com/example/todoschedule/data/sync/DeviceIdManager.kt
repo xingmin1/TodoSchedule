@@ -53,6 +53,7 @@ class DeviceIdManager @Inject constructor(
      */
     suspend fun getOrCreateDeviceId(): String {
         return mutex.withLock {
+            Log.d(TAG, "获取或创建设备ID")
             // 如果已有缓存，直接返回
             cachedDeviceId?.let { return@withLock it }
 

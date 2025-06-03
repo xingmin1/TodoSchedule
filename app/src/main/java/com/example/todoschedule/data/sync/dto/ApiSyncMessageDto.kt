@@ -3,7 +3,6 @@ package com.example.todoschedule.data.sync.dto
 import android.util.Log
 import com.squareup.moshi.JsonClass
 import org.json.JSONObject
-import java.util.UUID
 
 /**
  * API同步消息传输对象
@@ -12,7 +11,7 @@ import java.util.UUID
 @JsonClass(generateAdapter = true)
 data class ApiSyncMessageDto(
     val id: Long,
-    val userId: UUID,
+    val userId: String,
     val entityType: String,
     val crdtKey: String,
     // 服务端返回的嵌套JSON字符串
@@ -48,7 +47,7 @@ data class ApiSyncMessageDto(
 
             // 构建应用内使用的SyncMessageDto
             SyncMessageDto(
-                id = crdtKey,
+                id = id.toString(),
                 entityType = entityType,
                 operationType = operationType,
                 deviceId = originDeviceId,

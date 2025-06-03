@@ -422,69 +422,77 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun downloadMessagesByEntityTypeExcludeOrigin(entityType: String): List<SyncMessageDto> {
-        // 只支持这五种实体类型的同步
-        val supportedTypes = listOf(
-            SyncConstants.EntityType.COURSE.value,
-            SyncConstants.EntityType.COURSE_NODE.value,
-            SyncConstants.EntityType.TABLE.value,
-            SyncConstants.EntityType.ORDINARY_SCHEDULE.value,
-            SyncConstants.EntityType.TIME_SLOT.value
-        )
+override suspend fun downloadMessagesByEntityTypeExcludeOrigin(entityType: String): List<SyncMessageDto> {
+    Log.d(TAG, "开始下载 $entityType 类型的非本地消息")
+    // 只支持这五种实体类型的同步
+    val supportedTypes = listOf(
+        SyncConstants.EntityType.COURSE.value,
+        SyncConstants.EntityType.COURSE_NODE.value,
+        SyncConstants.EntityType.TABLE.value,
+        SyncConstants.EntityType.ORDINARY_SCHEDULE.value,
+        SyncConstants.EntityType.TIME_SLOT.value
+    )
 
-        if (entityType !in supportedTypes) {
-            Log.d(TAG, "跳过不支持的实体类型: $entityType")
-            return emptyList()
-        }
+    if (entityType !in supportedTypes) {
+        Log.d(TAG, "跳过不支持的实体类型: $entityType")
+        return emptyList()
+    }
 
-        return try {
-            val deviceId = deviceIdManager.getOrCreateDeviceId()
-            val response = syncApi.getMessagesByEntityTypeExcludeOrigin(deviceId, entityType)
+    return try {
+        Log.d(TAG, "准备下载 $entityType 类型的非本地消息")
+        val deviceId = deviceIdManager.getOrCreateDeviceId()
+        Log.d(TAG, "获取到设备ID: $deviceId，准备请求服务器获取 $entityType 类型的非本地消息")
+        val response = syncApi.getMessagesByEntityTypeExcludeOrigin(deviceId, entityType)
 
-            if (response.isSuccessful) {
-                // 解析响应，处理可能的格式错误
-                try {
-                    val apiMessages = response.body() ?: emptyList()
+        if (response.isSuccessful) {
+            Log.d(TAG, "服务器响应成功，开始解析 $entityType 类型的消息")
+            // 解析响应，处理可能的格式错误
+            try {
+                val apiMessages = response.body() ?: emptyList()
+                Log.d(TAG, "获取到 ${apiMessages.size} 条 $entityType 类型的API消息")
 
-                    // 处理API消息格式，将ApiSyncMessageDto转换为SyncMessageDto
-                    val processedMessages = apiMessages.mapNotNull { apiMessage ->
-                        try {
-                            // 使用ApiSyncMessageDto的转换方法获取SyncMessageDto
-                            val syncMessage = apiMessage.toSyncMessageDto()
-                            if (syncMessage == null) {
-                                Log.w(TAG, "无法从API消息中提取有效的同步消息: $apiMessage")
-                            }
-                            syncMessage
-                        } catch (e: Exception) {
-                            Log.e(TAG, "处理API消息时出错: ${e.message}, 消息: $apiMessage", e)
-                            null
+                // 处理API消息格式，将ApiSyncMessageDto转换为SyncMessageDto
+                val processedMessages = apiMessages.mapNotNull { apiMessage ->
+                    try {
+                        // 使用ApiSyncMessageDto的转换方法获取SyncMessageDto
+                        val syncMessage = apiMessage.toSyncMessageDto()
+                        if (syncMessage == null) {
+                            Log.w(TAG, "无法从API消息中提取有效的同步消息: $apiMessage")
                         }
+                        syncMessage
+                    } catch (e: Exception) {
+                        Log.e(TAG, "处理API消息时出错: ${e.message}, 消息: $apiMessage", e)
+                        null
                     }
-
-                    if (processedMessages.size < apiMessages.size) {
-                        Log.w(
-                            TAG,
-                            "过滤掉了 ${apiMessages.size - processedMessages.size} 条格式不正确的消息"
-                        )
-                    }
-
-                    processedMessages
-                } catch (e: Exception) {
-                    Log.e(TAG, "解析 $entityType 类型的消息时出错: ${e.message}")
-                    emptyList()
                 }
-            } else {
-                Log.e(
-                    TAG,
-                    "下载 $entityType 类型的非本地消息失败: ${response.errorBody()?.string()}"
-                )
+
+                if (processedMessages.size < apiMessages.size) {
+                    Log.w(
+                        TAG,
+                        "过滤掉了 ${apiMessages.size - processedMessages.size} 条格式不正确的消息"
+                    )
+                } else {
+                    Log.d(TAG, "所有API消息均成功转换为SyncMessageDto")
+                }
+
+                Log.d(TAG, "最终返回 ${processedMessages.size} 条 $entityType 类型的同步消息")
+                processedMessages
+            } catch (e: Exception) {
+                Log.e(TAG, "解析 $entityType 类型的消息时出错: ${e.message}")
                 emptyList()
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "下载 $entityType 类型的非本地消息时发生错误", e)
+        } else {
+            Log.e(
+                TAG,
+                "下载 $entityType 类型的非本地消息失败: ${response.errorBody()?.string()}"
+            )
             emptyList()
         }
+    } catch (e: Exception) {
+        Log.e(TAG, "下载 $entityType 类型的非本地消息时发生错误", e)
+        emptyList()
     }
+}
 
     override suspend fun markMessagesAsProcessed(ids: List<UUID>) {
         syncMessageDao.markAsProcessed(ids.map { it.toString() })
