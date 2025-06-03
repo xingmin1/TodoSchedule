@@ -44,7 +44,7 @@ import java.net.URLEncoder
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SchoolSelectorScreen(
-    tableId: Int,
+    tableId: UUID,
     navigationState: NavigationState
 ) {
     val viewModel: SchoolViewModel = viewModel()

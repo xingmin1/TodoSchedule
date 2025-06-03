@@ -39,7 +39,7 @@ class OrdinaryScheduleDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val scheduleId: Int =
+    private val scheduleId: UUID =
         checkNotNull(savedStateHandle[AppRoutes.OrdinaryScheduleDetail.ARG_SCHEDULE_ID])
 
     val uiState: StateFlow<OrdinaryScheduleDetailUiState> =

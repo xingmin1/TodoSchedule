@@ -44,35 +44,35 @@ sealed class AppRoutes(val route: String) {
      * 添加课程
      */
     object AddCourse : AppRoutes("add_course/{tableId}") {
-        fun createRoute(tableId: Int) = "add_course/$tableId"
+        fun createRoute(tableId: UUID) = "add_course/$tableId"
     }
 
     /**
      * 课程详情
      */
     object CourseDetail : AppRoutes("course_detail/{tableId}/{courseId}") {
-        fun createRoute(tableId: Int, courseId: Int) = "course_detail/$tableId/$courseId"
+        fun createRoute(tableId: UUID, courseId: UUID) = "course_detail/$tableId/$courseId"
     }
 
     /**
      * 编辑课程
      */
     object EditCourse : AppRoutes("edit_course/{tableId}/{courseId}") {
-        fun createRoute(tableId: Int, courseId: Int) = "edit_course/$tableId/$courseId"
+        fun createRoute(tableId: UUID, courseId: UUID) = "edit_course/$tableId/$courseId"
     }
 
     /**
      * 学校教务系统选择页面
      */
     object SchoolSelector : AppRoutes("schoolSelector/{tableId}") {
-        fun createRoute(tableId: Int) = "schoolSelector/$tableId"
+        fun createRoute(tableId: UUID) = "schoolSelector/$tableId"
     }
 
     /**
      * WebView页面
      */
     object SchoolWebView : AppRoutes("webView/{encodedUrl}/{tableId}") {
-        fun createRoute(encodedUrl: String, tableId: Int) = "webView/$encodedUrl/$tableId"
+        fun createRoute(encodedUrl: String, tableId: UUID) = "webView/$encodedUrl/$tableId"
     }
 
     /**
@@ -80,7 +80,7 @@ sealed class AppRoutes(val route: String) {
      */
     object AddEditOrdinarySchedule :
         AppRoutes("add_edit_ordinary_schedule?scheduleId={scheduleId}") {
-        fun createRoute(scheduleId: Int? = null): String {
+        fun createRoute(scheduleId: UUID? = null): String {
             return if (scheduleId != null) {
                 "add_edit_ordinary_schedule?scheduleId=$scheduleId"
             } else {
@@ -95,7 +95,7 @@ sealed class AppRoutes(val route: String) {
      * 普通日程详情页面
      */
     object OrdinaryScheduleDetail : AppRoutes("ordinary_schedule_detail/{scheduleId}") {
-        fun createRoute(scheduleId: Int) = "ordinary_schedule_detail/$scheduleId"
+        fun createRoute(scheduleId: UUID) = "ordinary_schedule_detail/$scheduleId"
         const val ARG_SCHEDULE_ID = "scheduleId" // Argument name constant
     }
 
@@ -114,7 +114,7 @@ sealed class AppRoutes(val route: String) {
      * 可选参数 tableId 用于编辑模式
      */
     object CreateEditTable : AppRoutes("create_edit_table?tableId={tableId}") {
-        fun createRoute(tableId: Int? = null): String {
+        fun createRoute(tableId: UUID? = null): String {
             return if (tableId != null) {
                 "create_edit_table?tableId=$tableId"
             } else {
@@ -155,11 +155,11 @@ sealed class AppRoutes(val route: String) {
     data object TableManagement : AppRoutes("table_management")
     data object SingleTableSettings : AppRoutes("single_table_settings/{tableId}") {
         const val ARG_TABLE_ID = "tableId" // Argument name constant
-        fun createRoute(tableId: Int) = "single_table_settings/$tableId"
+        fun createRoute(tableId: UUID) = "single_table_settings/$tableId"
     }
 
     data object TimeNodesSettings : AppRoutes("time_nodes_settings/{configId}") {
-        fun createRoute(configId: Int) = "time_nodes_settings/$configId"
+        fun createRoute(configId: UUID) = "time_nodes_settings/$configId"
     }
 
     data object DefaultDisplaySettings : AppRoutes("default_display_settings")

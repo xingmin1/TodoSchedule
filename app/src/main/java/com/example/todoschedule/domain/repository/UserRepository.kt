@@ -10,7 +10,7 @@ interface UserRepository {
     fun getAllUsers(): Flow<List<User>>
 
     /** 获取指定ID的用户 */
-    suspend fun getUserById(id: Int): User?
+    suspend fun getUserById(Id: UUID): User?
 
     /** 添加用户 */
     suspend fun addUser(user: User): Long

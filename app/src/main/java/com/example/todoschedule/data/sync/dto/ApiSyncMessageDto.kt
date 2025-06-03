@@ -12,7 +12,7 @@ import org.json.JSONObject
 @JsonClass(generateAdapter = true)
 data class ApiSyncMessageDto(
     val id: Long,
-    val userId: Int,
+    val userId: UUID,
     val entityType: String,
     val crdtKey: String,
     // 服务端返回的嵌套JSON字符串

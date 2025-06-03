@@ -29,7 +29,7 @@ fun CourseWithNodes.toCourse(): Course {
 /**
  * 将Course领域模型转换为CourseEntity
  */
-fun Course.toCourseEntity(tableId: Int): CourseEntity {
+fun Course.toCourseEntity(tableId: UUID): CourseEntity {
     return CourseEntity(
         id = id,
         tableId = tableId,
@@ -42,7 +42,7 @@ fun Course.toCourseEntity(tableId: Int): CourseEntity {
     )
 }
 
-fun Course.toCourseNodeEntity(courseId: Int): List<CourseNodeEntity> {
+fun Course.toCourseNodeEntity(courseId: UUID): List<CourseNodeEntity> {
     return nodes.map { node ->
         CourseNodeEntity(
             courseId = courseId,
@@ -77,7 +77,7 @@ fun CourseNodeEntity.toCourseNode(): CourseNode {
 /**
  * 将CourseNode领域模型转换为CourseNodeEntity
  */
-fun CourseNode.toCourseNodeEntity(courseId: Int): CourseNodeEntity {
+fun CourseNode.toCourseNodeEntity(courseId: UUID): CourseNodeEntity {
     return CourseNodeEntity(
         courseId = courseId,
         day = day,

@@ -73,7 +73,7 @@ fun ScheduleMonthContent(
     initialYearMonth: java.time.YearMonth,
     onYearMonthChange: (java.time.YearMonth) -> Unit,
     navigationState: NavigationState,
-    defaultTableId: Int?,
+    defaultTableId: UUID?,
     viewModel: ScheduleViewModel,
     paddingValues: PaddingValues,
     isLargeMode: Boolean,
@@ -148,7 +148,7 @@ private fun YearMonth.toEpochMonth(): Long {
 @Composable
 fun MonthSchedulePage(
     navigationState: NavigationState,
-    defaultTableId: Int?,
+    defaultTableId: UUID?,
     viewModel: ScheduleViewModel,
     yearMonth: YearMonth,
     isLargeMode: Boolean,

@@ -25,7 +25,7 @@ interface SyncEntity {
      *
      * 注意：这个ID只在本地设备上有意义，不应用于跨设备同步
      */
-    val id: Int
+    val Id: UUID
 
     /**
      * 实体的CRDT全局唯一标识符
@@ -94,7 +94,7 @@ data class SyncMessageEntity(
     val timestampLogical: Long,            // 逻辑时钟
     val timestampNodeId: String,           // 节点ID
     val payload: String,                   // 消息负载（实体JSON序列化数据）
-    val userId: Int,                       // 用户ID
+    val userId: UUID,                       // 用户ID
     val syncStatus: String = SyncConstants.SyncStatus.PENDING.name,  // 同步状态
     val syncedAt: Long = 0                 // 同步时间
 ) {

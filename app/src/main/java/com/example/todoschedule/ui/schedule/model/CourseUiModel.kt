@@ -4,7 +4,7 @@ package com.example.todoschedule.ui.schedule.model
  * 课程UI显示模型
  */
 data class CourseUiModel(
-    val id: Int,
+    val Id: UUID,
     val name: String,
     val room: String?,
     val teacher: String?,

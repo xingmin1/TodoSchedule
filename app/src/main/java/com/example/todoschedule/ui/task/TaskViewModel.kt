@@ -110,8 +110,8 @@ open class TaskViewModel @Inject constructor(
     }
 
     private fun loadTasks(
-        userId: Int,
-        defaultTableId: Int,
+        userId: UUID,
+        defaultTableId: UUID,
         filter: TaskFilter,
         searchTerm: String
     ): Flow<TaskUiState> {

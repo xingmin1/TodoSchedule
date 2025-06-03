@@ -96,7 +96,7 @@ class SyncRepositoryImpl @Inject constructor(
         return syncMessageDao.getPendingMessages()
     }
 
-    override suspend fun getPendingMessagesByUserId(userId: Int): List<SyncMessageEntity> {
+    override suspend fun getPendingMessagesByUserId(userId: UUID): List<SyncMessageEntity> {
         return syncMessageDao.getPendingMessagesByUserId(userId)
     }
 
@@ -504,7 +504,7 @@ class SyncRepositoryImpl @Inject constructor(
      * @param userId 用户ID
      * @return 注册是否成功
      */
-    override suspend fun registerDevice(userId: Int): Boolean {
+    override suspend fun registerDevice(userId: UUID): Boolean {
         return try {
             val deviceId = deviceIdManager.getOrCreateDeviceId()
 

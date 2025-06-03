@@ -7,8 +7,8 @@ import com.example.todoschedule.ui.theme.ColorSchemeEnum
  * Domain 层的 OrdinarySchedule 模型，包含其关联的 TimeSlot 列表。
  */
 data class OrdinarySchedule(
-    val id: Int = 0,
-    val userId: Int,
+    val Id: UUID = 0,
+    val userId: UUID,
     val title: String,
     val description: String? = null,
     val location: String? = null,

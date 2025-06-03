@@ -19,19 +19,19 @@ class TableTimeConfigRepositoryImpl
 @Inject
 constructor(private val tableTimeConfigDao: TableTimeConfigDao) : TableTimeConfigRepository {
 
-    override fun getDefaultTimeConfig(tableId: Int): Flow<TableTimeConfig?> {
+    override fun getDefaultTimeConfig(tableId: UUID): Flow<TableTimeConfig?> {
         return tableTimeConfigDao.getDefaultTimeConfigWithNodes(tableId).map { configWithNodes ->
             configWithNodes?.toDomainModel() // 使用 Mapper 转换
         }
     }
 
-    override fun getTimeConfigById(configId: Int): Flow<TableTimeConfig?> {
+    override fun getTimeConfigById(configId: UUID): Flow<TableTimeConfig?> {
         return tableTimeConfigDao.getTimeConfigWithNodesById(configId).map { config ->
             config.toDomainModel() // Convert to domain model
         }
     }
 
-    override suspend fun ensureDefaultTimeConfig(tableId: Int, userId: Int): Int? {
+    override suspend fun ensureDefaultTimeConfig(tableId: UUID, userId: UUID): Int? {
         val existingDefault = tableTimeConfigDao.getDefaultTimeConfigForTable(tableId)
         if (existingDefault != null) {
             return existingDefault.id
@@ -101,7 +101,7 @@ constructor(private val tableTimeConfigDao: TableTimeConfigDao) : TableTimeConfi
         )
     }
 
-    override suspend fun deleteTimeConfig(configId: Int) {
+    override suspend fun deleteTimeConfig(configId: UUID) {
         // 1. 检查配置是否存在
         val configToDelete = tableTimeConfigDao.getTimeConfigById(configId)
             ?: throw NoSuchElementException("TimeConfig with id $configId not found.")
@@ -119,13 +119,13 @@ constructor(private val tableTimeConfigDao: TableTimeConfigDao) : TableTimeConfi
         tableTimeConfigDao.deleteConfigWithNodes(configId)
     }
 
-    override fun getAllTimeConfigsForTable(tableId: Int): Flow<List<TableTimeConfig>> {
+    override fun getAllTimeConfigsForTable(tableId: UUID): Flow<List<TableTimeConfig>> {
         return tableTimeConfigDao.getAllTimeConfigsWithNodes(tableId).map { list ->
             list.map { it.toDomainModel() } // Map each ConfigWithNodes to TableTimeConfig
         }
     }
 
-    override suspend fun setDefaultTimeConfig(tableId: Int, configId: Int) {
+    override suspend fun setDefaultTimeConfig(tableId: UUID, configId: UUID) {
         // 1. 检查要设为默认的配置是否存在且属于该 tableId
         val configToSetDefault = tableTimeConfigDao.getTimeConfigById(configId)
             ?: throw NoSuchElementException("TimeConfig with id $configId not found.")
@@ -144,7 +144,7 @@ constructor(private val tableTimeConfigDao: TableTimeConfigDao) : TableTimeConfi
 
 
     /** 创建默认时间节点详情列表。 */
-    private fun createDefaultTimeDetails(configId: Int): List<TableTimeConfigNodeDetaileEntity> {
+    private fun createDefaultTimeDetails(configId: UUID): List<TableTimeConfigNodeDetaileEntity> {
         // 注意：这里使用了新的实体 TableTimeConfigNodeDetaileEntity
         // configId 可以在 DAO 的事务中被正确设置，这里传入 0 或 实际 ID 均可
         return listOf(

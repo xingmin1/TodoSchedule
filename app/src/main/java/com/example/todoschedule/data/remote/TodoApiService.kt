@@ -28,7 +28,7 @@ interface TodoApiService {
      * 获取课表详情
      */
     @GET("tables/{tableId}")
-    suspend fun getTableById(@Path("tableId") tableId: Int): ApiResponse<TableDto>
+    suspend fun getTableById(@Path("tableId") tableId: UUID): ApiResponse<TableDto>
 
     /**
      * 创建课表
@@ -41,7 +41,7 @@ interface TodoApiService {
      */
     @PUT("tables/{tableId}")
     suspend fun updateTable(
-        @Path("tableId") tableId: Int,
+        @Path("tableId") tableId: UUID,
         @Body table: TableDto
     ): ApiResponse<TableDto>
 
@@ -49,20 +49,20 @@ interface TodoApiService {
      * 删除课表
      */
     @DELETE("tables/{tableId}")
-    suspend fun deleteTable(@Path("tableId") tableId: Int): ApiResponse<Unit>
+    suspend fun deleteTable(@Path("tableId") tableId: UUID): ApiResponse<Unit>
 
     /**
      * 获取课表的所有课程
      */
     @GET("tables/{tableId}/courses")
-    suspend fun getCoursesByTableId(@Path("tableId") tableId: Int): ApiResponse<List<CourseDto>>
+    suspend fun getCoursesByTableId(@Path("tableId") tableId: UUID): ApiResponse<List<CourseDto>>
 
     /**
      * 获取特定周次的课程
      */
     @GET("tables/{tableId}/courses")
     suspend fun getCoursesByWeek(
-        @Path("tableId") tableId: Int,
+        @Path("tableId") tableId: UUID,
         @Query("week") week: Int
     ): ApiResponse<List<CourseDto>>
 
@@ -70,7 +70,7 @@ interface TodoApiService {
      * 获取课程详情
      */
     @GET("courses/{courseId}")
-    suspend fun getCourseById(@Path("courseId") courseId: Int): ApiResponse<CourseDto>
+    suspend fun getCourseById(@Path("courseId") courseId: UUID): ApiResponse<CourseDto>
 
     /**
      * 创建课程
@@ -83,7 +83,7 @@ interface TodoApiService {
      */
     @PUT("courses/{courseId}")
     suspend fun updateCourse(
-        @Path("courseId") courseId: Int,
+        @Path("courseId") courseId: UUID,
         @Body course: CourseDto
     ): ApiResponse<CourseDto>
 
@@ -91,5 +91,5 @@ interface TodoApiService {
      * 删除课程
      */
     @DELETE("courses/{courseId}")
-    suspend fun deleteCourse(@Path("courseId") courseId: Int): ApiResponse<Unit>
+    suspend fun deleteCourse(@Path("courseId") courseId: UUID): ApiResponse<Unit>
 } 

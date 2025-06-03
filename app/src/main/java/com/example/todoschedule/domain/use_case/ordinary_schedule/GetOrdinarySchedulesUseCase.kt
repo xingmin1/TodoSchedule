@@ -11,7 +11,7 @@ import javax.inject.Inject
 class GetOrdinarySchedulesUseCase @Inject constructor(
     private val repository: OrdinaryScheduleRepository
 ) {
-    operator fun invoke(userId: Int): Flow<List<OrdinarySchedule>> {
+    operator fun invoke(userId: UUID): Flow<List<OrdinarySchedule>> {
         return repository.getAllSchedules(userId)
     }
 } 

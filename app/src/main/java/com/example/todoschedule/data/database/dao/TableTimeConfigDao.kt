@@ -18,7 +18,7 @@ interface TableTimeConfigDao {
 
     // --- TableTimeConfig 操作 ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTimeConfig(config: TableTimeConfigEntity): Long // 返回新插入行的 ID
+    suspend fun insertTimeConfig(config: TableTimeConfigEntity): UUID // 返回新插入行的 ID
 
     @Update
     suspend fun updateTimeConfig(config: TableTimeConfigEntity)
@@ -27,25 +27,25 @@ interface TableTimeConfigDao {
     suspend fun deleteTimeConfigEntity(config: TableTimeConfigEntity)
 
     @Query("SELECT * FROM table_time_config WHERE id = :configId")
-    fun getTimeConfigByIdFlow(configId: Int): Flow<TableTimeConfigEntity?> // Renamed to avoid clash
+    fun getTimeConfigByIdFlow(configId: UUID): Flow<TableTimeConfigEntity?> // Renamed to avoid clash
 
     @Query("SELECT * FROM table_time_config WHERE id = :configId")
-    suspend fun getTimeConfigById(configId: Int): TableTimeConfigEntity? // Suspend version for checks
+    suspend fun getTimeConfigById(configId: UUID): TableTimeConfigEntity? // Suspend version for checks
 
     @Query("SELECT * FROM table_time_config WHERE table_id = :tableId")
-    fun getTimeConfigsForTableFlow(tableId: Int): Flow<List<TableTimeConfigEntity>> // Renamed
+    fun getTimeConfigsForTableFlow(tableId: UUID): Flow<List<TableTimeConfigEntity>> // Renamed
 
     @Query("SELECT * FROM table_time_config WHERE table_id = :tableId")
-    suspend fun getTimeConfigsForTable(tableId: Int): List<TableTimeConfigEntity> // Suspend version
+    suspend fun getTimeConfigsForTable(tableId: UUID): List<TableTimeConfigEntity> // Suspend version
 
     @Query("SELECT * FROM table_time_config WHERE table_id = :tableId AND is_default = 1 LIMIT 1")
-    suspend fun getDefaultTimeConfigForTable(tableId: Int): TableTimeConfigEntity?
+    suspend fun getDefaultTimeConfigForTable(tableId: UUID): TableTimeConfigEntity?
 
     @Query("UPDATE table_time_config SET is_default = 0 WHERE table_id = :tableId AND is_default = 1")
-    suspend fun clearDefaultFlagForTable(tableId: Int)
+    suspend fun clearDefaultFlagForTable(tableId: UUID)
 
     @Query("UPDATE table_time_config SET is_default = 1 WHERE id = :configId")
-    suspend fun setDefaultFlag(configId: Int)
+    suspend fun setDefaultFlag(configId: UUID)
 
 
     // --- TableTimeConfigNodeDetaile 操作 ---
@@ -62,24 +62,24 @@ interface TableTimeConfigDao {
     suspend fun deleteNodeDetail(node: TableTimeConfigNodeDetaileEntity)
 
     @Query("DELETE FROM table_time_config_node_detaile WHERE table_time_config_id = :configId")
-    suspend fun deleteNodeDetailsForConfig(configId: Int)
+    suspend fun deleteNodeDetailsForConfig(configId: UUID)
 
     // --- 关联查询 (Flow based for observation) ---
 
     /** 获取指定课表的默认时间配置及其所有节点详情。 */
     @Transaction
     @Query("SELECT * FROM table_time_config WHERE table_id = :tableId AND is_default = 1 LIMIT 1")
-    fun getDefaultTimeConfigWithNodes(tableId: Int): Flow<TableTimeConfigWithNodes?>
+    fun getDefaultTimeConfigWithNodes(tableId: UUID): Flow<TableTimeConfigWithNodes?>
 
     /** 获取指定ID的时间配置及其所有节点详情。 */
     @Transaction
     @Query("SELECT * FROM table_time_config WHERE id = :configId")
-    fun getTimeConfigWithNodesById(configId: Int): Flow<TableTimeConfigWithNodes> // Returns Flow<List>
+    fun getTimeConfigWithNodesById(configId: UUID): Flow<TableTimeConfigWithNodes> // Returns Flow<List>
 
     /** 获取指定课表的所有时间配置及其所有节点详情。 */
     @Transaction
     @Query("SELECT * FROM table_time_config WHERE table_id = :tableId ORDER BY is_default DESC, id ASC") // Default first
-    fun getAllTimeConfigsWithNodes(tableId: Int): Flow<List<TableTimeConfigWithNodes>>
+    fun getAllTimeConfigsWithNodes(tableId: UUID): Flow<List<TableTimeConfigWithNodes>>
 
 
     // --- 事务性操作 ---
@@ -94,10 +94,10 @@ interface TableTimeConfigDao {
     suspend fun insertConfigWithNodes(
         configEntity: TableTimeConfigEntity,
         nodeEntities: List<TableTimeConfigNodeDetaileEntity>
-    ): Long {
+    ): UUID {
         val configId = insertTimeConfig(configEntity)
         // Ensure nodes have the correct configId (Room might handle this if ID is autoGenerate)
-        val updatedNodes = nodeEntities.map { it.copy(tableTimeConfigId = configId.toInt()) }
+        val updatedNodes = nodeEntities.map { it.copy(tableTimeConfigId = configId) }
         insertNodeDetails(updatedNodes)
         return configId
     }
@@ -130,7 +130,7 @@ interface TableTimeConfigDao {
         // Create a dummy entity just for the delete operation by ID
         val configToDelete = TableTimeConfigEntity(
             id = configId,
-            tableId = -1,
+            tableId = UUID(0, 0), // Dummy UUID, won't be used
             name = "",
             isDefault = false
         ) // tableId and name don't matter here
@@ -143,7 +143,7 @@ interface TableTimeConfigDao {
      * @param newDefaultConfigId 要设为默认的配置 ID
      */
     @Transaction
-    suspend fun setDefault(tableId: Int, newDefaultConfigId: Int) {
+    suspend fun setDefault(tableId: UUID, newDefaultConfigId: UUID) {
         clearDefaultFlagForTable(tableId) // Clear the old default flag
         setDefaultFlag(newDefaultConfigId) // Set the new default flag
     }
@@ -151,7 +151,7 @@ interface TableTimeConfigDao {
 
     // --- 清理操作 ---
     @Query("DELETE FROM table_time_config WHERE table_id = :tableId")
-    suspend fun deleteTimeConfigsForTable(tableId: Int) // 删除某个课表的所有时间配置
+    suspend fun deleteTimeConfigsForTable(tableId: UUID) // 删除某个课表的所有时间配置
 
     @Query("DELETE FROM table_time_config")
     suspend fun deleteAllTimeConfigs()

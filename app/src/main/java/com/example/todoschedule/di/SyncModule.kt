@@ -91,7 +91,7 @@ object SyncModule {
         return object : SyncApi {
             override suspend fun sendMessages(
                 messages: List<SyncMessageDto>,
-                userId: Int
+                userId: UUID
             ): SyncResult {
                 Log.d(
                     "SyncModule",
@@ -172,7 +172,7 @@ object SyncModule {
                 }
             }
 
-            override suspend fun getMessages(userId: Int): List<SyncMessageDto> {
+            override suspend fun getMessages(userId: UUID): List<SyncMessageDto> {
                 Log.d("SyncModule", "尝试获取用户ID " + userId + " 的所有消息")
                 val deviceId = deviceIdManager.getOrCreateDeviceId()
                 try {

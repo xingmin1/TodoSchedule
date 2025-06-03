@@ -31,8 +31,8 @@ class TimeNodesSettingsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val tableId: Int = checkNotNull(savedStateHandle[ARG_TABLE_ID])
-    private val configId: Int = checkNotNull(savedStateHandle[ARG_CONFIG_ID])
+    private val tableId: UUID = checkNotNull(savedStateHandle[ARG_TABLE_ID])
+    private val configId: UUID = checkNotNull(savedStateHandle[ARG_CONFIG_ID])
 
     // UI 状态
     data class UiState(
@@ -55,7 +55,7 @@ class TimeNodesSettingsViewModel @Inject constructor(
             val nodeNumber: Int = nodeToEdit?.node ?: 0 // 添加模式下可能需要自动计算
         ) : DialogState()
 
-        data class DeleteNode(val nodeId: Int, val nodeName: String) : DialogState()
+        data class DeleteNode(val nodeId: UUID, val nodeName: String) : DialogState()
     }
 
     private val _uiState = MutableStateFlow(UiState())
@@ -110,7 +110,7 @@ class TimeNodesSettingsViewModel @Inject constructor(
             _uiState.value.copy(dialogState = DialogState.AddOrEditNode(nodeToEdit = node))
     }
 
-    fun showDeleteNodeDialog(nodeId: Int, nodeName: String) {
+    fun showDeleteNodeDialog(nodeId: UUID, nodeName: String) {
         _uiState.value = _uiState.value.copy(dialogState = DialogState.DeleteNode(nodeId, nodeName))
     }
 
@@ -182,7 +182,7 @@ class TimeNodesSettingsViewModel @Inject constructor(
         }
     }
 
-    fun deleteNode(nodeId: Int) {
+    fun deleteNode(nodeId: UUID) {
         viewModelScope.launch {
             try {
                 val currentConfig = timeConfigFlow.value ?: run {

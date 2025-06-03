@@ -1,6 +1,5 @@
 package com.example.todoschedule.data.database.dao
 
-import android.util.Log
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -11,7 +10,7 @@ import androidx.room.Update
 import com.example.todoschedule.data.database.entity.OrdinaryScheduleEntity
 import com.example.todoschedule.data.model.OrdinaryScheduleWithTimeSlots
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.onEach
+import java.util.UUID
 
 @Dao
 interface OrdinaryScheduleDao {
@@ -29,7 +28,7 @@ interface OrdinaryScheduleDao {
     suspend fun deleteSchedule(schedule: OrdinaryScheduleEntity) // 删除日程
 
     @Query("DELETE FROM ordinary_schedule WHERE id = :id")
-    suspend fun deleteOrdinarySchedule(id: Int) // 根据ID删除日程
+    suspend fun deleteOrdinarySchedule(id: UUID) // 根据ID删除日程
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrdinarySchedule(schedule: OrdinaryScheduleEntity): Long // 插入日程（用于同步）
@@ -38,7 +37,7 @@ interface OrdinaryScheduleDao {
     @Query("SELECT * FROM ordinary_schedule WHERE id = :id")
     // 根据ID获取一个普通日程及其所有关联的时间槽 (使用 @Relation)。
     // 注意：返回的时间槽需要通过日程类型过滤
-    fun getScheduleWithTimeSlotsById(id: Int): Flow<OrdinaryScheduleWithTimeSlots?>
+    fun getScheduleWithTimeSlotsById(id: UUID): Flow<OrdinaryScheduleWithTimeSlots?>
 
     @Transaction
     @Query(
@@ -49,29 +48,29 @@ interface OrdinaryScheduleDao {
         ORDER BY id DESC
         """
     )
-    fun getAllSchedulesWithTimeSlots(userId: Int): Flow<List<OrdinaryScheduleWithTimeSlots>>
+    fun getAllSchedulesWithTimeSlots(userId: UUID): Flow<List<OrdinaryScheduleWithTimeSlots>>
 
     @Query("DELETE FROM ordinary_schedule WHERE userId = :userId")
-    suspend fun deleteAllSchedules(userId: Int) // 删除所有日程
+    suspend fun deleteAllSchedules(userId: UUID) // 删除所有日程
 
-    @Query("SELECT id FROM ordinary_schedule WHERE crdtKey = :crdtKey LIMIT 1")
-    suspend fun getIdByCrdtKey(crdtKey: String): Int? // 根据CRDT键获取ID
+    @Query("SELECT id FROM ordinary_schedule WHERE id = :id LIMIT 1")
+    suspend fun getIdById(id: String): Int? // 根据CRDT键获取ID
 
-    @Query("SELECT * FROM ordinary_schedule WHERE crdtKey = :crdtKey LIMIT 1")
-    suspend fun getOrdinaryScheduleByCrdtKey(crdtKey: String): OrdinaryScheduleEntity? // 根据CRDT键获取实体
+    @Query("SELECT * FROM ordinary_schedule WHERE id = :id LIMIT 1")
+    suspend fun getOrdinaryScheduleById(id: String): OrdinaryScheduleEntity? // 根据CRDT键获取实体
 
-    @Query("SELECT * FROM ordinary_schedule WHERE userCrdtKey = :userCrdtKey")
-    suspend fun getOrdinarySchedulesByUserCrdtKey(userCrdtKey: String): List<OrdinaryScheduleEntity> // 根据用户CRDT键获取日程列表
+    @Query("SELECT * FROM ordinary_schedule WHERE userId = :userId")
+    suspend fun getOrdinarySchedulesByUserId(userId: String): List<OrdinaryScheduleEntity> // 根据用户CRDT键获取日程列表
 
     /**
      * 根据用户ID获取日程列表（非Flow）
      */
     @Query("SELECT * FROM ordinary_schedule WHERE userId = :userId")
-    suspend fun fetchSchedulesByUserId(userId: Int): List<OrdinaryScheduleEntity>
+    suspend fun fetchSchedulesByUserId(userId: UUID): List<OrdinaryScheduleEntity>
 
     /**
      * 根据ID获取日程实体（非Flow）
      */
     @Query("SELECT * FROM ordinary_schedule WHERE id = :scheduleId LIMIT 1")
-    suspend fun getOrdinaryScheduleById(scheduleId: Int): OrdinaryScheduleEntity?
+    suspend fun getOrdinaryScheduleById(scheduleId: UUID): OrdinaryScheduleEntity?
 }

@@ -28,7 +28,7 @@ class SyncApiImpl @Inject constructor(
      * @param userId 用户ID
      * @return 操作结果
      */
-    override suspend fun sendMessages(messages: List<SyncMessageDto>, userId: Int): SyncResult {
+    override suspend fun sendMessages(messages: List<SyncMessageDto>, userId: UUID): SyncResult {
         if (messages.isEmpty()) {
             Log.d(TAG, "没有消息需要发送")
             return SyncResult(
@@ -103,7 +103,7 @@ class SyncApiImpl @Inject constructor(
      * @param userId 用户ID
      * @return 服务器上的同步消息
      */
-    override suspend fun getMessages(userId: Int): List<SyncMessageDto> {
+    override suspend fun getMessages(userId: UUID): List<SyncMessageDto> {
         return try {
             val deviceId = deviceIdManager.getOrCreateDeviceId()
             Log.d(TAG, "准备从服务器获取消息，设备ID: $deviceId, 用户ID: $userId")

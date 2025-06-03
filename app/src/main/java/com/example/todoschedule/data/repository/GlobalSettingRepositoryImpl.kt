@@ -17,11 +17,11 @@ class GlobalSettingRepositoryImpl
 @Inject
 constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepository {
 
-    override fun getGlobalSettingByUserId(userId: Int): Flow<GlobalTableSetting?> {
+    override fun getGlobalSettingByUserId(userId: UUID): Flow<GlobalTableSetting?> {
         return globalSettingDao.getGlobalSettingByUserId(userId).map { it?.toGlobalTableSetting() }
     }
 
-    override suspend fun getGlobalSettingById(id: Int): GlobalTableSetting? {
+    override suspend fun getGlobalSettingById(Id: UUID): GlobalTableSetting? {
         return globalSettingDao.getGlobalSettingById(id)?.toGlobalTableSetting()
     }
 
@@ -33,7 +33,7 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
         globalSettingDao.updateGlobalSetting(globalSetting.toGlobalTableSettingEntity())
     }
 
-    override suspend fun initDefaultSettingIfNeeded(userId: Int): Long {
+    override suspend fun initDefaultSettingIfNeeded(userId: UUID): Long {
         // 检查用户是否已有全局设置
         val hasGlobalSetting = globalSettingDao.hasGlobalSetting(userId) > 0
         if (!hasGlobalSetting) {
@@ -61,7 +61,7 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
         }
     }
 
-    override suspend fun updateDefaultTableIds(userId: Int, tableIds: List<Int>) {
+    override suspend fun updateDefaultTableIds(userId: UUID, tableIds: List<Int>) {
         try {
             // 获取用户的全局设置实体
             val settingEntity = globalSettingDao.getGlobalSettingByUserId(userId).first()
@@ -97,7 +97,7 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
         }
     }
 
-    override fun getDefaultTableIds(userId: Int): Flow<List<Int>> {
+    override fun getDefaultTableIds(userId: UUID): Flow<List<Int>> {
         return globalSettingDao.getGlobalSettingByUserId(userId).map { entity ->
             entity?.let {
                 it.defaultTableIds.split(",").filter { id -> id.isNotEmpty() }.map { id ->

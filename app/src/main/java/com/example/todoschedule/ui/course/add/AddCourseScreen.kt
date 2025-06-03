@@ -64,7 +64,7 @@ import com.example.todoschedule.ui.theme.ColorSchemeEnum
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddCourseScreen(
-    tableId: Int,
+    tableId: UUID,
     viewModel: AddCourseViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
     onCourseAdded: (Int) -> Unit

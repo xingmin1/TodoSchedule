@@ -10,6 +10,7 @@ import com.example.todoschedule.data.database.entity.CourseEntity
 import com.example.todoschedule.data.database.entity.CourseNodeEntity
 import com.example.todoschedule.data.model.CourseWithNodes
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 /**
  * 课程DAO接口
@@ -20,8 +21,8 @@ interface CourseDao {
      * 获取指定课表的所有课程
      */
     @Transaction
-    @Query("SELECT * FROM course WHERE tableCrdtKey = :tableId")
-    fun getCoursesByTableId(tableId: Int): Flow<List<CourseWithNodes>>
+    @Query("SELECT * FROM course WHERE tableId = :tableId")
+    fun getCoursesByTableId(tableId: UUID): Flow<List<CourseWithNodes>>
 
     /**
      * 获取特定周次的课程
@@ -30,13 +31,13 @@ interface CourseDao {
     @Query(
         """
         SELECT DISTINCT c.* FROM course c
-        JOIN course_node cn ON c.crdtKey = cn.courseCrdtKey
-        WHERE c.tableCrdtKey = :tableId
+        JOIN course_node cn ON c.id = cn.courseId
+        WHERE c.tableId = :tableId
         AND cn.startWeek <= :week AND cn.endWeek >= :week
         AND (cn.weekType = 0 OR (cn.weekType = 1 AND :week % 2 = 1) OR (cn.weekType = 2 AND :week % 2 = 0))
     """
     )
-    fun getCoursesByWeek(tableId: Int, week: Int): Flow<List<CourseWithNodes>>
+    fun getCoursesByWeek(tableId: UUID, week: Int): Flow<List<CourseWithNodes>>
 
     /**
      * 获取特定日期的课程节点
@@ -44,20 +45,20 @@ interface CourseDao {
     @Query(
         """
         SELECT * FROM course_node
-        WHERE courseId IN (SELECT crdtKey FROM course WHERE tableCrdtKey = :tableId)
+        WHERE courseId IN (SELECT id FROM course WHERE tableId = :tableId)
         AND day = :day
         AND startWeek <= :week AND endWeek >= :week
         AND (weekType = 0 OR (weekType = 1 AND :week % 2 = 1) OR (weekType = 2 AND :week % 2 = 0))
     """
     )
-    fun getCourseNodesByDayAndWeek(tableId: Int, day: Int, week: Int): Flow<List<CourseNodeEntity>>
+    fun getCourseNodesByDayAndWeek(tableId: UUID, day: Int, week: Int): Flow<List<CourseNodeEntity>>
 
     /**
      * 获取课程详情
      */
     @Transaction
-    @Query("SELECT * FROM course WHERE crdtKey = :courseId")
-    suspend fun getCourseWithNodesById(courseId: Int): CourseWithNodes?
+    @Query("SELECT * FROM course WHERE id = :courseId")
+    suspend fun getCourseWithNodesById(courseId: UUID): CourseWithNodes?
 
     /**
      * 插入课程
@@ -93,25 +94,25 @@ interface CourseDao {
      * 删除课程
      */
     @Query("DELETE FROM course WHERE id = :courseId")
-    suspend fun deleteCourse(courseId: Int)
+    suspend fun deleteCourse(courseId: UUID)
 
     /**
      * 删除课程节点
      */
     @Query("DELETE FROM course_node WHERE id = :nodeId")
-    suspend fun deleteCourseNode(nodeId: Int)
+    suspend fun deleteCourseNode(nodeId: UUID)
 
     /**
      * 根据ID获取课程实体（非Flow）
      */
     @Query("SELECT * FROM course WHERE id = :id LIMIT 1")
-    suspend fun getCourseByIdValue(id: Int): CourseEntity?
+    suspend fun getCourseByIdValue(id: UUID): CourseEntity?
 
     /**
      * 根据CRDT键查询课程
      */
-    @Query("SELECT * FROM course WHERE crdtKey = :crdtKey LIMIT 1")
-    suspend fun getCourseByCrdtKey(crdtKey: String): CourseEntity?
+    @Query("SELECT * FROM course WHERE id = :id LIMIT 1")
+    suspend fun getCourseById(id: String): CourseEntity?
 
     /**
      * 获取所有课程
@@ -123,35 +124,35 @@ interface CourseDao {
      * 删除课程的所有节点
      */
     @Query("DELETE FROM course_node WHERE courseId = :courseId")
-    suspend fun deleteAllNodesOfCourse(courseId: Int)
+    suspend fun deleteAllNodesOfCourse(courseId: UUID)
 
     /**
-     * 根据crdtKey查询课程本地ID
+     * 根据id查询课程本地ID
      */
-    @Query("SELECT id FROM course WHERE crdtKey = :crdtKey LIMIT 1")
-    suspend fun getIdByCrdtKey(crdtKey: String): Int?
+    @Query("SELECT id FROM course WHERE id = :id LIMIT 1")
+    suspend fun getIdById(id: String): Int?
 
     /**
-     * 根据crdtKey查询课程节点
+     * 根据id查询课程节点
      */
-    @Query("SELECT * FROM course_node WHERE crdtKey = :crdtKey LIMIT 1")
-    suspend fun getCourseNodeByCrdtKey(crdtKey: String): CourseNodeEntity?
+    @Query("SELECT * FROM course_node WHERE id = :id LIMIT 1")
+    suspend fun getCourseNodeById(id: String): CourseNodeEntity?
 
     /**
-     * 根据tableCrdtKey查询课程列表
+     * 根据tableId查询课程列表
      */
-    @Query("SELECT * FROM course WHERE tableCrdtKey = :tableCrdtKey")
-    suspend fun getCoursesByTableCrdtKey(tableCrdtKey: String): List<CourseEntity>
+    @Query("SELECT * FROM course WHERE tableId = :tableId")
+    suspend fun getCoursesByTableId(tableId: String): List<CourseEntity>
 
     /**
      * 根据ID获取课程节点
      */
     @Query("SELECT * FROM course_node WHERE id = :nodeId")
-    suspend fun getCourseNodeById(nodeId: Int): CourseNodeEntity?
+    suspend fun getCourseNodeById(nodeId: UUID): CourseNodeEntity?
 
     /**
      * 根据ID获取课程实体（不含节点）
      */
     @Query("SELECT * FROM course WHERE id = :courseId")
-    suspend fun getCourseById(courseId: Int): CourseEntity?
+    suspend fun getCourseById(courseId: UUID): CourseEntity?
 }

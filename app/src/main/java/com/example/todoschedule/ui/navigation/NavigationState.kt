@@ -113,21 +113,21 @@ class NavigationState(
     /**
      * 导航到添加课程页面
      */
-    fun navigateToAddCourse(tableId: Int = AppConstants.Ids.INVALID_TABLE_ID) {
+    fun navigateToAddCourse(tableId: UUID = AppConstants.Ids.INVALID_TABLE_ID) {
         navController.navigate(AppRoutes.AddCourse.createRoute(tableId))
     }
 
     /**
      * 导航到课程详情页面
      */
-    fun navigateToCourseDetail(tableId: Int, courseId: Int) {
+    fun navigateToCourseDetail(tableId: UUID, courseId: UUID) {
         navController.navigate(AppRoutes.CourseDetail.createRoute(tableId, courseId))
     }
 
     /**
      * 导航到编辑课程页面
      */
-    fun navigateToEditCourse(tableId: Int, courseId: Int) {
+    fun navigateToEditCourse(tableId: UUID, courseId: UUID) {
         navController.navigate(AppRoutes.EditCourse.createRoute(tableId, courseId))
     }
 
@@ -141,21 +141,21 @@ class NavigationState(
     /**
      * 导航到学校选择页面
      */
-    fun navigateSchoolSelectorScreen(tableId: Int) {
+    fun navigateSchoolSelectorScreen(tableId: UUID) {
         navController.navigate(AppRoutes.SchoolSelector.createRoute(tableId))
     }
 
     /**
      *导航到对应学校的WebView页面
      */
-    fun navigateWebViewScreen(encodeUrl: String, tableId: Int) {
+    fun navigateWebViewScreen(encodeUrl: String, tableId: UUID) {
         navController.navigate(AppRoutes.SchoolWebView.createRoute(encodeUrl, tableId))
     }
 
     /**
      * 导航到添加/编辑普通日程页面
      */
-    fun navigateToAddEditOrdinarySchedule(scheduleId: Int? = null) {
+    fun navigateToAddEditOrdinarySchedule(scheduleId: UUID? = null) {
         val route = AppRoutes.AddEditOrdinarySchedule.createRoute(scheduleId)
         navController.navigate(route)
     }
@@ -163,14 +163,14 @@ class NavigationState(
     /**
      * 导航到普通日程详情页面
      */
-    fun navigateToOrdinaryScheduleDetail(scheduleId: Int) {
+    fun navigateToOrdinaryScheduleDetail(scheduleId: UUID) {
         navController.navigate(AppRoutes.OrdinaryScheduleDetail.createRoute(scheduleId))
     }
 
     /**
      * 导航到创建/编辑课表页面
      */
-    fun navigateToCreateEditTable(tableId: Int? = null) {
+    fun navigateToCreateEditTable(tableId: UUID? = null) {
         navController.navigate(AppRoutes.CreateEditTable.createRoute(tableId))
     }
 
@@ -204,11 +204,11 @@ class NavigationState(
         navController.navigate(AppRoutes.DefaultDisplaySettings.route)
     }
 
-    fun navigateToSingleTableSettings(tableId: Int) {
+    fun navigateToSingleTableSettings(tableId: UUID) {
         navController.navigate(AppRoutes.SingleTableSettings.createRoute(tableId))
     }
 
-    fun navigateToTimeNodesSettings(configId: Int) {
+    fun navigateToTimeNodesSettings(configId: UUID) {
         navController.navigate(AppRoutes.TimeNodesSettings.createRoute(configId))
     }
 }

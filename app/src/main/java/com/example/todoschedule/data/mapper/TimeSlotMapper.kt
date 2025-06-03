@@ -5,7 +5,7 @@ import com.example.todoschedule.data.database.entity.TimeSlotEntity
 import com.example.todoschedule.domain.model.TimeSlot
 
 
-fun TimeSlot.toEntity(scheduleId: Int, scheduleType: ScheduleType): TimeSlotEntity {
+fun TimeSlot.toEntity(scheduleId: UUID, scheduleType: ScheduleType): TimeSlotEntity {
     return TimeSlotEntity(
         id = this.id,
         startTime = this.startTime,

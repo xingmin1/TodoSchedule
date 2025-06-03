@@ -87,7 +87,7 @@ class SyncService : Service() {
         }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: UUID): Int {
         Log.d(TAG, "SyncService started with startId: $startId")
 
         // 第一次启动时检查用户登录状态，只有在用户已登录且有token时才执行同步

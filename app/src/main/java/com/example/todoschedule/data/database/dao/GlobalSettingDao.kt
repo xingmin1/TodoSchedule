@@ -7,17 +7,18 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.todoschedule.data.database.entity.GlobalTableSettingEntity
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 /** 全局设置DAO接口 */
 @Dao
 interface GlobalSettingDao {
     /** 获取用户的全局设置 */
     @Query("SELECT * FROM global_table_setting WHERE userId = :userId")
-    fun getGlobalSettingByUserId(userId: Int): Flow<GlobalTableSettingEntity?>
+    fun getGlobalSettingByUserId(userId: UUID): Flow<GlobalTableSettingEntity?>
 
     /** 获取全局设置 */
     @Query("SELECT * FROM global_table_setting WHERE id = :id")
-    suspend fun getGlobalSettingById(id: Int): GlobalTableSettingEntity?
+    suspend fun getGlobalSettingById(id: UUID): GlobalTableSettingEntity?
 
     /** 插入全局设置 */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -29,5 +30,5 @@ interface GlobalSettingDao {
 
     /** 检查用户是否有全局设置 */
     @Query("SELECT COUNT(*) FROM global_table_setting WHERE userId = :userId")
-    suspend fun hasGlobalSetting(userId: Int): Int
+    suspend fun hasGlobalSetting(userId: UUID): Int
 }

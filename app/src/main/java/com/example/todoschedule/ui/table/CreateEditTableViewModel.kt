@@ -46,7 +46,7 @@ class CreateEditTableViewModel @Inject constructor(
         }
     }
 
-    private fun loadTableForEditing(tableId: Int) {
+    private fun loadTableForEditing(tableId: UUID) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, tableId = tableId) } // 设置 ID 并标记加载中
             val tableFlow = tableRepository.getTableById(tableId)

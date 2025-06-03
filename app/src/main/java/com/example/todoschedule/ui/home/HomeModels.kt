@@ -6,7 +6,7 @@ import com.example.todoschedule.data.database.converter.ScheduleStatus
  * 首页课程UI模型
  */
 data class HomeCourseUiModel(
-    val id: Int,
+    val Id: UUID,
     val name: String,
     val startNode: Int,
     val endNode: Int,
@@ -18,7 +18,7 @@ data class HomeCourseUiModel(
  * 首页日程UI模型
  */
 data class HomeScheduleUiModel(
-    val id: Int,
+    val Id: UUID,
     val title: String,
     val description: String?,
     val status: ScheduleStatus? = ScheduleStatus.TODO,

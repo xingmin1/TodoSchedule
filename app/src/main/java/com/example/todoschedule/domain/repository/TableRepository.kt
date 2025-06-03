@@ -12,16 +12,16 @@ interface TableRepository {
     fun getDefaultTable(): Flow<Table?>
 
     /** 根据ID获取课表 */
-    fun getTableById(tableId: Int): Flow<Table?>
+    fun getTableById(tableId: UUID): Flow<Table?>
 
     /** 根据用户ID获取课表 */
-    fun getTableByUserId(userId: Int): Flow<List<Table>>
+    fun getTableByUserId(userId: UUID): Flow<List<Table>>
 
     /** 根据ID获取课表 */
-    suspend fun fetchTableById(tableId: Int): Table?
+    suspend fun fetchTableById(tableId: UUID): Table?
 
     /** 根据用户ID获取课表 */
-    suspend fun fetchTablesByUserId(userId: Int): List<Table>
+    suspend fun fetchTablesByUserId(userId: UUID): List<Table>
 
     /** 添加课表 */
     suspend fun addTable(table: Table): Long
@@ -30,5 +30,5 @@ interface TableRepository {
     suspend fun updateTable(table: Table)
 
     /** 删除课表 */
-    suspend fun deleteTable(tableId: Int)
+    suspend fun deleteTable(tableId: UUID)
 }

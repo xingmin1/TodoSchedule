@@ -79,7 +79,7 @@ fun DayScheduleContent(
     onDateChange: (kotlinx.datetime.LocalDate) -> Unit,
     viewModel: ScheduleViewModel = hiltViewModel(),
     navigationState: NavigationState,
-    defaultTableId: Int?
+    defaultTableId: UUID?
 ) {
     val pageCount = 1000 // A large number for pseudo-infinite scrolling
     val initialPage = pageCount / 2 // Start in the middle
@@ -165,7 +165,7 @@ fun TimeSlot.isAllDayEvent(): Boolean {
 fun AllDayEventRow(
     events: List<TimeSlot>,
     navigationState: NavigationState,
-    defaultTableId: Int?
+    defaultTableId: UUID?
 ) {
     Row(
         Modifier
@@ -199,7 +199,7 @@ fun DayTimeline(
     date: LocalDate,
     events: List<TimeSlot>, // Should only contain timed events for this specific date
     navigationState: NavigationState,
-    defaultTableId: Int?
+    defaultTableId: UUID?
 ) {
     val hourHeight = HOUR_HEIGHT
     val gridStartHour = GRID_START_HOUR
@@ -377,7 +377,7 @@ fun DayTimeline(
 private fun handleTimeSlotClick(
     timeSlot: TimeSlot,
     navigationState: NavigationState,
-    defaultTableId: Int?
+    defaultTableId: UUID?
 ) {
     Log.d(
         "DaySchedule",

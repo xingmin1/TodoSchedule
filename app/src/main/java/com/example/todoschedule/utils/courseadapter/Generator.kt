@@ -16,7 +16,7 @@ class Generator(
 ) {
     private data class Header(
         val courseLen: Int = 50,
-        val id: Int = 1,
+        val Id: UUID = 1,
         val name: String = "默认",
         val sameBreakLen: Boolean = false,
         val sameLen: Boolean = true,
@@ -33,7 +33,7 @@ class Generator(
     private data class ColorScheme(
         val background: String = "",
         val courseTextColor: Int = -1,
-        val id: Int = 1,
+        val Id: UUID = 1,
         val itemAlpha: Int = 60,
         val itemHeight: Int = 64,
         val itemTextSize: Int = 12,
@@ -59,7 +59,7 @@ class Generator(
     )
 
     private data class CourseDetailItem(
-        val id: Int,
+        val Id: UUID,
         val day: Int,
         val room: String,
         val teacher: String,
@@ -68,7 +68,7 @@ class Generator(
         val startWeek: Int,
         val endWeek: Int,
         val type: Int,
-        val tableId: Int,
+        val tableId: UUID,
         val endTime: String = "",
         val startTime: String = "",
         val ownTime: Boolean = false,

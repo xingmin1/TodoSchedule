@@ -5,7 +5,7 @@ import kotlinx.datetime.Instant
 
 /** 用户领域模型 */
 data class User(
-    val id: Int = 0,
+    val Id: UUID = 0,
     val username: String,
     val phoneNumber: String? = null,
     val email: String? = null,

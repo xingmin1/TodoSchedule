@@ -6,7 +6,7 @@ import com.example.todoschedule.ui.theme.ColorSchemeEnum
  * 课程详情数据模型
  */
 data class CourseDetailModel(
-    val id: Int,
+    val Id: UUID,
     val courseName: String,
     val color: ColorSchemeEnum,
     val room: String? = null,

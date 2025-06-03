@@ -56,7 +56,7 @@ interface SyncRepository {
      * @param userId 用户ID
      * @return 待同步消息列表
      */
-    suspend fun getPendingMessagesByUserId(userId: Int): List<SyncMessageEntity>
+    suspend fun getPendingMessagesByUserId(userId: UUID): List<SyncMessageEntity>
 
     /**
      * 获取特定类型的待同步消息
@@ -116,7 +116,7 @@ interface SyncRepository {
      * @param userId 用户ID
      * @return 是否注册成功
      */
-    suspend fun registerDevice(userId: Int): Boolean
+    suspend fun registerDevice(userId: UUID): Boolean
 
     /**
      * 获取所有同步消息

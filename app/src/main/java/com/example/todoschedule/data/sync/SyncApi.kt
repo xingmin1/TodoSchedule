@@ -14,14 +14,14 @@ interface SyncApi {
      * @param userId 用户ID
      * @return 操作结果
      */
-    suspend fun sendMessages(messages: List<SyncMessageDto>, userId: Int): SyncResult
+    suspend fun sendMessages(messages: List<SyncMessageDto>, userId: UUID): SyncResult
 
     /**
      * 从服务器获取同步消息
      * @param userId 用户ID
      * @return 服务器上的同步消息
      */
-    suspend fun getMessages(userId: Int): List<SyncMessageDto>
+    suspend fun getMessages(userId: UUID): List<SyncMessageDto>
 }
 
 /**

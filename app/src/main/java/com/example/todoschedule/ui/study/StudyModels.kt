@@ -72,7 +72,7 @@ fun LocalDateTime.format(formatter: DateTimeFormatter): String {
  * 学习计划
  */
 data class StudyPlan(
-    val id: Int,  // ID
+    val Id: UUID,  // ID
     val title: String,  // 标题
     val startTime: LocalDateTime, // 开始时间
     val endTime: LocalDateTime,  // 结束时间

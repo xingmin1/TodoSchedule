@@ -17,7 +17,7 @@ interface UserDao {
 
     /** A获取指定ID的用户 */
     @Query("SELECT * FROM user WHERE id = :userId")
-    suspend fun getUserById(userId: Int): UserEntity?
+    suspend fun getUserById(userId: UUID): UserEntity?
 
     /** 根据用户名获取用户 */
     @Query("SELECT * FROM user WHERE username = :username")
@@ -37,5 +37,5 @@ interface UserDao {
 
     /** 删除用户 */
     @Query("DELETE FROM user WHERE id = :userId")
-    fun deleteUser(userId: Int)
+    fun deleteUser(userId: UUID)
 }

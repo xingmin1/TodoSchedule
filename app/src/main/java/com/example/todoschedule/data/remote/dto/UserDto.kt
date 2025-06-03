@@ -38,7 +38,7 @@ data class UserRegisterRequest(
  * 用户响应数据
  */
 data class UserDto(
-    val id: Int,
+    val Id: UUID,
     val username: String,
     val token: String,
     val created_at: String? = null,

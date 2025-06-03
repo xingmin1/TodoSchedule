@@ -7,10 +7,10 @@ import kotlinx.coroutines.flow.Flow
 interface TableTimeConfigRepository {
 
     /** 获取指定课表的默认时间配置。 返回的 Flow 在没有找到默认配置时会发射 null。 */
-    fun getDefaultTimeConfig(tableId: Int): Flow<TableTimeConfig?>
+    fun getDefaultTimeConfig(tableId: UUID): Flow<TableTimeConfig?>
 
     /** 根据 TableTimeConfig ID 获取时间配置。 如果找不到，Flow 会发出 null。 */
-    fun getTimeConfigById(configId: Int): Flow<TableTimeConfig?> // Keep as nullable for consistency with DAO
+    fun getTimeConfigById(configId: UUID): Flow<TableTimeConfig?> // Keep as nullable for consistency with DAO
 
     /**
      * 为指定的课表创建或确保存在一个默认的时间配置。
@@ -19,8 +19,8 @@ interface TableTimeConfigRepository {
      * 如果创建失败，则返回 null。
      */
     suspend fun ensureDefaultTimeConfig(
-        tableId: Int,
-        userId: Int
+        tableId: UUID,
+        userId: UUID
     ): Int? // userId might not be needed here if not used for ownership/permissions
 
     /**
@@ -46,14 +46,14 @@ interface TableTimeConfigRepository {
      * @throws IllegalArgumentException 如果尝试删除默认配置。可以先设置其他配置为默认。
      * @throws NoSuchElementException 如果具有给定 `configId` 的配置不存在。
      */
-    suspend fun deleteTimeConfig(configId: Int)
+    suspend fun deleteTimeConfig(configId: UUID)
 
     /**
      * 获取指定课表的所有时间配置（包括默认和自定义）。
      * @param tableId 课表的 ID。
      * @return 包含该课表所有时间配置的 Flow。
      */
-    fun getAllTimeConfigsForTable(tableId: Int): Flow<List<TableTimeConfig>>
+    fun getAllTimeConfigsForTable(tableId: UUID): Flow<List<TableTimeConfig>>
 
     /**
      * 将指定的时间配置设置为其所属课表的默认配置。
@@ -62,6 +62,6 @@ interface TableTimeConfigRepository {
      * @param configId 要设置为默认的时间配置的 ID。
      * @throws NoSuchElementException 如果具有给定 `configId` 或 `tableId` 的配置不存在。
      */
-    suspend fun setDefaultTimeConfig(tableId: Int, configId: Int)
+    suspend fun setDefaultTimeConfig(tableId: UUID, configId: UUID)
 }
 

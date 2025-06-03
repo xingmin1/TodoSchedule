@@ -9,12 +9,12 @@ import kotlinx.datetime.toLocalDateTime
  * Domain 层的 TimeSlot 模型。
  */
 data class TimeSlot(
-    val id: Int = 0,
+    val Id: UUID = 0,
     val startTime: Long, // 开始时间 (时间戳)
     val endTime: Long, // 结束时间 (时间戳)
     val scheduleType: ScheduleType, // 使用枚举类型
-    val scheduleId: Int, // 关联日程的 ID
-    val userId: Int, // 添加 userId
+    val scheduleId: UUID, // 关联日程的 ID
+    val userId: UUID, // 添加 userId
     val head: String? = null, // 可选的标题覆盖
     val priority: Int? = null, // 优先级
     val isCompleted: Boolean = false, // 是否已完成

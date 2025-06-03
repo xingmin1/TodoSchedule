@@ -351,7 +351,7 @@ class OrdinaryScheduleRepositoryImplTest {
     // --- 辅助函数创建测试数据 ---
 
     private fun createTestSchedule(
-        id: Int = 0, // 让 Room 自动生成 ID 通常更好，但测试中指定方便验证
+        Id: UUID = 0, // 让 Room 自动生成 ID 通常更好，但测试中指定方便验证
         title: String = "Test Schedule",
         status: ScheduleStatus = ScheduleStatus.TODO,
         timeSlots: List<TimeSlot> = emptyList()
@@ -370,10 +370,10 @@ class OrdinaryScheduleRepositoryImplTest {
     }
 
     private fun createTestTimeSlot(
-        userId: Int,
-        scheduleId: Int,
+        userId: UUID,
+        scheduleId: UUID,
         startTimeOffset: Long = 0, // 相对当前时间的偏移量（毫秒）
-        id: Int = 0
+        Id: UUID = 0
     ): TimeSlot {
         val now = Clock.System.now().toEpochMilliseconds()
         return TimeSlot(
@@ -397,7 +397,7 @@ class OrdinaryScheduleRepositoryImplTest {
     // （之前的步骤中已将其放在 repository 中作为私有函数，这里为了方便测试再写一个）
     // 如果你的 mapper 是公共的，可以直接导入使用。
     private fun TimeSlot.toEntity(
-        scheduleId: Int,
+        scheduleId: UUID,
         scheduleTypeStr: String
     ): com.example.todoschedule.data.database.entity.TimeSlotEntity {
         val typeEnum = try {

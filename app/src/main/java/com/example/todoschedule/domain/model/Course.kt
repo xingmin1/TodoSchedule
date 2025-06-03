@@ -14,7 +14,7 @@ import com.example.todoschedule.ui.theme.ColorSchemeEnum
  * @property nodes 课程节点
  */
 data class Course(
-    val id: Int = 0,
+    val Id: UUID = 0,
     val courseName: String,
     val color: ColorSchemeEnum,
     val room: String? = null,

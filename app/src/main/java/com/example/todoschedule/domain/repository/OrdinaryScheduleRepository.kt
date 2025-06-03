@@ -37,16 +37,16 @@ interface OrdinaryScheduleRepository {
      * @param id 日程 ID。
      * @return 包含日程和时间槽的 Flow<OrdinarySchedule?>。
      */
-    fun getScheduleById(id: Int): Flow<com.example.todoschedule.domain.model.OrdinarySchedule?>
+    fun getScheduleById(Id: UUID): Flow<com.example.todoschedule.domain.model.OrdinarySchedule?>
 
     /**
      * 获取所有普通日程及其关联的时间槽。
      * @return 包含所有日程和时间槽的 Flow<List<OrdinarySchedule>>。
      */
-    fun getAllSchedules(userId: Int): Flow<List<com.example.todoschedule.domain.model.OrdinarySchedule>>
+    fun getAllSchedules(userId: UUID): Flow<List<com.example.todoschedule.domain.model.OrdinarySchedule>>
 
     /**
      * 删除所有普通日程及其关联的时间槽。
      */
-    suspend fun deleteAllSchedules(userId: Int)
+    suspend fun deleteAllSchedules(userId: UUID)
 } 

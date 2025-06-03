@@ -35,7 +35,7 @@ class SingleTableSettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     // 从路由参数获取表ID
-    private val tableId: Int = checkNotNull(
+    private val tableId: UUID = checkNotNull(
         savedStateHandle.get<String>(AppRoutes.SingleTableSettings.ARG_TABLE_ID)?.toIntOrNull()
     )
 
@@ -58,12 +58,12 @@ class SingleTableSettingsViewModel @Inject constructor(
         object None : DialogState()
         data class AddTimeConfig(val name: String = "") : DialogState()
         data class EditTimeConfigName(
-            val configId: Int,
+            val configId: UUID,
             val currentName: String,
             val newName: String = currentName
         ) : DialogState()
 
-        data class DeleteTimeConfig(val configId: Int, val configName: String) : DialogState()
+        data class DeleteTimeConfig(val configId: UUID, val configName: String) : DialogState()
     }
 
     private val _uiState = MutableStateFlow(UiState())
@@ -205,13 +205,13 @@ class SingleTableSettingsViewModel @Inject constructor(
     }
 
     /** 显示编辑时间配置名称对话框 */
-    fun showEditTimeConfigNameDialog(configId: Int, currentName: String) {
+    fun showEditTimeConfigNameDialog(configId: UUID, currentName: String) {
         _uiState.value =
             _uiState.value.copy(dialogState = DialogState.EditTimeConfigName(configId, currentName))
     }
 
     /** 显示删除时间配置对话框 */
-    fun showDeleteTimeConfigDialog(configId: Int, configName: String) {
+    fun showDeleteTimeConfigDialog(configId: UUID, configName: String) {
         _uiState.value =
             _uiState.value.copy(dialogState = DialogState.DeleteTimeConfig(configId, configName))
     }
@@ -256,7 +256,7 @@ class SingleTableSettingsViewModel @Inject constructor(
     }
 
     /** 更新时间配置名称 */
-    fun updateTimeConfigName(configId: Int, newName: String) {
+    fun updateTimeConfigName(configId: UUID, newName: String) {
         viewModelScope.launch {
             if (newName.isBlank()) {
                 _uiState.value = _uiState.value.copy(error = "名称不能为空")
@@ -288,7 +288,7 @@ class SingleTableSettingsViewModel @Inject constructor(
     }
 
     /** 删除时间配置 */
-    fun deleteTimeConfig(configId: Int) {
+    fun deleteTimeConfig(configId: UUID) {
         viewModelScope.launch {
             try {
                 tableTimeConfigRepository.deleteTimeConfig(configId)
@@ -304,7 +304,7 @@ class SingleTableSettingsViewModel @Inject constructor(
     }
 
     /** 设置为默认时间配置 */
-    fun setDefaultTimeConfig(configId: Int) {
+    fun setDefaultTimeConfig(configId: UUID) {
         viewModelScope.launch {
             try {
                 tableTimeConfigRepository.setDefaultTimeConfig(tableId, configId)

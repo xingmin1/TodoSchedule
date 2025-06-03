@@ -32,7 +32,7 @@ sealed class TaskItemUiModel {
     abstract val timeDescription: String // e.g., "截止时间：今天 22:00", "第 1-2 节"
     abstract val priorityTag: PriorityTag? // 优先级或状态标签
     abstract val isCompleted: Boolean // 是否已完成 (用于视觉效果和筛选)
-    abstract val originalId: Int // 原始 ID，用于导航
+    abstract val originalId: UUID // 原始 ID，用于导航
     abstract val itemType: TaskItemType // 原始类型，用于导航判断
     abstract val startTime: LocalDateTime // 开始时间
     abstract val endTime: LocalDateTime // 结束时间
@@ -44,7 +44,7 @@ sealed class TaskItemUiModel {
         override val timeDescription: String,
         override val priorityTag: PriorityTag?,
         override val isCompleted: Boolean,
-        override val originalId: Int,
+        override val originalId: UUID,
         override val startTime: LocalDateTime,
         override val endTime: LocalDateTime,
         val status: ScheduleStatus?, // 添加状态以备后用
@@ -59,11 +59,11 @@ sealed class TaskItemUiModel {
         override val title: String, // 课程名
         override val timeDescription: String, // 节次和教室
         val courseColor: ColorSchemeEnum?, // 课程颜色
-        override val originalId: Int, // Course ID
+        override val originalId: UUID, // Course ID
         override val startTime: LocalDateTime, // 开始时间
         override val endTime: LocalDateTime, // 结束时间
-        val courseNodeId: Int? = null, // 可选的 CourseNode ID
-        val tableId: Int, // 所属课表ID
+        val courseNodeId: UUID? = null, // 可选的 CourseNode ID
+        val tableId: UUID, // 所属课表ID
     ) : TaskItemUiModel() {
         override val priorityTag: PriorityTag? = null // 课程通常没有优先级标签
         override val isCompleted: Boolean = false // 课程没有完成状态

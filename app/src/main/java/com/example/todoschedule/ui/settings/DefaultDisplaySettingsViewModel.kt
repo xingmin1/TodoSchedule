@@ -76,7 +76,7 @@ class DefaultDisplaySettingsViewModel @Inject constructor(
         }
     }
 
-    fun onTableSelectionChanged(tableId: Int, isSelected: Boolean) {
+    fun onTableSelectionChanged(tableId: UUID, isSelected: Boolean) {
         _uiState.update { currentState ->
             val currentSelection = currentState.selectedTableIds.toMutableSet()
             if (isSelected) {

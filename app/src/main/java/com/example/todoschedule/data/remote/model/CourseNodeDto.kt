@@ -4,8 +4,8 @@ package com.example.todoschedule.data.remote.model
  * 课程节点数据传输对象
  */
 data class CourseNodeDto(
-    val id: Int = 0,
-    val courseId: Int = 0,
+    val Id: UUID = 0,
+    val courseId: UUID = 0,
     val courseNodeName: String? = null,
     val color: String? = null,
     val room: String? = null,

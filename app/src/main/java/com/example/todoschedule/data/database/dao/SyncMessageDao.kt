@@ -7,8 +7,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.todoschedule.data.database.entity.SyncMessageEntity
-import com.example.todoschedule.data.sync.SyncConstants
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 /**
  * 同步消息数据访问对象
@@ -57,7 +57,7 @@ interface SyncMessageDao {
      * @return 同步消息
      */
     @Query("SELECT * FROM sync_message WHERE sync_id = :syncId")
-    suspend fun getBySyncId(syncId: Int): SyncMessageEntity?
+    suspend fun getBySyncId(syncId: UUID): SyncMessageEntity?
 
     /**
      * 获取所有同步消息
@@ -79,7 +79,7 @@ interface SyncMessageDao {
      * @return 待同步消息列表
      */
     @Query("SELECT * FROM sync_message WHERE sync_status = 'PENDING' AND user_id = :userId ORDER BY created_at ASC")
-    suspend fun getPendingMessagesByUserId(userId: Int): List<SyncMessageEntity>
+    suspend fun getPendingMessagesByUserId(userId: UUID): List<SyncMessageEntity>
 
     /**
      * 获取特定类型的待同步消息

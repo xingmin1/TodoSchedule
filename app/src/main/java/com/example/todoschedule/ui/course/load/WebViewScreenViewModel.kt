@@ -24,7 +24,7 @@ import javax.inject.Inject
 sealed interface SaveCourseState {
     object Idle : SaveCourseState
     object Saving : SaveCourseState
-    data class Success(val tableId: Int) : SaveCourseState
+    data class Success(val tableId: UUID) : SaveCourseState
     data class Error(val message: String) : SaveCourseState
 }
 
@@ -42,7 +42,7 @@ class WebViewScreenViewModel @Inject constructor(
     /**
      * 保存课程
      */
-    fun saveCourse(tableId: Int, courses: List<Course>) {
+    fun saveCourse(tableId: UUID, courses: List<Course>) {
         // 检查是否已在保存中，防止重复点击
         if (_saveState.value == SaveCourseState.Saving) {
             return

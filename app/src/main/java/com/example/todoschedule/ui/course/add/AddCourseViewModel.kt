@@ -155,7 +155,7 @@ class AddCourseViewModel @Inject constructor(
     /**
      * 保存课程
      */
-    fun saveCourse(tableId: Int) {
+    fun saveCourse(tableId: UUID) {
         if (!validateForm()) {
             _saveState.value = SaveState.Error("请填写必要的课程信息")
             return
@@ -246,6 +246,6 @@ fun CourseNodeUiState.toDomain(): CourseNode {
 sealed class SaveState {
     object Idle : SaveState()
     object Loading : SaveState()
-    data class Success(val courseId: Int) : SaveState()
+    data class Success(val courseId: UUID) : SaveState()
     data class Error(val message: String) : SaveState()
 }

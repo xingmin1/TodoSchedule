@@ -3,7 +3,7 @@ package com.example.todoschedule.ui.table
 import kotlinx.datetime.LocalDate
 
 data class CreateEditTableUiState(
-    val tableId: Int? = null, // 用于区分是创建还是编辑
+    val tableId: UUID? = null, // 用于区分是创建还是编辑
     val tableName: String = "",
     val startDate: LocalDate? = null,
     val totalWeeks: String = "20", // 默认总周数

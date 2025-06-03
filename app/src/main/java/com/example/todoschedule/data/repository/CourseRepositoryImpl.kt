@@ -70,11 +70,11 @@ constructor(
         }
     }
 
-    override suspend fun getCourseById(id: Int): Course? {
+    override suspend fun getCourseById(Id: UUID): Course? {
         return courseDao.getCourseWithNodesById(id)?.toCourse()
     }
 
-    override suspend fun addCourse(course: Course, tableId: Int): Long {
+    override suspend fun addCourse(course: Course, tableId: UUID): Long {
         try {
             val courseEntity = course.toCourseEntity(tableId)
             val courseId = courseDao.insertCourse(courseEntity)
@@ -100,7 +100,7 @@ constructor(
         }
     }
 
-    override suspend fun addCourses(course: List<Course>, tableId: Int): List<Long> {
+    override suspend fun addCourses(course: List<Course>, tableId: UUID): List<Long> {
         Log.d(TAG, "开始导入 ${course.size} 个课程到表ID=${tableId}")
 
         try {
@@ -177,7 +177,7 @@ constructor(
         }
     }
 
-    override suspend fun updateCourse(course: Course, tableId: Int) {
+    override suspend fun updateCourse(course: Course, tableId: UUID) {
         try {
             val courseEntity = course.toCourseEntity(tableId)
             courseDao.updateCourse(courseEntity)
@@ -204,7 +204,7 @@ constructor(
         }
     }
 
-    override suspend fun deleteCourse(courseId: Int) {
+    override suspend fun deleteCourse(courseId: UUID) {
         try {
             // 获取实体信息，以便删除后也能创建同步消息
             val courseEntity = courseDao.getCourseWithNodesById(courseId)?.course
@@ -232,13 +232,13 @@ constructor(
         }
     }
 
-    override fun getCoursesByTableId(tableId: Int): Flow<List<Course>> {
+    override fun getCoursesByTableId(tableId: UUID): Flow<List<Course>> {
         return courseDao.getCoursesByTableId(tableId).map { courseWithNodesList ->
             courseWithNodesList.map { it.toCourse() }
         }
     }
 
-    override fun getCoursesByWeek(tableId: Int, week: Int): Flow<List<Course>> {
+    override fun getCoursesByWeek(tableId: UUID, week: Int): Flow<List<Course>> {
         return courseDao.getCoursesByTableId(tableId).map { courseWithNodesList ->
             courseWithNodesList
                 .map { courseWithNodes ->
@@ -259,7 +259,7 @@ constructor(
     }
 
     override fun getCourseNodesByDayAndWeek(
-        tableId: Int,
+        tableId: UUID,
         day: Int,
         week: Int
     ): Flow<List<CourseNode>> {
@@ -278,7 +278,7 @@ constructor(
         }
     }
 
-    override suspend fun deleteCourseNode(nodeId: Int) {
+    override suspend fun deleteCourseNode(nodeId: UUID) {
         try {
             // 由于节点的删除关联到课程，所以需要查询节点所属的课程
             // 同时有必要随后更新课程的同步信息

@@ -67,8 +67,8 @@ import kotlinx.coroutines.flow.collectLatest
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditCourseScreen(
-    tableId: Int,
-    courseId: Int,
+    tableId: UUID,
+    courseId: UUID,
     onNavigateBack: () -> Unit,
     onCourseUpdated: () -> Unit,
     viewModel: EditCourseViewModel = hiltViewModel()

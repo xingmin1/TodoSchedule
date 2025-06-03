@@ -109,7 +109,7 @@ fun ScheduleScreen(
     fun handleTimeSlotClick(
         timeSlot: TimeSlot,
         navigationState: NavigationState,
-        tableId: Int?
+        tableId: UUID?
     ) {
         when (timeSlot.scheduleType) {
             ScheduleType.COURSE -> {

@@ -8,7 +8,7 @@ import kotlinx.datetime.Instant
 /** 用户实体类 */
 @Entity(tableName = "user")
 data class UserEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey(autoGenerate = true) val Id: UUID = 0,
     val username: String,
     val phoneNumber: String? = null,
     val email: String? = null,

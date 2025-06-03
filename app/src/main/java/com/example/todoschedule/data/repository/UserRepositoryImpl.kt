@@ -29,7 +29,7 @@ class UserRepositoryImpl @Inject constructor(
         return userDao.getAllUsers().map { userEntities -> userEntities.map { it.toUser() } }
     }
 
-    override suspend fun getUserById(userId: Int): User? {
+    override suspend fun getUserById(userId: UUID): User? {
         return userDao.getUserById(userId)?.toUser()
     }
 

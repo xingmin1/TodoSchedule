@@ -102,7 +102,7 @@ class TableManagementViewModel @Inject constructor(
     /**
      * 删除课表
      */
-    fun deleteTable(tableId: Int, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun deleteTable(tableId: UUID, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
                 tableRepository.deleteTable(tableId)

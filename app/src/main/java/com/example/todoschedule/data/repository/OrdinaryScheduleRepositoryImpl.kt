@@ -294,7 +294,7 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getScheduleById(id: Int): Flow<OrdinarySchedule?> {
+    override fun getScheduleById(Id: UUID): Flow<OrdinarySchedule?> {
         // 使用新的 DAO 方法
         return ordinaryScheduleDao.getScheduleWithTimeSlotsById(id).map { scheduleWithSlots ->
             // 映射到 Domain Model
@@ -302,7 +302,7 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getAllSchedules(userId: Int): Flow<List<OrdinarySchedule>> {
+    override fun getAllSchedules(userId: UUID): Flow<List<OrdinarySchedule>> {
         // 使用新的 DAO 方法
         Log.d(TAG, "获取用户 $userId 的所有日程")
         return ordinaryScheduleDao.getAllSchedulesWithTimeSlots(userId).map { list ->
@@ -333,7 +333,7 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
     }
 
     @Transaction
-    override suspend fun deleteAllSchedules(userId: Int) {
+    override suspend fun deleteAllSchedules(userId: UUID) {
         try {
             // 1. 获取所有普通日程及其时间槽
             val allSchedulesWithSlots = ordinaryScheduleDao.getAllSchedulesWithTimeSlots(userId)

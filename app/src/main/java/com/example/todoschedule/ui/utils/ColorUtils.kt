@@ -8,7 +8,7 @@ import kotlin.math.pow
 object ColorUtils {
     fun calculateTimeSlotColors(
         displayColor: ColorSchemeEnum?,
-        scheduleId: Int,
+        scheduleId: UUID,
         isDarkTheme: Boolean,
         colorScheme: ColorScheme
     ): Pair<Color, Color> {

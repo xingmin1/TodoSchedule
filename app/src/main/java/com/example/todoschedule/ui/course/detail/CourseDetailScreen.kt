@@ -54,8 +54,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseDetailScreen(
-    tableId: Int,
-    courseId: Int,
+    tableId: UUID,
+    courseId: UUID,
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (Int, Int) -> Unit,
     viewModel: CourseDetailViewModel = hiltViewModel()

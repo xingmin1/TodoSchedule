@@ -11,7 +11,7 @@ import javax.inject.Inject
 class GetDefaultTableTimeConfigUseCase @Inject constructor(
     private val repository: TableTimeConfigRepository
 ) {
-    operator fun invoke(tableId: Int): Flow<TableTimeConfig?> {
+    operator fun invoke(tableId: UUID): Flow<TableTimeConfig?> {
         // 可以在这里添加验证或其他业务逻辑
         if (tableId <= 0) {
             // 处理无效的 tableId，例如返回 emptyFlow() 或抛出异常

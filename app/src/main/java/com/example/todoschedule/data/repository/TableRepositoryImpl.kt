@@ -35,22 +35,22 @@ class TableRepositoryImpl @Inject constructor(
     }
 
     /** 根据ID获取课表 */
-    override fun getTableById(tableId: Int): Flow<Table?> {
+    override fun getTableById(tableId: UUID): Flow<Table?> {
         return tableDao.getTableById(tableId).map { it?.toDomain() }
     }
 
     /** 根据用户ID获取课表 */
-    override fun getTableByUserId(userId: Int): Flow<List<Table>> {
+    override fun getTableByUserId(userId: UUID): Flow<List<Table>> {
         return tableDao.getTableByUserId(userId).map { flowList -> flowList.map { it.toDomain() } }
     }
 
     /** 根据ID获取课表 */
-    override suspend fun fetchTableById(tableId: Int): Table? {
+    override suspend fun fetchTableById(tableId: UUID): Table? {
         return tableDao.fetchTableById(tableId)?.toDomain()
     }
 
     /** 根据用户ID获取课表 */
-    override suspend fun fetchTablesByUserId(userId: Int): List<Table> {
+    override suspend fun fetchTablesByUserId(userId: UUID): List<Table> {
         return tableDao.fetchTablesByUserId(userId).map { it.toDomain() }
     }
 
@@ -124,7 +124,7 @@ class TableRepositoryImpl @Inject constructor(
     }
 
     /** 删除课表 */
-    override suspend fun deleteTable(tableId: Int) {
+    override suspend fun deleteTable(tableId: UUID) {
         try {
             // 获取要删除的课表实体，用于创建同步消息
             val tableEntity = tableDao.fetchTableById(tableId) ?: return

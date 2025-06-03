@@ -6,8 +6,8 @@ import kotlinx.datetime.plus
 
 /** 课表领域模型 */
 data class Table(
-    val id: Int = 0,
-    val userId: Int,
+    val Id: UUID = 0,
+    val userId: UUID,
     val tableName: String,
     val background: String = "",
     val startDate: LocalDate,

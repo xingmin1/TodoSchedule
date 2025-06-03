@@ -80,7 +80,7 @@ class EditCourseViewModel @Inject constructor(
     /**
      * 加载课程数据
      */
-    fun loadCourse(id: Int) {
+    fun loadCourse(Id: UUID) {
         courseId = id
         _uiState.value = EditCourseUiState.Loading
 
@@ -125,7 +125,7 @@ class EditCourseViewModel @Inject constructor(
     /**
      * 更新课程
      */
-    fun updateCourse(tableId: Int) {
+    fun updateCourse(tableId: UUID) {
         if (!validateForm()) {
             viewModelScope.launch {
                 _events.send(EditCourseEvent.ShowError("请填写必要的课程信息"))

@@ -100,7 +100,7 @@ class SyncManager @Inject constructor(
         crdtKey: String,
         entityType: SyncConstants.EntityType,
         operationType: String,
-        userId: Int,
+        userId: UUID,
         payload: String,
         updatedClock: HybridLogicalClock,
     ): SyncMessageEntity {
@@ -144,7 +144,7 @@ class SyncManager @Inject constructor(
         crdtKey: String,
         entityType: SyncConstants.EntityType,
         operationType: String,
-        userId: Int,
+        userId: UUID,
         entity: T,
         oldEntity: T? = null,
     ) {

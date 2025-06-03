@@ -1,7 +1,7 @@
 package bean
 
 data class CourseDetailBean(
-    var id: Int,
+    var Id: UUID,
     var day: Int,
     var room: String?,
     var teacher: String?,
@@ -10,6 +10,6 @@ data class CourseDetailBean(
     var startWeek: Int,
     var endWeek: Int,
     var type: Int,
-    var tableId: Int,
+    var tableId: UUID,
     var credit: Float = 0f
 )

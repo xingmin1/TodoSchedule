@@ -384,7 +384,7 @@ constructor(
      * 辅助函数：为指定课表的所有课程节点生成 TimeSlot 列表 (覆盖所有周)。
      */
     private fun generateAllTimeSlotsForCourseNodes(
-        userId: Int,
+        userId: UUID,
         courses: List<Course>,
         tableTimeConfig: TableTimeConfig,
         table: Table

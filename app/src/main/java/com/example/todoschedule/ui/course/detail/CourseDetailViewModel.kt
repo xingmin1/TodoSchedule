@@ -24,12 +24,12 @@ class CourseDetailViewModel @Inject constructor(
     val uiState: StateFlow<CourseDetailUiState> = _uiState
 
     // 当前课程ID
-    private var currentCourseId: Int = 0
+    private var currentCourseId: UUID = 0
 
     /**
      * 加载课程详情
      */
-    fun loadCourse(courseId: Int) {
+    fun loadCourse(courseId: UUID) {
         currentCourseId = courseId
         _uiState.value = CourseDetailUiState.Loading
 

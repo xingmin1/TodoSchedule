@@ -80,7 +80,7 @@ import main.java.parser.ZZUParser
 fun WebViewScreen(
     navigationState: NavigationState,
     url: String,
-    tableId: Int,
+    tableId: UUID,
     viewModel: WebViewScreenViewModel = hiltViewModel(),
 ) {
     var currentUrl by remember { mutableStateOf(url) }
@@ -536,7 +536,7 @@ fun rememberWebView(
 
 @SuppressLint("StateFlowValueCalledInComposition")
 private fun saveParserResult(
-    tableId: Int,
+    tableId: UUID,
     parserResult: ParserResult,
     viewModel: WebViewScreenViewModel,
 ) {

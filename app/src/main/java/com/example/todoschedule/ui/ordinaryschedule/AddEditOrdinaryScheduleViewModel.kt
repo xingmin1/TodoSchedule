@@ -35,7 +35,7 @@ import javax.inject.Inject
 
 // 状态数据类
 data class AddEditOrdinaryScheduleUiState(
-    val scheduleId: Int? = null, // Track the ID for editing
+    val scheduleId: UUID? = null, // Track the ID for editing
     val title: String = "",
     val description: String? = null,
     val location: String? = null,
@@ -85,7 +85,7 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
         }
     }
 
-    private fun loadScheduleForEditing(scheduleId: Int) {
+    private fun loadScheduleForEditing(scheduleId: UUID) {
         _uiState.update {
             it.copy(
                 isLoading = true,

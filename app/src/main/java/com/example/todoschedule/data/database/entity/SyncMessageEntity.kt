@@ -35,7 +35,7 @@ import kotlinx.datetime.Clock
 data class SyncMessageEntity(
     // 自增主键ID，由数据库自动生成
     @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(name = "sync_id") val syncId: Int = 0,
+    @ColumnInfo(name = "sync_id") val syncId: UUID = 0,
 
     // 实体在分布式系统中的唯一标识符，这是CRDT中的核心标识
     @ColumnInfo(name = "crdt_key") val crdtKey: String,
@@ -65,7 +65,7 @@ data class SyncMessageEntity(
     @ColumnInfo(name = "payload") val payload: String,
 
     // 用户ID，标识数据所属的用户
-    @ColumnInfo(name = "user_id") val userId: Int,
+    @ColumnInfo(name = "user_id") val userId: UUID,
 
     // 同步状态（待同步、同步中、已同步、同步失败）
     @ColumnInfo(name = "sync_status") val syncStatus: String = SyncConstants.SyncStatus.PENDING.name,

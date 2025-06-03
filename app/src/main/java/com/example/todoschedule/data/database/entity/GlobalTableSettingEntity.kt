@@ -21,7 +21,7 @@ import java.util.UUID
 )
 data class GlobalTableSettingEntity(
     @PrimaryKey val id: UUID = UUID.randomUUID(), // 本地ID，使用UUID的哈希值作为默认值
-    val userId: Int, // 用户ID
+    val userId: UUID, // 用户ID
     val defaultTableIds: String, // 默认显示课表ID，使用TypeConverter转换
     val showWeekend: Boolean = true, // 显示周末
     val courseNotificationStyle: Int = 0, // 课程通知风格
