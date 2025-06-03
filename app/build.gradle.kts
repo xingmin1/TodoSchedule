@@ -19,6 +19,19 @@ android {
     namespace = "com.example.todoschedule"
     compileSdk = 35
 
+    packaging {
+        resources {
+            // 如果你只想保留一份，首推 pickFirst
+            pickFirsts += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+
+            // 可选：一次性把 BC/JSpecify 其它多余说明文件也处理掉
+            excludes += listOf(
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*"
+            )
+        }
+    }
+
     defaultConfig {
         applicationId = "com.example.todoschedule"
         minSdk = 26
@@ -96,10 +109,10 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
 
     // Moshi JSON Parsing
-    implementation("com.squareup.moshi:moshi:1.15.0")
-    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
+    implementation(libs.moshi)
+    implementation(libs.moshi.kotlin)
     implementation(libs.identity.jvm)
-    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
+    ksp(libs.moshi.kotlin.codegen)
     
     // Compose UI
     implementation(platform(libs.androidx.compose.bom))
@@ -148,12 +161,11 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     // HLC - Hybrid Logical Clock
-    implementation("com.github.charlietap:hlc:1.0.1")
+    implementation("com.github.charlietap:hlc:1.1.0")
 
     // Synk CRDT 数据同步库
     implementation("com.github.charlietap.synk:delightful-metastore:0.38")
     implementation("com.github.charlietap.synk:synk:0.38")
-    ksp("com.github.charlietap.synk:adapter-codegen:0.38")
 
     // SQLDelight - 用于数据库访问
     implementation("app.cash.sqldelight:android-driver:2.0.1")
@@ -161,9 +173,9 @@ dependencies {
     implementation("com.squareup.sqldelight:android-driver:1.5.4")
 
     // WorkManager - 用于后台任务
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("androidx.hilt:hilt-work:1.1.0")
-    ksp("androidx.hilt:hilt-compiler:1.1.0")
+    implementation("androidx.work:work-runtime-ktx:2.10.1")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    ksp("androidx.hilt:hilt-compiler:1.2.0")
 
     // 测试依赖
     testImplementation(libs.junit)
