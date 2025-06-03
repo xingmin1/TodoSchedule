@@ -31,6 +31,6 @@ data class OrdinaryScheduleEntity(
     @ColumnInfo(name = "is_all_day") val isAllDay: Boolean = false,
     val status: ScheduleStatus? = ScheduleStatus.TODO,
 ) : Syncable {
-    override val syncId: String
+    override val id: String
         get() = id.toString()
 } 

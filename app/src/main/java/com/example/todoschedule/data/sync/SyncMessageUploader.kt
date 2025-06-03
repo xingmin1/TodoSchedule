@@ -1,6 +1,7 @@
 package com.example.todoschedule.data.sync
 
 import android.util.Log
+import com.example.todoschedule.core.extensions.toStringList
 import com.example.todoschedule.data.database.dao.SyncMessageDao
 import com.example.todoschedule.data.database.entity.SyncMessageEntity
 import com.example.todoschedule.data.remote.api.SyncApi
@@ -57,7 +58,7 @@ class SyncMessageUploader @Inject constructor(
                 messages.forEachIndexed { index, entity ->
                     Log.d(
                         TAG,
-                        "消息[$index] - ID: ${entity.syncId}, 类型: ${entity.entityType}, 操作: ${entity.operationType}, 时间戳: ${entity.timestampWallClock}"
+                        "消息[$index] - ID: ${entity.id}, 类型: ${entity.entityType}, 操作: ${entity.operationType}, 时间戳: ${entity.timestampWallClock}"
                     )
                 }
 
@@ -128,9 +129,9 @@ class SyncMessageUploader @Inject constructor(
                             "消息上传成功: ${messages.size}条消息已接收，实体类型: $entityType"
                         )
                         // 更新消息状态为已同步
-                        val messageIds = messages.map { it.syncId }
+                        val messageIds = messages.map { it.id }
                         Log.d(TAG, "标记以下消息ID为已处理: $messageIds")
-                        syncMessageDao.markAsProcessed(messageIds)
+                        syncMessageDao.markAsProcessed(messageIds.toStringList())
                         Log.d(
                             TAG,
                             "=== 同步上传完成 [状态=成功] [entityType=$entityType] [接收=${messages.size}] ==="
@@ -143,7 +144,7 @@ class SyncMessageUploader @Inject constructor(
 
                         // 更新消息状态为同步失败
                         val failedMessages = messages.map {
-                            Log.d(TAG, "标记消息ID ${it.syncId} 为失败状态, 错误: $errorMsg")
+                            Log.d(TAG, "标记消息ID ${it.id} 为失败状态, 错误: $errorMsg")
                             it.withStatus(SyncConstants.SyncStatus.FAILED, errorMsg)
                         }
                         syncMessageDao.updateAll(failedMessages)
@@ -171,7 +172,7 @@ class SyncMessageUploader @Inject constructor(
 
                     // 更新消息状态为同步失败
                     val failedMessages = messages.map {
-                        Log.d(TAG, "标记消息ID ${it.syncId} 为失败状态, HTTP错误: $errorCode")
+                        Log.d(TAG, "标记消息ID ${it.id} 为失败状态, HTTP错误: $errorCode")
                         it.withStatus(
                             SyncConstants.SyncStatus.FAILED,
                             "HTTP $errorCode: $errorBody"
@@ -196,7 +197,7 @@ class SyncMessageUploader @Inject constructor(
             // 如果所有重试都失败了，更新消息状态为同步失败
             Log.e(TAG, "所有重试都失败了: ${e.message}, 实体类型: $entityType", e)
             val failedMessages = messages.map {
-                Log.d(TAG, "标记消息ID ${it.syncId} 为最终失败状态，所有重试均失败")
+                Log.d(TAG, "标记消息ID ${it.id} 为最终失败状态，所有重试均失败")
                 it.withStatus(SyncConstants.SyncStatus.FAILED, "所有重试失败: ${e.message}")
             }
             syncMessageDao.updateAll(failedMessages)

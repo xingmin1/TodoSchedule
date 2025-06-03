@@ -1,11 +1,13 @@
 package com.example.todoschedule.data.remote.model
 
+import java.util.UUID
+
 /**
  * 课程节点数据传输对象
  */
 data class CourseNodeDto(
-    val Id: UUID = 0,
-    val courseId: UUID = 0,
+    val id: UUID,
+    val courseId: UUID,
     val courseNodeName: String? = null,
     val color: String? = null,
     val room: String? = null,

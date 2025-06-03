@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mykotlinapplication.utils.injectjs.injectHeadRepairScript
+import com.example.todoschedule.core.extensions.valid
 import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
 import com.example.todoschedule.ui.navigation.NavigationState
@@ -542,7 +543,9 @@ private fun saveParserResult(
     viewModel: WebViewScreenViewModel,
 ) {
     val courseList = parserResult.baseList.map { course ->
+        assert(course.id.valid())
         Course(
+            id = course.id,
             courseName = course.courseName,
             color = course.color,
             credit = course.credit,

@@ -40,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todoschedule.ui.navigation.NavigationState
 import net.sourceforge.pinyin4j.PinyinHelper
 import java.net.URLEncoder
+import java.util.UUID
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

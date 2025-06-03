@@ -1,39 +1,38 @@
 package com.example.todoschedule.data.repository
 
 import android.util.Log
+import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.AppDatabase
 import com.example.todoschedule.data.database.dao.CourseDao
-import kotlinx.coroutines.delay
 import com.example.todoschedule.data.database.dao.CourseNodeDao
 import com.example.todoschedule.data.database.dao.OrdinaryScheduleDao
 import com.example.todoschedule.data.database.dao.SyncMessageDao
 import com.example.todoschedule.data.database.dao.TableDao
-import com.example.todoschedule.data.database.entity.SyncMessageEntity
-import com.example.todoschedule.data.database.entity.toEntity
 import com.example.todoschedule.data.database.entity.CourseEntity
 import com.example.todoschedule.data.database.entity.CourseNodeEntity
 import com.example.todoschedule.data.database.entity.OrdinaryScheduleEntity
+import com.example.todoschedule.data.database.entity.SyncMessageEntity
 import com.example.todoschedule.data.database.entity.TableEntity
 import com.example.todoschedule.data.database.entity.TimeSlotEntity
+import com.example.todoschedule.data.database.entity.toEntity
 import com.example.todoschedule.data.remote.api.SyncApi
 import com.example.todoschedule.data.sync.DeviceIdManager
 import com.example.todoschedule.data.sync.SyncConstants
 import com.example.todoschedule.data.sync.SyncManager
 import com.example.todoschedule.data.sync.dto.DeviceRegistrationDto
-import com.example.todoschedule.data.sync.dto.SyncMessagesDto
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import retrofit2.HttpException
-import java.io.IOException
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlinx.coroutines.Dispatchers
-import javax.inject.Provider
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlin.math.log
+import retrofit2.HttpException
+import java.io.IOException
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Provider
+import javax.inject.Singleton
 
 /**
  * 同步仓库实现类
@@ -160,7 +159,7 @@ class SyncRepositoryImpl @Inject constructor(
             messages.take(3).forEachIndexed { index, entity ->
                 Log.d(
                     TAG,
-                    "原始消息[$index] - ID: ${entity.syncId}, 类型: ${entity.entityType}, 操作: ${entity.operationType}"
+                    "原始消息[$index] - ID: ${entity.id}, 类型: ${entity.entityType}, 操作: ${entity.operationType}"
                 )
                 Log.d(
                     TAG,
@@ -185,7 +184,7 @@ class SyncRepositoryImpl @Inject constructor(
             messageDtos.take(3).forEachIndexed { index, dto ->
                 Log.d(
                     TAG,
-                    "DTO[$index] - 类型: ${dto.entityType}, 操作: ${dto.operationType}, CRDT键: ${dto.crdtKey}"
+                    "DTO[$index] - 类型: ${dto.entityType}, 操作: ${dto.operationType}, CRDT键: ${dto.id}"
                 )
                 Log.d(
                     TAG,
@@ -206,7 +205,7 @@ class SyncRepositoryImpl @Inject constructor(
 
             Log.d(
                 TAG,
-                "准备上传${messages.size}条同步消息，实体类型: $entityType，设备ID: $deviceId，第一条消息ID: ${messages.firstOrNull()?.syncId}"
+                "准备上传${messages.size}条同步消息，实体类型: $entityType，设备ID: $deviceId，第一条消息ID: ${messages.firstOrNull()?.id}"
             )
             if (serializedMessages.isNotEmpty()) {
                 val firstMessage = serializedMessages.first()
@@ -281,9 +280,9 @@ class SyncRepositoryImpl @Inject constructor(
                 if (apiResponse.code == 200) {
                     Log.d(TAG, "消息上传成功: ${messages.size}条消息已接收，实体类型: $entityType")
                     // 更新消息状态为已同步
-                    val messageIds = messages.map { it.syncId }
+                    val messageIds = messages.map { it.id }
                     Log.d(TAG, "正在标记以下消息为已处理: $messageIds")
-                    syncMessageDao.markAsProcessed(messageIds)
+                    syncMessageDao.markAsProcessed(messageIds.map { it.toString() })
                     Log.d(TAG, "======== 上传同步消息完成: 成功 ========")
                     return messageIds.map { it.toString() } // 返回字符串格式的ID以保持兼容性
                 } else {
@@ -291,7 +290,7 @@ class SyncRepositoryImpl @Inject constructor(
                     Log.e(TAG, "消息上传失败: $errorMsg, 实体类型: $entityType")
                     // 更新消息状态为同步失败
                     val failedMessages = messages.map {
-                        Log.d(TAG, "标记消息${it.syncId}为失败状态，错误: $errorMsg")
+                        Log.d(TAG, "标记消息${it.id}为失败状态，错误: $errorMsg")
                         it.withStatus(SyncConstants.SyncStatus.FAILED, errorMsg)
                     }
                     syncMessageDao.updateAll(failedMessages)
@@ -311,7 +310,7 @@ class SyncRepositoryImpl @Inject constructor(
                 Log.e(TAG, "HTTP错误详情 - 请求头: ${response.raw().request.headers}")
 
                 val failedMessages = messages.map {
-                    Log.d(TAG, "标记消息${it.syncId}为失败状态，HTTP错误: $errorCode")
+                    Log.d(TAG, "标记消息${it.id}为失败状态，HTTP错误: $errorCode")
                     it.withStatus(SyncConstants.SyncStatus.FAILED, "HTTP $errorCode: $errorBody")
                 }
                 syncMessageDao.updateAll(failedMessages)
@@ -325,7 +324,7 @@ class SyncRepositoryImpl @Inject constructor(
             )
             e.printStackTrace()
             val failedMessages = messages.map {
-                Log.d(TAG, "标记消息${it.syncId}为失败状态，网络错误: ${e.message}")
+                Log.d(TAG, "标记消息${it.id}为失败状态，网络错误: ${e.message}")
                 it.withStatus(SyncConstants.SyncStatus.FAILED, "网络错误: ${e.message}")
             }
             syncMessageDao.updateAll(failedMessages)
@@ -334,7 +333,7 @@ class SyncRepositoryImpl @Inject constructor(
             Log.e(TAG, "HTTP错误: ${e.code()}, 信息: ${e.message()}, 实体类型: $entityType", e)
             e.printStackTrace()
             val failedMessages = messages.map {
-                Log.d(TAG, "标记消息${it.syncId}为失败状态，HTTP错误: ${e.code()}")
+                Log.d(TAG, "标记消息${it.id}为失败状态，HTTP错误: ${e.code()}")
                 it.withStatus(SyncConstants.SyncStatus.FAILED, "HTTP ${e.code()}: ${e.message()}")
             }
             syncMessageDao.updateAll(failedMessages)
@@ -347,7 +346,7 @@ class SyncRepositoryImpl @Inject constructor(
             )
             e.printStackTrace()
             val failedMessages = messages.map {
-                Log.d(TAG, "标记消息${it.syncId}为失败状态，未知错误: ${e::class.java.simpleName}")
+                Log.d(TAG, "标记消息${it.id}为失败状态，未知错误: ${e::class.java.simpleName}")
                 it.withStatus(
                     SyncConstants.SyncStatus.FAILED,
                     "${e::class.java.simpleName}: ${e.message}"
@@ -487,16 +486,16 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun markMessagesAsProcessed(ids: List<Int>) {
-        syncMessageDao.markAsProcessed(ids)
+    override suspend fun markMessagesAsProcessed(ids: List<UUID>) {
+        syncMessageDao.markAsProcessed(ids.map { it.toString() })
     }
 
     /**
      * 将同步消息标记为已同步
      * @param ids 消息ID列表
      */
-    override suspend fun markMessagesAsSynced(ids: List<Int>) {
-        syncMessageDao.markAsProcessed(ids)
+    override suspend fun markMessagesAsSynced(ids: List<UUID>) {
+        syncMessageDao.markAsProcessed(ids.map { it.toString() })
     }
 
     /**
@@ -511,7 +510,7 @@ class SyncRepositoryImpl @Inject constructor(
             Log.d(TAG, "正在注册设备: deviceId=$deviceId, userId=$userId")
 
             // 确保用户ID有效
-            if (userId <= 0) {
+            if (userId != AppConstants.EMPTY_UUID) {
                 Log.e(TAG, "无效的用户ID: $userId")
                 return false
             }
@@ -526,7 +525,7 @@ class SyncRepositoryImpl @Inject constructor(
 
             val response = syncApi.registerDevice(
                 deviceId = deviceId,
-                deviceRegistration = DeviceRegistrationDto(deviceId, userId)
+                deviceRegistration = DeviceRegistrationDto(deviceId, userId.toString())
             )
 
             val success = response.isSuccessful && response.body() != null
@@ -651,7 +650,7 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUserIdFromSession(): Long? {
+    override suspend fun getUserIdFromSession(): UUID? {
         return try {
             sessionRepository.currentUserIdFlow.first()
         } catch (e: Exception) {
@@ -680,15 +679,15 @@ class SyncRepositoryImpl @Inject constructor(
             val userIdFromFlow = getUserIdFromSession()
             Log.d(TAG, "从Session获取到的原始用户ID: $userIdFromFlow")
 
-            val userId = userIdFromFlow?.toInt() ?: run {
+            val userId = userIdFromFlow ?: run {
                 Log.e(TAG, "获取用户ID失败，无法执行同步")
                 return
             }
 
-            Log.d(TAG, "转换后的用户ID: $userId, 是否有效: ${userId > 0}")
+            Log.d(TAG, "转换后的用户ID: $userId, 是否有效: ${userId != AppConstants.EMPTY_UUID}")
 
             // 确保用户ID有效
-            if (userId <= 0) {
+            if (userId != AppConstants.EMPTY_UUID) {
                 Log.e(TAG, "用户ID无效，跳过设备注册")
                 return
             }
@@ -798,12 +797,12 @@ class SyncRepositoryImpl @Inject constructor(
                         // 调用SyncManager处理每条下载的消息
                         Log.d(
                             TAG,
-                            "处理消息: 类型=${message.entityType}, 操作=${message.operationType}, CRDT键=${message.crdtKey}"
+                            "处理消息: 类型=${message.entityType}, 操作=${message.operationType}, CRDT键=${message.id}"
                         )
                         syncManager.processReceivedMessage(message)
                         processedMessageCount++
                     } catch (e: Exception) {
-                        Log.e(TAG, "处理消息失败: CRDT键=${message.crdtKey}, 错误: ${e.message}", e)
+                        Log.e(TAG, "处理消息失败: CRDT键=${message.id}, 错误: ${e.message}", e)
                     }
                 }
 
@@ -833,21 +832,21 @@ class SyncRepositoryImpl @Inject constructor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    override suspend fun <T> getEntityByCrdtKey(crdtKey: String): T? {
+    suspend fun <T> getEntityByCrdtKey(crdtKey: String): T? {
         return withContext(Dispatchers.IO) {
             try {
                 // 尝试在所有DAO中查找实体
-                val course = database.courseDao().getCourseByCrdtKey(crdtKey)
+                val course = database.courseDao().getCourseById(crdtKey)
                 if (course != null) return@withContext course as T
 
-                val courseNode = database.courseNodeDao().getCourseNodeByCrdtKey(crdtKey)
+                val courseNode = database.courseNodeDao().getCourseNodeById(crdtKey)
                 if (courseNode != null) return@withContext courseNode as T
 
                 val ordinarySchedule =
-                    database.ordinaryScheduleDao().getOrdinaryScheduleByCrdtKey(crdtKey)
+                    database.ordinaryScheduleDao().getOrdinaryScheduleById(crdtKey)
                 if (ordinarySchedule != null) return@withContext ordinarySchedule as T
 
-                val table = database.tableDao().getTableByCrdtKey(crdtKey)
+                val table = database.tableDao().getTableById(crdtKey)
                 if (table != null) return@withContext table as T
 
                 // 没有找到匹配的实体
@@ -887,7 +886,8 @@ class SyncRepositoryImpl @Inject constructor(
                     }
 
                     is TableEntity -> {
-                        val tableId = database.tableDao().insertTable(entity).toInt()
+                        val tableId = entity.id
+                            database.tableDao().insertTable(entity)
                         Log.d(TAG, "保存课表成功，课表ID：$tableId")
 
                         // 如果课表名是"默认课表"，自动设置为默认课表

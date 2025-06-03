@@ -53,11 +53,11 @@ interface SyncMessageDao {
 
     /**
      * 根据消息ID获取同步消息
-     * @param syncId 消息ID
+     * @param id 消息ID
      * @return 同步消息
      */
-    @Query("SELECT * FROM sync_message WHERE sync_id = :syncId")
-    suspend fun getBySyncId(syncId: UUID): SyncMessageEntity?
+    @Query("SELECT * FROM sync_message WHERE id = :id")
+    suspend fun getBySyncId(id: UUID): SyncMessageEntity?
 
     /**
      * 获取所有同步消息
@@ -106,10 +106,10 @@ interface SyncMessageDao {
 
     /**
      * 将特定消息列表标记为已同步
-     * @param syncIds 消息ID列表
+     * @param ids 消息ID列表
      */
-    @Query("UPDATE sync_message SET sync_status = 'SYNCED' WHERE sync_id IN (:syncIds)")
-    suspend fun markAsProcessed(syncIds: List<Int>)
+    @Query("UPDATE sync_message SET sync_status = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsProcessed(ids: List<String>)
 
     /**
      * 根据CRDT键和类型获取最新的消息

@@ -27,7 +27,9 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
     }
 
     override suspend fun addGlobalSetting(globalSetting: GlobalTableSetting): UUID {
-        return globalSettingDao.insertGlobalSetting(globalSetting.toGlobalTableSettingEntity())
+        assert(globalSetting.id != AppConstants.EMPTY_UUID)
+        globalSettingDao.insertGlobalSetting(globalSetting.toGlobalTableSettingEntity())
+        return globalSetting.id
     }
 
     override suspend fun updateGlobalSetting(globalSetting: GlobalTableSetting) {
@@ -41,6 +43,7 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
             // 创建默认全局设置
             val defaultGlobalSetting =
                 GlobalTableSetting(
+                    id = UUID.randomUUID(), // 生成新的ID
                     userId = userId,
                     defaultTableIds = emptyList(), // 初始为空，后续由创建默认课表后更新
                     showWeekend = true,
@@ -62,7 +65,7 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
         }
     }
 
-    override suspend fun updateDefaultTableIds(userId: UUID, tableIds: List<Int>) {
+    override suspend fun updateDefaultTableIds(userId: UUID, tableIds: List<UUID>) {
         try {
             // 获取用户的全局设置实体
             val settingEntity = globalSettingDao.getGlobalSettingByUserId(userId).first()
@@ -80,6 +83,7 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
                     "未找到用户 $userId 的全局设置，将创建新的默认设置并设置默认课表"
                 )
                 val newDefaultSetting = GlobalTableSetting(
+                    id = UUID.randomUUID(), // 生成新的ID
                     userId = userId,
                     defaultTableIds = tableIds, // 使用传入的 tableIds
                     // 使用与 initDefaultSettingIfNeeded 中相同的默认值
@@ -98,11 +102,11 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
         }
     }
 
-    override fun getDefaultTableIds(userId: UUID): Flow<List<Int>> {
+    override fun getDefaultTableIds(userId: UUID): Flow<List<UUID>> {
         return globalSettingDao.getGlobalSettingByUserId(userId).map { entity ->
             entity?.let {
                 it.defaultTableIds.split(",").filter { id -> id.isNotEmpty() }.map { id ->
-                    id.toInt()
+                    id.let { UUID.fromString(it) }
                 }
             }
                 ?: emptyList()

@@ -21,7 +21,7 @@ import java.util.UUID
     indices = [Index("userId"), Index("id")]
 )
 data class TableEntity(
-    @PrimaryKey val id: UUID = UUID.randomUUID(), // 本地ID，使用UUID的哈希值作为默认值
+    @PrimaryKey override val id: UUID = UUID.randomUUID(), // 本地ID，使用UUID的哈希值作为默认值
     val userId: UUID, // 用户ID (本地ID，用于Room外键关系)
     val tableName: String, // 课表名称
     val background: String = "", // 背景颜色
@@ -29,7 +29,4 @@ data class TableEntity(
     val terms: String = "", // 学期信息
     val startDate: LocalDate, // 学期开始日期
     val totalWeeks: Int = 20, // 总周数
-) : Syncable {
-    override val syncId: String
-        get() = id.toString()
-}
+) : Syncable

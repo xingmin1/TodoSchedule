@@ -1,6 +1,7 @@
 package com.example.todoschedule.data.repository
 
 import android.util.Log
+import com.example.todoschedule.core.extensions.valid
 import com.example.todoschedule.data.database.dao.TableDao
 import com.example.todoschedule.data.database.entity.TableEntity
 import com.example.todoschedule.data.sync.SyncConstants
@@ -59,7 +60,9 @@ class TableRepositoryImpl @Inject constructor(
     override suspend fun addTable(table: Table): UUID {
         try {
             val tableEntity = table.toEntity()
-            val tableId = tableDao.insertTable(tableEntity)
+            val tableId = tableEntity.id
+            assert(tableId.valid())
+            tableDao.insertTable(tableEntity)
             val tableEntityWithId = tableEntity.copy(id = tableId)
 
             // 创建同步消息
@@ -71,7 +74,7 @@ class TableRepositoryImpl @Inject constructor(
                 entity = tableEntityWithId
             )
 
-            Log.d(TAG, "添加课表已创建同步消息: ${tableEntity.crdtKey}")
+            Log.d(TAG, "添加课表已创建同步消息: ${tableEntity.id}")
 
             // 创建同步消息后立即触发同步过程
             try {
@@ -97,16 +100,15 @@ class TableRepositoryImpl @Inject constructor(
             tableDao.updateTable(tableEntity)
 
             // 创建同步消息
-            val userId = sessionRepository.currentUserIdFlow.first()?.toInt() ?: table.userId
+            val userId = sessionRepository.currentUserIdFlow.first() ?: table.userId
             syncManager.createAndSaveSyncMessage(
-                crdtKey = tableEntity.crdtKey,
                 entityType = SyncConstants.EntityType.TABLE,
                 operationType = SyncConstants.OperationType.UPDATE,
                 userId = userId,
                 entity = tableEntity
             )
 
-            Log.d(TAG, "更新课表已创建同步消息: ${tableEntity.crdtKey}")
+            Log.d(TAG, "更新课表已创建同步消息: ${tableEntity.id}")
 
             // 创建同步消息后立即触发同步过程
             try {
@@ -130,16 +132,15 @@ class TableRepositoryImpl @Inject constructor(
             val tableEntity = tableDao.fetchTableById(tableId) ?: return
 
             // 先创建同步消息，再删除课表
-            val userId = sessionRepository.currentUserIdFlow.first()?.toInt() ?: tableEntity.userId
+            val userId = sessionRepository.currentUserIdFlow.first() ?: tableEntity.userId
             syncManager.createAndSaveSyncMessage(
-                crdtKey = tableEntity.crdtKey,
                 entityType = SyncConstants.EntityType.TABLE,
                 operationType = SyncConstants.OperationType.DELETE,
                 userId = userId,
                 entity = tableEntity
             )
 
-            Log.d(TAG, "删除课表已创建同步消息: ${tableEntity.crdtKey}")
+            Log.d(TAG, "删除课表已创建同步消息: ${tableEntity.id}")
 
             // 执行删除操作
             tableDao.deleteTable(tableId)

@@ -4,11 +4,12 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import java.util.UUID
 
 /** 用户实体类 */
 @Entity(tableName = "user")
 data class UserEntity(
-    @PrimaryKey(autoGenerate = true) val Id: UUID = 0,
+    @PrimaryKey val id: UUID = UUID.randomUUID(),
     val username: String,
     val phoneNumber: String? = null,
     val email: String? = null,

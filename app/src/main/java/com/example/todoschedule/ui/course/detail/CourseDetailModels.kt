@@ -1,12 +1,13 @@
 package com.example.todoschedule.ui.course.detail
 
 import com.example.todoschedule.ui.theme.ColorSchemeEnum
+import java.util.UUID
 
 /**
  * 课程详情数据模型
  */
 data class CourseDetailModel(
-    val Id: UUID,
+    val id: UUID,
     val courseName: String,
     val color: ColorSchemeEnum,
     val room: String? = null,

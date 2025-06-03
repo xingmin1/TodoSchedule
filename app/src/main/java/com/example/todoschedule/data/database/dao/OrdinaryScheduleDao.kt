@@ -16,7 +16,7 @@ import java.util.UUID
 interface OrdinaryScheduleDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSchedule(schedule: OrdinaryScheduleEntity): UUID // 返回插入行的 ID
+    suspend fun insertSchedule(schedule: OrdinaryScheduleEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSchedules(schedules: List<OrdinaryScheduleEntity>): List<Long> // 插入多个日程
@@ -54,7 +54,7 @@ interface OrdinaryScheduleDao {
     suspend fun deleteAllSchedules(userId: UUID) // 删除所有日程
 
     @Query("SELECT id FROM ordinary_schedule WHERE id = :id LIMIT 1")
-    suspend fun getIdById(id: String): Int? // 根据CRDT键获取ID
+    suspend fun getIdById(id: String): UUID? // 根据CRDT键获取ID
 
     @Query("SELECT * FROM ordinary_schedule WHERE id = :id LIMIT 1")
     suspend fun getOrdinaryScheduleById(id: String): OrdinaryScheduleEntity? // 根据CRDT键获取实体

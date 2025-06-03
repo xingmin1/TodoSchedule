@@ -10,6 +10,7 @@ import com.example.todoschedule.data.database.entity.TableEntity
 import com.example.todoschedule.data.repository.SyncRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -49,7 +50,7 @@ class IdResolver @Inject constructor(
      * @param id 课程的CRDT键
      * @return 本地数据库中的ID，如果未找到则返回null
      */
-    suspend fun resolveCourseId(id: String?): Int? = withContext(Dispatchers.IO) {
+    suspend fun resolveCourseId(id: String?): UUID? = withContext(Dispatchers.IO) {
         if (id == null) return@withContext null
         return@withContext database.courseDao().getIdById(id)
     }

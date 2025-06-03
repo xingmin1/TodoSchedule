@@ -2,6 +2,8 @@ package com.example.todoschedule.ui.course.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todoschedule.core.constants.AppConstants
+import com.example.todoschedule.core.extensions.valid
 import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
 import com.example.todoschedule.domain.repository.CourseRepository
@@ -9,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -24,7 +27,7 @@ class CourseDetailViewModel @Inject constructor(
     val uiState: StateFlow<CourseDetailUiState> = _uiState
 
     // 当前课程ID
-    private var currentCourseId: UUID = 0
+    private var currentCourseId: UUID = AppConstants.EMPTY_UUID
 
     /**
      * 加载课程详情
@@ -51,7 +54,7 @@ class CourseDetailViewModel @Inject constructor(
      * 删除课程
      */
     fun deleteCourse() {
-        if (currentCourseId <= 0) return
+        if (currentCourseId.valid()) return
 
         viewModelScope.launch {
             try {

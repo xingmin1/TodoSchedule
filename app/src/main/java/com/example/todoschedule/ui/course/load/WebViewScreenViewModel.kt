@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todoschedule.core.constants.AppConstants
+import com.example.todoschedule.core.extensions.valid
 import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.Table
 import com.example.todoschedule.domain.repository.CourseRepository
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 // 定义保存状态的密封类
@@ -51,7 +53,7 @@ class WebViewScreenViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 var actualTableId = tableId
-                val userId = getLoginUserIdFlowUseCase().filterNotNull().first().toInt() // 获取用户ID
+                val userId = getLoginUserIdFlowUseCase().filterNotNull().first() // 获取用户ID
 
                 // 检查课表ID是否有效或是否存在
                 val tableExists = tableId != AppConstants.Ids.INVALID_TABLE_ID &&
@@ -59,13 +61,15 @@ class WebViewScreenViewModel @Inject constructor(
 
                 if (!tableExists) {
                     Log.d("WebViewScreenVM", "课表ID无效或未找到课表，创建默认课表")
+                    assert(tableId.valid())
                     val newTable = Table(
+                        id = tableId,
                         userId = userId,
                         tableName = AppConstants.Database.DEFAULT_TABLE_NAME, // 可以考虑让用户在导入前/后命名
                         startDate = AppConstants.Database.DEFAULT_TABLE_START_DATE,
                     )
                     Log.d("WebViewScreenVM", "Creating new table: $newTable")
-                    actualTableId = tableRepository.addTable(newTable).toInt()
+                    actualTableId = tableRepository.addTable(newTable)
                     Log.d("WebViewScreenVM", "New table created with ID: $actualTableId")
                 } else {
                      Log.d("WebViewScreenVM", "Using existing table ID: $actualTableId")

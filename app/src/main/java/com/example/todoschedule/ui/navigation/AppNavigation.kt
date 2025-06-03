@@ -227,10 +227,10 @@ fun AppNavigation(
                     )
                 ) { backStackEntry ->
                     val tableId =
-                        backStackEntry.arguments?.getInt("tableId")
+                        backStackEntry.arguments?.getString("tableId")?.toUuid()
                             ?: AppConstants.Ids.INVALID_TABLE_ID
                     val courseId =
-                        backStackEntry.arguments?.getInt("courseId")
+                        backStackEntry.arguments?.getString("courseId")?.toUuid()
                             ?: AppConstants.Ids.INVALID_COURSE_ID
                     // CourseDetailScreen 需要适配或有自己的 Scaffold
                     CourseDetailScreen(
@@ -252,10 +252,10 @@ fun AppNavigation(
                     )
                 ) { backStackEntry ->
                     val tableId =
-                        backStackEntry.arguments?.getInt("tableId")
+                        backStackEntry.arguments?.getString("tableId")?.toUuid()
                             ?: AppConstants.Ids.INVALID_TABLE_ID
                     val courseId =
-                        backStackEntry.arguments?.getInt("courseId")
+                        backStackEntry.arguments?.getString("courseId")?.toUuid()
                             ?: AppConstants.Ids.INVALID_COURSE_ID
                     // EditCourseScreen 需要适配或有自己的 Scaffold
                     EditCourseScreen(
@@ -274,7 +274,7 @@ fun AppNavigation(
                     )
                 ) { backStackEntry ->
                     val tableId =
-                        backStackEntry.arguments?.getInt("tableId")
+                        backStackEntry.arguments?.getString("tableId")?.toUuid()
                             ?: AppConstants.Ids.INVALID_TABLE_ID
                     Log.d(
                         "AppNavigation",
@@ -302,7 +302,7 @@ fun AppNavigation(
                     val encodedUrl = backStackEntry.arguments?.getString("encodedUrl") ?: ""
                     val originalUrl = URLDecoder.decode(encodedUrl, "UTF-8")
                     val tableId =
-                        backStackEntry.arguments?.getInt("tableId")
+                        backStackEntry.arguments?.getString("tableId")?.toUuid()
                             ?: AppConstants.Ids.INVALID_TABLE_ID
                     // WebViewScreen 需要适配或有自己的 Scaffold
                     WebViewScreen(navigationState, originalUrl, tableId)

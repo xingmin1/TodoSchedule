@@ -62,6 +62,7 @@ import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.ui.course.add.CourseNodeUiState
 import com.example.todoschedule.ui.theme.ColorSchemeEnum
 import kotlinx.coroutines.flow.collectLatest
+import java.util.UUID
 
 /** 编辑课程页面 */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -448,7 +449,7 @@ fun CourseNodeDialog(
         startWeekError = startWeek.toIntOrNull() == null || startWeek.toInt() < 1
         endWeekError =
             endWeek.toIntOrNull() == null ||
-                    endWeek.toInt() < (startWeek.toIntOrNull() ?: AppConstants.Ids.INVALID_ID)
+                    endWeek.toInt() < (startWeek.toIntOrNull()!!)
 
         return !dayError && !startNodeError && !stepError && !startWeekError && !endWeekError
     }

@@ -91,6 +91,7 @@ class RegisterUserUseCase @Inject constructor(
         // 本地密码哈希
         val passwordHash = hashPasswordUseCase(password)
         val newUser = User(
+            id = UUID.randomUUID(),
             username = username,
             passwordHash = passwordHash,
             phoneNumber = phoneNumber,

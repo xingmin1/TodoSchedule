@@ -1,7 +1,9 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("kotlin-kapt")
+    //id("kotlin-kapt")
     id("dagger.hilt.android.plugin")
     id("kotlin-parcelize")
     alias(libs.plugins.kotlin.compose)
@@ -10,7 +12,7 @@ plugins {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions.jvmTarget = "11"
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
 }
 
 android {
@@ -97,7 +99,7 @@ dependencies {
     implementation("com.squareup.moshi:moshi:1.15.0")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
     implementation(libs.identity.jvm)
-    kapt("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
+    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
     
     // Compose UI
     implementation(platform(libs.androidx.compose.bom))
@@ -118,13 +120,13 @@ dependencies {
 
     // Hilt 依赖注入
     implementation(libs.hilt.android)
-    kapt(libs.hilt.android.compiler)
+    ksp(libs.hilt.android.compiler)
 
     implementation(libs.coil.compose)
 
     // Room 数据库
     implementation(libs.androidx.room.runtime)
-    kapt(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 
     // Retrofit 网络请求
@@ -161,7 +163,7 @@ dependencies {
     // WorkManager - 用于后台任务
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("androidx.hilt:hilt-work:1.1.0")
-    kapt("androidx.hilt:hilt-compiler:1.1.0")
+    ksp("androidx.hilt:hilt-compiler:1.1.0")
 
     // 测试依赖
     testImplementation(libs.junit)
@@ -188,7 +190,7 @@ dependencies {
 
     // Hilt Testing
     androidTestImplementation(libs.hilt.android.testing)
-    kaptAndroidTest(libs.hilt.compiler)
+    kspAndroidTest(libs.hilt.compiler)
 
     // Android Architecture Components testing - for InstantTaskExecutorRule
     androidTestImplementation(libs.androidx.core.testing)

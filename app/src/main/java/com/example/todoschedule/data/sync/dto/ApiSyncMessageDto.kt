@@ -48,7 +48,7 @@ data class ApiSyncMessageDto(
 
             // 构建应用内使用的SyncMessageDto
             SyncMessageDto(
-                crdtKey = crdtKey,
+                id = crdtKey,
                 entityType = entityType,
                 operationType = operationType,
                 deviceId = originDeviceId,

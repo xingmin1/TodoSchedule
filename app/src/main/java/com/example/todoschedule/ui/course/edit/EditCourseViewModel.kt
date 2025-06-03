@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -47,7 +48,7 @@ class EditCourseViewModel @Inject constructor(
     val uiState: StateFlow<EditCourseUiState> = _uiState
 
     // 课程ID
-    private var courseId = 0
+    private var courseId = AppConstants.EMPTY_UUID
 
     // 课程基本信息
     private val _courseName = MutableStateFlow("")
@@ -80,7 +81,7 @@ class EditCourseViewModel @Inject constructor(
     /**
      * 加载课程数据
      */
-    fun loadCourse(Id: UUID) {
+    fun loadCourse(id: UUID) {
         courseId = id
         _uiState.value = EditCourseUiState.Loading
 

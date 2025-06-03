@@ -3,6 +3,7 @@ package com.example.todoschedule.data.mapper
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.data.database.entity.TimeSlotEntity
 import com.example.todoschedule.domain.model.TimeSlot
+import java.util.UUID
 
 
 fun TimeSlot.toEntity(scheduleId: UUID, scheduleType: ScheduleType): TimeSlotEntity {

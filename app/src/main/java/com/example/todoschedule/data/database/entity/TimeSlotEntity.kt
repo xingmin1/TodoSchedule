@@ -37,6 +37,6 @@ data class TimeSlotEntity(
     @ColumnInfo(name = "reminder_type") val reminderType: ReminderType? = ReminderType.NONE,
     @ColumnInfo(name = "reminder_offset") val reminderOffset: Long? = null, // 提醒偏移量 (相对开始时间的毫秒数)
 ) : Syncable {
-    override val syncId: String
+    override val id: String
         get() = id.toString()
 }

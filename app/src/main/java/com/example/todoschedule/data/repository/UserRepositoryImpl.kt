@@ -3,6 +3,7 @@ package com.example.todoschedule.data.repository
 import android.content.Context
 import android.util.Log
 import com.example.todoschedule.core.constants.AppConstants
+import com.example.todoschedule.core.extensions.valid
 import com.example.todoschedule.data.database.dao.UserDao
 import com.example.todoschedule.data.mapper.toUser
 import com.example.todoschedule.data.mapper.toUserEntity
@@ -36,7 +37,9 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun addUser(user: User): UUID {
         Log.d("UserRepository", "添加用户: ${user.username}")
-        return userDao.insertUser(user.toUserEntity())
+        assert(user.id.valid())
+        userDao.insertUser(user.toUserEntity())
+        return user.id
     }
 
     override suspend fun registerUser(user: User): Result<UUID> {
@@ -45,7 +48,9 @@ class UserRepositoryImpl @Inject constructor(
             if (existingUser != null) {
                 Result.failure(Exception("用户名 '${user.username}' 已被注册"))
             } else {
-                val userId = userDao.insertUser(user.toUserEntity())
+                val userId = user.id
+                assert(userId.valid())
+                userDao.insertUser(user.toUserEntity())
                 Result.success(userId)
             }
         } catch (e: Exception) {
@@ -75,7 +80,10 @@ class UserRepositoryImpl @Inject constructor(
         val userCount = userDao.getUserCount()
         if (userCount == 0) {
             // 创建默认用户
-            val defaultUser = User(username = AppConstants.Database.DEFAULT_USER_NAME)
+            val defaultUser = User(
+                id = UUID.randomUUID(),
+                username = AppConstants.Database.DEFAULT_USER_NAME
+            )
             val userId = addUser(defaultUser)
             Log.d("UserRepository", "创建了默认用户，ID: $userId")
             return userId

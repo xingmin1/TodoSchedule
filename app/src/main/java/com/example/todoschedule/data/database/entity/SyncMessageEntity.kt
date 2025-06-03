@@ -29,7 +29,7 @@ import java.util.UUID
     indices = [
         Index(value = ["sync_status"]),
         Index(value = ["entity_type"]),
-        Index(value = ["crdt_key"])
+        Index(value = ["id"])
     ]
 )
 data class SyncMessageEntity(

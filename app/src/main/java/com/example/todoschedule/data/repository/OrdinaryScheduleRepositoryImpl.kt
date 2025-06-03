@@ -3,6 +3,7 @@ package com.example.todoschedule.data.repository
 // 移除不必要的导入
 import android.util.Log
 import androidx.room.Transaction
+import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.data.database.dao.OrdinaryScheduleDao
 import com.example.todoschedule.data.database.dao.TimeSlotDao
@@ -43,7 +44,9 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
         try {
             // 1. 插入 OrdinaryScheduleEntity 并获取 ID
             val scheduleEntity = schedule.toEntity()
-            val scheduleId = ordinaryScheduleDao.insertSchedule(scheduleEntity)
+            val scheduleId = scheduleEntity.id
+            assert(scheduleId != AppConstants.EMPTY_UUID) { "Schedule ID must not be zero" }
+            ordinaryScheduleDao.insertSchedule(scheduleEntity)
 
             // 设置scheduleId后的实体
             val updatedEntity = scheduleEntity.copy(id = scheduleId)
@@ -53,7 +56,7 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
             // 2. 准备 TimeSlotEntity 列表 (设置 scheduleId 和 scheduleType)
             val timeSlotEntities = schedule.timeSlots.map {
                 // 确保传入正确的 ID
-                it.toEntity(scheduleId.toInt(), scheduleType)
+                it.toEntity(scheduleId, scheduleType)
             }
 
             // 3. 插入 TimeSlotEntity 列表
@@ -63,20 +66,18 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
             Log.d(TAG, "成功插入时间槽，数量: ${timeSlotEntities.size}")
 
             // 4. 创建日程的同步消息
-            val userId = sessionRepository.currentUserIdFlow.first()?.toInt() ?: schedule.userId
+            val userId = sessionRepository.currentUserIdFlow.first() ?: schedule.userId
             syncManager.createAndSaveSyncMessage(
-                crdtKey = updatedEntity.crdtKey,
                 entityType = SyncConstants.EntityType.ORDINARY_SCHEDULE,
                 operationType = SyncConstants.OperationType.ADD,
                 userId = userId,
                 entity = updatedEntity
             )
-            Log.d(TAG, "日程已创建同步消息: ${updatedEntity.crdtKey}")
+            Log.d(TAG, "日程已创建同步消息: ${updatedEntity.id}")
 
             // 5. 创建每个时间槽的同步消息
             for (timeSlotEntity in timeSlotEntities) {
                 syncManager.createAndSaveSyncMessage(
-                    crdtKey = timeSlotEntity.crdtKey,
                     entityType = SyncConstants.EntityType.TIME_SLOT,
                     operationType = SyncConstants.OperationType.ADD,
                     userId = userId,
@@ -107,19 +108,20 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
         try {
             // 批量插入日程实体
             val scheduleEntities = schedules.map { it.toEntity() }
-            val scheduleIds = ordinaryScheduleDao.insertSchedules(scheduleEntities)
+            val scheduleIds = scheduleEntities.map { it.id }
+            ordinaryScheduleDao.insertSchedules(scheduleEntities)
 
             // 准备并批量插入时间槽实体
             val timeSlotEntities = schedules.flatMapIndexed { index, schedule ->
                 // 获取日程实体及crdt键
                 val scheduleEntity = scheduleEntities[index]
-                val scheduleCrdtKey = scheduleEntity.crdtKey
+                val scheduleCrdtKey = scheduleEntity.id
                 Log.d(TAG, "【日程CRDT键】日程'${scheduleEntity.title}'的CRDT键: $scheduleCrdtKey")
 
                 schedule.timeSlots.map { timeSlot ->
-                    val entity = timeSlot.toEntity(scheduleIds[index].toInt(), scheduleType)
+                    val entity = timeSlot.toEntity(scheduleIds[index], scheduleType)
                     // 使用新增的scheduleCrdtKey字段设置关联的日程CRDT键
-                    entity.copy(scheduleCrdtKey = scheduleCrdtKey)
+                    entity.copy(scheduleId = scheduleCrdtKey)
                 }
             }
             if (timeSlotEntities.isNotEmpty()) {
@@ -127,16 +129,15 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
             }
 
             // 获取当前用户ID
-            val userId = sessionRepository.currentUserIdFlow.first()?.toInt()
-                ?: (schedules.firstOrNull()?.userId ?: 1)
+            val userId = sessionRepository.currentUserIdFlow.first()
+                ?: (schedules.firstOrNull()?.userId ?: AppConstants.EMPTY_UUID)
 
             // 为每个日程创建同步消息
             scheduleEntities.forEachIndexed { index, entity ->
                 // 更新实体ID，确保使用数据库分配的ID
-                val updatedEntity = entity.copy(id = scheduleIds[index].toInt())
+                val updatedEntity = entity.copy(id = scheduleIds[index])
 
                 syncManager.createAndSaveSyncMessage(
-                    crdtKey = updatedEntity.crdtKey,
                     entityType = SyncConstants.EntityType.ORDINARY_SCHEDULE,
                     operationType = SyncConstants.OperationType.ADD,
                     userId = userId,
@@ -148,7 +149,6 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
             // 为每个时间槽创建同步消息
             timeSlotEntities.forEach { timeSlotEntity ->
                 syncManager.createAndSaveSyncMessage(
-                    crdtKey = timeSlotEntity.crdtKey,
                     entityType = SyncConstants.EntityType.TIME_SLOT,
                     operationType = SyncConstants.OperationType.ADD,
                     userId = userId,
@@ -181,39 +181,39 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
 
             // 2. 删除与此日程关联的旧的 TimeSlotEntity
             // 注意：这里仍然需要手动删除，@Relation 主要用于查询
-            val oldTimeSlots = timeSlotDao.getTimeSlotsBySchedule(scheduleType, schedule.id).first()
+            val oldTimeSlots = timeSlotDao.getTimeSlotsBySchedule(scheduleType,
+                schedule.id.toString()
+            ).first()
             for (oldTimeSlot in oldTimeSlots) {
                 timeSlotDao.deleteTimeSlot(oldTimeSlot)
             }
 
             // 3. 插入新的 TimeSlotEntity (设置 scheduleId、scheduleType 和 scheduleCrdtKey)
-            val scheduleCrdtKey = scheduleEntity.crdtKey
+            val scheduleCrdtKey = scheduleEntity.id
             Log.d(TAG, "【更新日程】日程'${scheduleEntity.title}'的CRDT键: $scheduleCrdtKey")
 
             val timeSlotEntities = schedule.timeSlots.map {
                 // 确保使用正确的 schedule.id 和 scheduleCrdtKey
                 val entity = it.toEntity(schedule.id, scheduleType)
-                entity.copy(scheduleCrdtKey = scheduleCrdtKey)
+                entity.copy(scheduleId = scheduleCrdtKey)
             }
             if (timeSlotEntities.isNotEmpty()) {
                 timeSlotDao.insertTimeSlots(timeSlotEntities)
             }
 
             // 4. 创建日程更新的同步消息
-            val userId = sessionRepository.currentUserIdFlow.first()?.toInt() ?: schedule.userId
+            val userId = sessionRepository.currentUserIdFlow.first() ?: schedule.userId
             syncManager.createAndSaveSyncMessage(
-                crdtKey = scheduleEntity.crdtKey,
                 entityType = SyncConstants.EntityType.ORDINARY_SCHEDULE,
                 operationType = SyncConstants.OperationType.UPDATE,
                 userId = userId,
                 entity = scheduleEntity
             )
-            Log.d(TAG, "日程更新已创建同步消息: ${scheduleEntity.crdtKey}")
+            Log.d(TAG, "日程更新已创建同步消息: ${scheduleEntity.id}")
 
             // 5. 创建每个新时间槽的同步消息
             timeSlotEntities.forEach { timeSlotEntity ->
                 syncManager.createAndSaveSyncMessage(
-                    crdtKey = timeSlotEntity.crdtKey,
                     entityType = SyncConstants.EntityType.TIME_SLOT,
                     operationType = SyncConstants.OperationType.ADD, // 新插入的时间槽用ADD
                     userId = userId,
@@ -243,15 +243,14 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
             // 获取时间槽实体，用于创建删除同步消息
             // getTimeSlotsBySchedule返回的是Flow，需要先收集数据
             val timeSlotEntities =
-                timeSlotDao.getTimeSlotsBySchedule(scheduleType, schedule.id).first()
+                timeSlotDao.getTimeSlotsBySchedule(scheduleType, schedule.id.toString()).first()
 
             // 获取用户ID
-            val userId = sessionRepository.currentUserIdFlow.first()?.toInt() ?: schedule.userId
+            val userId = sessionRepository.currentUserIdFlow.first() ?: schedule.userId
 
             // 为每个时间槽创建删除同步消息
             for (timeSlotEntity in timeSlotEntities) {
                 syncManager.createAndSaveSyncMessage(
-                    crdtKey = timeSlotEntity.crdtKey,
                     entityType = SyncConstants.EntityType.TIME_SLOT,
                     operationType = SyncConstants.OperationType.DELETE,
                     userId = userId,
@@ -263,17 +262,16 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
             // 为日程创建删除同步消息
             val scheduleEntity = schedule.toEntity()
             syncManager.createAndSaveSyncMessage(
-                crdtKey = scheduleEntity.crdtKey,
                 entityType = SyncConstants.EntityType.ORDINARY_SCHEDULE,
                 operationType = SyncConstants.OperationType.DELETE,
                 userId = userId,
                 entity = scheduleEntity
             )
-            Log.d(TAG, "日程删除已创建同步消息: ${scheduleEntity.crdtKey}")
+            Log.d(TAG, "日程删除已创建同步消息: ${scheduleEntity.id}")
 
             // 执行删除操作
             // 1. 删除关联的 TimeSlots
-            timeSlotDao.deleteTimeSlotsBySchedule(scheduleType, schedule.id)
+            timeSlotDao.deleteTimeSlotsBySchedule(scheduleType, schedule.id.toString())
             // 2. 删除 OrdinaryScheduleEntity
             ordinaryScheduleDao.deleteSchedule(scheduleEntity)
 
@@ -292,7 +290,7 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getScheduleById(Id: UUID): Flow<OrdinarySchedule?> {
+    override fun getScheduleById(id: UUID): Flow<OrdinarySchedule?> {
         // 使用新的 DAO 方法
         return ordinaryScheduleDao.getScheduleWithTimeSlotsById(id).map { scheduleWithSlots ->
             // 映射到 Domain Model
@@ -350,7 +348,6 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
             for (scheduleWithSlots in allSchedulesWithSlots) {
                 // 为日程创建删除同步消息
                 syncManager.createAndSaveSyncMessage(
-                    crdtKey = scheduleWithSlots.schedule.crdtKey,
                     entityType = SyncConstants.EntityType.ORDINARY_SCHEDULE,
                     operationType = SyncConstants.OperationType.DELETE,
                     userId = userId,
@@ -360,7 +357,6 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
                 // 为每个时间槽创建删除同步消息
                 for (timeSlot in scheduleWithSlots.timeSlots) {
                     syncManager.createAndSaveSyncMessage(
-                        crdtKey = timeSlot.crdtKey,
                         entityType = SyncConstants.EntityType.TIME_SLOT,
                         operationType = SyncConstants.OperationType.DELETE,
                         userId = userId,
@@ -375,7 +371,7 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
 
             // 3. 删除所有关联的 TimeSlots
             for (id in allScheduleIds) {
-                timeSlotDao.deleteTimeSlotsBySchedule(scheduleType, id)
+                timeSlotDao.deleteTimeSlotsBySchedule(scheduleType, id.toString())
             }
 
             // 4. 删除所有普通日程

@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
                 Log.d(TAG, "用户已登录(ID: $userId)且有token，启动同步服务")
 
                 // 确保设备ID已成功注册
-                val deviceRegistered = syncRepository.registerDevice(userId.toInt())
+                val deviceRegistered = syncRepository.registerDevice(userId)
                 if (!deviceRegistered) {
                     Log.d(TAG, "设备注册失败，不启动同步服务")
                     return@launch
@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
 
                 // 同时安排WorkManager任务作为备份同步机制
                 val tokenData = androidx.work.Data.Builder()
-                    .putInt("userId", userId.toInt())
+                    .putString("userId", userId.toString())
                     .putString("token", token)
                     .build()
 

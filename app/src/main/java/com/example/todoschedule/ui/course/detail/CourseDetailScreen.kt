@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import java.util.UUID
 
 /**
  * 课程详情页面
@@ -57,7 +58,7 @@ fun CourseDetailScreen(
     tableId: UUID,
     courseId: UUID,
     onNavigateBack: () -> Unit,
-    onNavigateToEdit: (Int, Int) -> Unit,
+    onNavigateToEdit: (UUID, UUID) -> Unit,
     viewModel: CourseDetailViewModel = hiltViewModel()
 ) {
     // 加载课程数据

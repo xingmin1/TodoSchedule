@@ -1,11 +1,11 @@
 package com.example.todoschedule.data.database.converter
 
 import androidx.room.TypeConverter
-import com.tap.hlc.Timestamp
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.serialization.json.Json
+import java.util.UUID
 
 /** Room类型转换器 */
 class Converters {
@@ -105,4 +105,8 @@ class Converters {
     fun toReminderType(typeString: String?): ReminderType? {
         return typeString?.let { enumValueOf<ReminderType>(it) }
     }
+
+    // --- UUID Converters ---
+    @TypeConverter fun fromUuid(u: UUID?): String? = u?.toString()
+    @TypeConverter fun toUuid(s: String?): UUID? = s?.let(UUID::fromString)
 }

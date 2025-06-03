@@ -26,7 +26,7 @@ interface UserDao {
 
     /** 插入用户 */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertUser(user: UserEntity): UUID
+    suspend fun insertUser(user: UserEntity)
 
     /** 更新用户 */
     @Update

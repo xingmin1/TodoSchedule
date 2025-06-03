@@ -22,7 +22,7 @@ interface TableTimeConfigRepository {
     suspend fun ensureDefaultTimeConfig(
         tableId: UUID,
         userId: UUID
-    ): Int? // userId might not be needed here if not used for ownership/permissions
+    ): UUID? // userId might not be needed here if not used for ownership/permissions
 
     /**
      * 添加一个新的时间配置。

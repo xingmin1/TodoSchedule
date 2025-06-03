@@ -18,7 +18,7 @@ interface TableTimeConfigDao {
 
     // --- TableTimeConfig 操作 ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTimeConfig(config: TableTimeConfigEntity): UUID // 返回新插入行的 ID
+    suspend fun insertTimeConfig(config: TableTimeConfigEntity)
 
     @Update
     suspend fun updateTimeConfig(config: TableTimeConfigEntity)
@@ -95,7 +95,8 @@ interface TableTimeConfigDao {
         configEntity: TableTimeConfigEntity,
         nodeEntities: List<TableTimeConfigNodeDetaileEntity>
     ): UUID {
-        val configId = insertTimeConfig(configEntity)
+        val configId = configEntity.id
+        insertTimeConfig(configEntity)
         // Ensure nodes have the correct configId (Room might handle this if ID is autoGenerate)
         val updatedNodes = nodeEntities.map { it.copy(tableTimeConfigId = configId) }
         insertNodeDetails(updatedNodes)

@@ -127,7 +127,7 @@ data class SyncMessageEntity(
      */
     fun toDto(): SyncMessageDto {
         return SyncMessageDto(
-            crdtKey = crdtKey,
+            id = crdtKey,
             entityType = entityType,
             operationType = operationType,
             deviceId = deviceId,

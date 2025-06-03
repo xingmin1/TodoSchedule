@@ -181,6 +181,7 @@ class AddCourseViewModel @Inject constructor(
                     val userId = currentUserId
                     // 创建默认课表并获取新ID                    // 创建默认课表并获取新ID
                     val newTable = Table(
+                        id = UUID.randomUUID(),
                         userId = userId,
                         tableName = AppConstants.Database.DEFAULT_TABLE_NAME,
                         startDate = AppConstants.Database.DEFAULT_TABLE_START_DATE,
@@ -190,6 +191,7 @@ class AddCourseViewModel @Inject constructor(
                 }
 
                 val course = Course(
+                    id = UUID.randomUUID(),
                     courseName = _courseName.value,
                     color = _color.value,
                     room = _room.value.takeIf { it.isNotEmpty() },

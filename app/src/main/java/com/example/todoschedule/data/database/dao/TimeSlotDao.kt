@@ -6,7 +6,6 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import com.android.identity.util.UUID
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.data.database.entity.TimeSlotEntity
 import kotlinx.coroutines.flow.Flow
@@ -27,7 +26,7 @@ interface TimeSlotDao {
     suspend fun deleteTimeSlot(timeSlot: TimeSlotEntity) // 删除时间槽
 
     @Query("SELECT * FROM time_slot WHERE id = :id")
-    fun getTimeSlotById(id: UUID): Flow<TimeSlotEntity?> // 根据 ID 获取时间槽
+    fun getTimeSlotById(id: String): Flow<TimeSlotEntity?> // 根据 ID 获取时间槽
 
     @Query("SELECT * FROM time_slot")
     fun getAllTimeSlots(): Flow<List<TimeSlotEntity>> // 获取所有时间槽
@@ -40,19 +39,19 @@ interface TimeSlotDao {
     @Query("SELECT * FROM time_slot WHERE schedule_type = :scheduleType AND schedule_id = :scheduleId")
     fun getTimeSlotsBySchedule(
         scheduleType: ScheduleType,
-        scheduleId: UUID
+        scheduleId: String
     ): Flow<List<TimeSlotEntity>>
 
     // 删除特定日程类型和 ID 的时间槽
     @Query("DELETE FROM time_slot WHERE schedule_type = :scheduleType AND schedule_id = :scheduleId")
-    suspend fun deleteTimeSlotsBySchedule(scheduleType: ScheduleType, scheduleId: UUID)
+    suspend fun deleteTimeSlotsBySchedule(scheduleType: ScheduleType, scheduleId: String)
 
     @Query("DELETE FROM time_slot")
     suspend fun deleteAllTimeSlots() // 删除所有时间槽
 
     // 获取指定用户的所有时间槽
     @Query("SELECT * FROM time_slot WHERE user_id = :userId ORDER BY start_time ASC")
-    fun getTimeSlotsByUserId(userId: UUID): Flow<List<TimeSlotEntity>>
+    fun getTimeSlotsByUserId(userId: String): Flow<List<TimeSlotEntity>>
 
     // 根据CRDT键获取时间槽（可观察）
     @Query("SELECT * FROM time_slot WHERE id = :crdtKey")
@@ -65,10 +64,6 @@ interface TimeSlotDao {
     // 获取所有时间槽（非Flow）
     @Query("SELECT * FROM time_slot")
     suspend fun getAllTimeSlotsSync(): List<TimeSlotEntity>
-
-    // 根据CRDT键获取ID
-    @Query("SELECT id FROM time_slot WHERE id = :crdtKey LIMIT 1")
-    suspend fun getIdByCrdtKey(crdtKey: String): Int?
 
     // 根据日程CRDT键获取时间槽列表
     @Query("SELECT * FROM time_slot WHERE schedule_id = :scheduleCrdtKey")

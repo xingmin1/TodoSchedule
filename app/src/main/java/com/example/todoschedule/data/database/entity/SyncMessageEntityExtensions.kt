@@ -16,7 +16,7 @@ import com.example.todoschedule.data.sync.dto.TimestampDto
  */
 fun SyncMessageEntity.toDto(): SyncMessageDto {
     return SyncMessageDto(
-        crdtKey = this.crdtKey,
+        id = this.id.toString(),
         entityType = this.entityType,
         operationType = this.operationType,
         deviceId = this.deviceId,
@@ -26,7 +26,7 @@ fun SyncMessageEntity.toDto(): SyncMessageDto {
             nodeId = this.timestampNodeId
         ),
         payload = this.payload,
-        userId = this.userId
+        userId = this.userId.toString()
     )
 }
 

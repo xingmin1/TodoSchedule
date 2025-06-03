@@ -64,19 +64,19 @@ interface CourseDao {
      * 插入课程
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCourse(course: CourseEntity): UUID
+    suspend fun insertCourse(course: CourseEntity)
 
     /**
      * 批量插入课程
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCourses(courses: List<CourseEntity>): List<UUID>
+    suspend fun insertCourses(courses: List<CourseEntity>)
 
     /**
      * 插入课程节点
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCourseNode(courseNode: CourseNodeEntity): UUID
+    suspend fun insertCourseNode(courseNode: CourseNodeEntity)
 
     /**
      * 批量插入课程节点
@@ -130,7 +130,7 @@ interface CourseDao {
      * 根据id查询课程本地ID
      */
     @Query("SELECT id FROM course WHERE id = :id LIMIT 1")
-    suspend fun getIdById(id: String): Int?
+    suspend fun getIdById(id: String): UUID?
 
     /**
      * 根据id查询课程节点

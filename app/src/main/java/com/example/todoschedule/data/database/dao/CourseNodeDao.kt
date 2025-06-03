@@ -19,7 +19,7 @@ interface CourseNodeDao {
      * 根据ID获取课程节点
      */
     @Query("SELECT * FROM course_node WHERE id = :id")
-    suspend fun getCourseNodeById(Id: UUID): CourseNodeEntity?
+    suspend fun getCourseNodeById(id: UUID): CourseNodeEntity?
 
     /**
      * 根据课程ID获取所有课程节点
@@ -67,7 +67,7 @@ interface CourseNodeDao {
      * 根据id获取课程节点ID
      */
     @Query("SELECT id FROM course_node WHERE id = :id LIMIT 1")
-    suspend fun getIdById(id: String): Int?
+    suspend fun getIdById(id: String): UUID?
 
     /**
      * 根据id获取课程节点

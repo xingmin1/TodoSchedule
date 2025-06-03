@@ -22,7 +22,7 @@ import java.util.UUID
     indices = [Index("tableId"), Index("id")]
 )
 data class CourseEntity(
-    @PrimaryKey val id: UUID = UUID.randomUUID(), // 本地ID，使用UUID的哈希值作为默认值
+    @PrimaryKey override val id: UUID = UUID.randomUUID(), // 本地ID，使用UUID的哈希值作为默认值
     val tableId: UUID, // 所属课表ID (本地ID，用于Room外键关系)
     val courseName: String, // 课程名称
     val color: String = "#FF4081", // 显示颜色，默认粉色
@@ -33,7 +33,4 @@ data class CourseEntity(
     val credit: Float? = null, // 学分
     val courseCode: String? = null, // 课程代码
     val syllabusLink: String? = null, // 教学大纲链接
-) : Syncable {
-    override val syncId: String
-        get() = id.toString()
-} 
+) : Syncable

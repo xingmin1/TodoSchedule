@@ -77,10 +77,11 @@ import kotlinx.datetime.toJavaInstant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.UUID
 
 // Dummy User for Preview
 val previewUser = User(
-    id = 1,
+    id = UUID.randomUUID(),
     username = "张三",
     email = "zhangsan@example.com",
     phoneNumber = "13800138000",

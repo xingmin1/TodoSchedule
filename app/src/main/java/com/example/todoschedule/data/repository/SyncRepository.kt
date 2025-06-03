@@ -70,7 +70,7 @@ interface SyncRepository {
      * u4e0au4f20u540cu6b65u6d88u606fu5230u670du52a1u5668
      * @param messages u540cu6b65u6d88u606f5217u8868
      * @param entityType u5b9eu4f53u7c7bu578b
-     * @return u4e0au4f20u6210u529fu7684u6d88u606fIDu5217u8868uff08u5b57u7b26u4e32u8868u793au7684syncIduff09
+     * @return u4e0au4f20u6210u529fu7684u6d88u606fIDu5217u8868uff08u5b57u7b26u4e32u8868u793au7684iduff09
      */
     suspend fun uploadMessages(messages: List<SyncMessageEntity>, entityType: String): List<String>
 
@@ -104,13 +104,13 @@ interface SyncRepository {
      * 将同步消息标记为已处理
      * @param ids 消息ID列表
      */
-    suspend fun markMessagesAsProcessed(ids: List<Int>)
+    suspend fun markMessagesAsProcessed(ids: List<UUID>)
 
     /**
      * 将同步消息标记为已同步
      * @param ids 消息ID列表
      */
-    suspend fun markMessagesAsSynced(ids: List<Int>)
+    suspend fun markMessagesAsSynced(ids: List<UUID>)
 
     /**
      * 注册设备

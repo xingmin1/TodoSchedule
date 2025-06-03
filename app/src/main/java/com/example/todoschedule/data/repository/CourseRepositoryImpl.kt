@@ -1,36 +1,29 @@
 package com.example.todoschedule.data.repository
 
-import android.database.sqlite.SQLiteConstraintException
-import android.database.sqlite.SQLiteException
 import android.util.Log
+import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.data.database.dao.CourseDao
-import com.example.todoschedule.data.sync.SyncConstants
-import com.example.todoschedule.data.sync.SyncManager
-import com.example.todoschedule.domain.model.Course
-import com.example.todoschedule.domain.repository.CourseRepository
-import com.example.todoschedule.domain.repository.SessionRepository
+import com.example.todoschedule.data.database.dao.TableDao
 import com.example.todoschedule.data.mapper.toCourse
 import com.example.todoschedule.data.mapper.toCourseEntity
 import com.example.todoschedule.data.mapper.toCourseNode
 import com.example.todoschedule.data.mapper.toCourseNodeEntity
+import com.example.todoschedule.data.sync.SyncConstants
+import com.example.todoschedule.data.sync.SyncManager
+import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
+import com.example.todoschedule.domain.repository.CourseRepository
+import com.example.todoschedule.domain.repository.GlobalSettingRepository
+import com.example.todoschedule.domain.repository.SessionRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.IOException
-
-import com.example.todoschedule.core.constants.AppConstants
-import com.example.todoschedule.data.database.dao.TableDao
-import com.example.todoschedule.domain.repository.GlobalSettingRepository
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -78,7 +71,11 @@ constructor(
     override suspend fun addCourse(course: Course, tableId: UUID): UUID {
         try {
             val courseEntity = course.toCourseEntity(tableId)
-            val courseId = courseDao.insertCourse(courseEntity)
+            val courseId = courseEntity.id
+            assert(courseId != AppConstants.EMPTY_UUID) {
+                "课程ID不能为空"
+            }
+            courseDao.insertCourse(courseEntity)
             courseDao.insertCourseNodes(
                 course.nodes.map { node -> node.toCourseNodeEntity(courseId) }
             )
@@ -114,7 +111,13 @@ constructor(
             }
 
             // 3. 插入课程并获取ID
-            val courseIds = courseDao.insertCourses(courseEntities)
+            val courseIds = courseEntities.map {
+                assert(it.id != AppConstants.EMPTY_UUID) {
+                    "课程ID不能为空"
+                }
+                it.id
+            }
+            courseDao.insertCourses(courseEntities)
             Log.d(TAG, "成功插入 ${courseIds.size} 个课程")
 
             // 4. 插入课程节点

@@ -38,7 +38,7 @@ interface TableDao {
 
     /** 插入课表 */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTable(table: TableEntity): UUID
+    suspend fun insertTable(table: TableEntity)
 
     /** 更新课表 */
     @Update
@@ -50,7 +50,7 @@ interface TableDao {
 
     /** 根据id查询课表本地ID */
     @Query("SELECT id FROM `table` WHERE id = :id LIMIT 1")
-    suspend fun getIdById(id: String): Int?
+    suspend fun getIdById(id: String): UUID?
 
     /** 根据id查询课表实体 */
     @Query("SELECT * FROM `table` WHERE id = :id LIMIT 1")

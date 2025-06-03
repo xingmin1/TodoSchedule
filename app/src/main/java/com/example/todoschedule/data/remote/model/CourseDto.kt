@@ -1,10 +1,12 @@
 package com.example.todoschedule.data.remote.model
 
+import java.util.UUID
+
 /**
  * 课程数据传输对象
  */
 data class CourseDto(
-    val Id: UUID = 0,
+    val id: UUID,
     val tableId: UUID,
     val courseName: String,
     val color: String = "#FF4081",

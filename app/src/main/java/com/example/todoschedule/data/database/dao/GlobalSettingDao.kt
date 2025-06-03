@@ -22,7 +22,7 @@ interface GlobalSettingDao {
 
     /** 插入全局设置 */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertGlobalSetting(globalSetting: GlobalTableSettingEntity): UUID
+    suspend fun insertGlobalSetting(globalSetting: GlobalTableSettingEntity)
 
     /** 更新全局设置 */
     @Update

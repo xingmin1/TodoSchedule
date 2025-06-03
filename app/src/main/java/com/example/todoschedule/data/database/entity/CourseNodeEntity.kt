@@ -22,7 +22,7 @@ import java.util.UUID
     indices = [Index("courseId"), Index("id")]
 )
 data class CourseNodeEntity(
-    @PrimaryKey val id: UUID = UUID.randomUUID(), // 本地ID，使用UUID的哈希值作为默认值
+    @PrimaryKey override val id: UUID = UUID.randomUUID(), // 本地ID，使用UUID的哈希值作为默认值
     val courseId: UUID, // 所属课程ID (本地ID，用于Room外键关系)
     val courseNodeName: String? = null, // 课程节点名称
     val color: String? = null, // 显示颜色
@@ -34,7 +34,4 @@ data class CourseNodeEntity(
     val startWeek: Int, // 开始周次
     val endWeek: Int, // 结束周次
     val weekType: Int = 0, // 周类型(0-全部，1-单周，2-双周)
-) : Syncable {
-    override val syncId: String
-        get() = id.toString()
-} 
+) : Syncable
