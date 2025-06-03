@@ -32,6 +32,7 @@ import com.example.todoschedule.domain.repository.GlobalSettingRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 /** 课程仓库实现类 */
@@ -50,8 +51,8 @@ constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun getCurrentUserAllCourses(): Flow<List<Course>> {
         return sessionRepository.currentUserIdFlow.flatMapLatest { userId ->
-            if (userId != null && userId != -1L) {
-                globalSettingRepository.getDefaultTableIds(userId.toInt())
+            if (userId != null && userId != AppConstants.Ids.INVALID_USER_ID) {
+                globalSettingRepository.getDefaultTableIds(userId)
                     .flatMapLatest { tableIds ->
                     val tableId = tableIds.firstOrNull() ?: AppConstants.Ids.INVALID_TABLE_ID
                     if (tableId == AppConstants.Ids.INVALID_TABLE_ID) {
@@ -70,29 +71,28 @@ constructor(
         }
     }
 
-    override suspend fun getCourseById(Id: UUID): Course? {
+    override suspend fun getCourseById(id: UUID): Course? {
         return courseDao.getCourseWithNodesById(id)?.toCourse()
     }
 
-    override suspend fun addCourse(course: Course, tableId: UUID): Long {
+    override suspend fun addCourse(course: Course, tableId: UUID): UUID {
         try {
             val courseEntity = course.toCourseEntity(tableId)
             val courseId = courseDao.insertCourse(courseEntity)
             courseDao.insertCourseNodes(
-                course.nodes.map { node -> node.toCourseNodeEntity(courseId.toInt()) }
+                course.nodes.map { node -> node.toCourseNodeEntity(courseId) }
             )
 
             // 创建同步消息
-            val userId = sessionRepository.currentUserIdFlow.value?.toInt() ?: 1
+            val userId = sessionRepository.currentUserIdFlow.value!!
             syncManager.createAndSaveSyncMessage(
-                crdtKey = courseEntity.crdtKey,
                 entityType = SyncConstants.EntityType.COURSE,
                 operationType = SyncConstants.OperationType.ADD,
                 userId = userId,
                 entity = courseEntity
             )
 
-            Log.d(TAG, "添加课程已创建同步消息: ${courseEntity.crdtKey}")
+            Log.d(TAG, "添加课程已创建同步消息: ${courseEntity.id}")
             return courseId
         } catch (e: Exception) {
             Log.e(TAG, "添加课程及同步消息失败", e)
@@ -100,17 +100,17 @@ constructor(
         }
     }
 
-    override suspend fun addCourses(course: List<Course>, tableId: UUID): List<Long> {
+    override suspend fun addCourses(course: List<Course>, tableId: UUID): List<UUID> {
         Log.d(TAG, "开始导入 ${course.size} 个课程到表ID=${tableId}")
 
         try {
             // 1. 获取表信息，为课程设置正确的CRDT键
             val table = tableDao.getTableById(tableId).first()
-            val tableCrdtKey = table?.crdtKey
+            val tableCrdtKey = table!!.id
 
             // 2. 正确设置表的CRDT键
             val courseEntities = course.map {
-                it.toCourseEntity(tableId).copy(tableCrdtKey = tableCrdtKey)
+                it.toCourseEntity(tableId).copy(tableId = tableCrdtKey)
             }
 
             // 3. 插入课程并获取ID
@@ -122,11 +122,11 @@ constructor(
                 mutableListOf<com.example.todoschedule.data.database.entity.CourseNodeEntity>()
             course.forEachIndexed { index, courseItem ->
                 if (index < courseIds.size) {
-                    val courseId = courseIds[index].toInt()
-                    val courseCrdtKey = courseEntities[index].crdtKey
+                    val courseId = courseIds[index]
+                    val courseCrdtKey = courseEntities[index].id
 
                     val nodeEntities = courseItem.nodes.map { node ->
-                        node.toCourseNodeEntity(courseId).copy(courseCrdtKey = courseCrdtKey)
+                        node.toCourseNodeEntity(courseId).copy(courseId = courseCrdtKey)
                     }
 
                     courseDao.insertCourseNodes(nodeEntities)
@@ -143,10 +143,9 @@ constructor(
                 delay(1000) // 关键延迟，确保数据库操作完成和UI更新
                 try {
                     // 创建课程同步消息
-                    val userId = sessionRepository.currentUserIdFlow.value?.toInt() ?: 1
+                    val userId = sessionRepository.currentUserIdFlow.value!!
                     for (entity in courseEntities) {
                         syncManager.createAndSaveSyncMessage(
-                            crdtKey = entity.crdtKey,
                             entityType = SyncConstants.EntityType.COURSE,
                             operationType = SyncConstants.OperationType.ADD,
                             userId = userId,
@@ -157,7 +156,6 @@ constructor(
                     // 创建课程节点同步消息
                     for (nodeEntity in allNodeEntities) {
                         syncManager.createAndSaveSyncMessage(
-                            crdtKey = nodeEntity.crdtKey,
                             entityType = SyncConstants.EntityType.COURSE_NODE,
                             operationType = SyncConstants.OperationType.ADD,
                             userId = userId,
@@ -188,16 +186,15 @@ constructor(
             }
 
             // 创建同步消息
-            val userId = sessionRepository.currentUserIdFlow.value?.toInt() ?: 1
+            val userId = sessionRepository.currentUserIdFlow.value!!
             syncManager.createAndSaveSyncMessage(
-                crdtKey = courseEntity.crdtKey,
                 entityType = SyncConstants.EntityType.COURSE,
                 operationType = SyncConstants.OperationType.UPDATE,
                 userId = userId,
                 entity = courseEntity
             )
 
-            Log.d(TAG, "更新课程已创建同步消息: ${courseEntity.crdtKey}")
+            Log.d(TAG, "更新课程已创建同步消息: ${courseEntity.id}")
         } catch (e: Exception) {
             Log.e(TAG, "更新课程及同步消息失败", e)
             throw e
@@ -215,16 +212,15 @@ constructor(
 
             // 创建同步消息
             if (courseEntity != null) {
-                val userId = sessionRepository.currentUserIdFlow.value?.toInt() ?: 1
+                val userId = sessionRepository.currentUserIdFlow.value!!
                 syncManager.createAndSaveSyncMessage(
-                    crdtKey = courseEntity.crdtKey,
                     entityType = SyncConstants.EntityType.COURSE,
                     operationType = SyncConstants.OperationType.DELETE,
                     userId = userId,
                     entity = courseEntity
                 )
 
-                Log.d(TAG, "删除课程已创建同步消息: ${courseEntity.crdtKey}")
+                Log.d(TAG, "删除课程已创建同步消息: ${courseEntity.id}")
             }
         } catch (e: Exception) {
             Log.e(TAG, "删除课程及同步消息失败", e)
@@ -290,16 +286,15 @@ constructor(
                 val courseEntity = courseDao.getCourseById(node.courseId)
                 if (courseEntity != null) {
                     // 创建同步消息
-                    val userId = sessionRepository.currentUserIdFlow.value?.toInt() ?: 1
+                    val userId = sessionRepository.currentUserIdFlow.value!!
                     syncManager.createAndSaveSyncMessage(
-                        crdtKey = courseEntity.crdtKey,
                         entityType = SyncConstants.EntityType.COURSE,
                         operationType = SyncConstants.OperationType.UPDATE,
                         userId = userId,
                         entity = courseEntity
                     )
 
-                    Log.d(TAG, "删除课程节点后更新课程同步消息: ${courseEntity.crdtKey}")
+                    Log.d(TAG, "删除课程节点后更新课程同步消息: ${courseEntity.id}")
                 }
             }
         } catch (e: Exception) {

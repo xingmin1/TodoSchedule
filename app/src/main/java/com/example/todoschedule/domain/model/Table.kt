@@ -8,7 +8,7 @@ import java.util.UUID
 
 /** 课表领域模型 */
 data class Table(
-    val Id: UUID = EMPTY_UUID,
+    val id: UUID,
     val userId: UUID,
     val tableName: String,
     val background: String = "",

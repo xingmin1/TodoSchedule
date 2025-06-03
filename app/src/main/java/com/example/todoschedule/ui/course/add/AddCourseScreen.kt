@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.ui.theme.ColorSchemeEnum
+import java.util.UUID
 
 /** 添加课程界面 */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,7 +68,7 @@ fun AddCourseScreen(
     tableId: UUID,
     viewModel: AddCourseViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
-    onCourseAdded: (Int) -> Unit
+    onCourseAdded: (UUID) -> Unit
 ) {
     val courseName by viewModel.courseName.collectAsState()
     val color by viewModel.color.collectAsState()
@@ -418,7 +419,7 @@ fun CourseNodeDialog(
         startWeekError = startWeek.toIntOrNull() == null || startWeek.toInt() < 1
         endWeekError =
             endWeek.toIntOrNull() == null ||
-                    endWeek.toInt() < (startWeek.toIntOrNull() ?: AppConstants.Ids.INVALID_ID)
+                    endWeek.toInt() < (startWeek.toIntOrNull() ?: 0)
 
         return !dayError && !startNodeError && !stepError && !startWeekError && !endWeekError
     }

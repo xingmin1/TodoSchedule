@@ -575,7 +575,8 @@ class StudyViewModel @Inject constructor() : ViewModel() {
                     }
                 }
             } else {
-                val newId = (currentPlans.maxOfOrNull { it.id } ?: 0) + 1
+//                val newId = (currentPlans.maxOfOrNull { it.id } ?: 0) + 1
+                val newId = UUID.randomUUID()
                 val newPlan = StudyPlan(
                     id = newId,
                     title = title,

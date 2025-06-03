@@ -8,6 +8,7 @@ import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
 import com.example.todoschedule.ui.theme.ColorSchemeEnum
 import com.example.todoschedule.ui.theme.toColorSchemeEnum
+import java.util.UUID
 
 /**
  * 将CourseEntity转换为Course领域模型

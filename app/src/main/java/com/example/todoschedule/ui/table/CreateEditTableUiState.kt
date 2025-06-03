@@ -1,6 +1,7 @@
 package com.example.todoschedule.ui.table
 
 import kotlinx.datetime.LocalDate
+import java.util.UUID
 
 data class CreateEditTableUiState(
     val tableId: UUID? = null, // 用于区分是创建还是编辑

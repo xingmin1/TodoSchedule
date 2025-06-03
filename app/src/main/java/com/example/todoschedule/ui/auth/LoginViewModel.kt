@@ -51,7 +51,7 @@ class LoginViewModel @Inject constructor(
 
             result.onSuccess { user ->
                 // 登录成功，保存用户会话
-                saveLoginSessionUseCase(user.id.toLong(), user.token) // 保存用户ID和token
+                saveLoginSessionUseCase(user.id, user.token) // 保存用户ID和token
 
                 // 触发立即同步，使用应用级别的协程作用域
                 applicationScope.launch {

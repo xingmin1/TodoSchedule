@@ -1,9 +1,11 @@
 import bean.Course
 import bean.CourseBaseBean
 import bean.WeekBean
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import kotlinx.coroutines.sync.Semaphore
 import java.lang.Math.abs
 import java.security.MessageDigest
+import java.util.UUID
 
 object Common {
 
@@ -214,11 +216,11 @@ object Common {
         return list
     }
 
-    fun findExistedCourseId(list: List<CourseBaseBean>, name: String): Int {
+    fun findExistedCourseId(list: List<CourseBaseBean>, name: String): UUID {
         val result = list.findLast {
             it.courseName == name
         }
-        return result?.id ?: -1
+        return result?.id ?: EMPTY_UUID
     }
 
     fun parseHeaderNodeString(str: String): Int {

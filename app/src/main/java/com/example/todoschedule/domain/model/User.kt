@@ -7,7 +7,7 @@ import java.util.UUID
 
 /** 用户领域模型 */
 data class User(
-    val id: UUID = EMPTY_UUID,
+    val id: UUID,
     val username: String,
     val phoneNumber: String? = null,
     val email: String? = null,

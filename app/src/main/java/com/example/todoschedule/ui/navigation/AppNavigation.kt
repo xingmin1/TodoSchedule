@@ -20,6 +20,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.todoschedule.core.constants.AppConstants
+import com.example.todoschedule.core.extensions.toUuid
 import com.example.todoschedule.domain.model.ThemeSettings
 import com.example.todoschedule.domain.repository.SessionRepository
 import com.example.todoschedule.domain.use_case.auth.GetLoginUserIdFlowUseCase
@@ -203,11 +204,11 @@ fun AppNavigation(
                 composable(
                     route = AppRoutes.AddCourse.route,
                     arguments = listOf(
-                        navArgument("tableId") { type = NavType.IntType }
+                        navArgument("tableId") { type = NavType.StringType }
                     )
                 ) { backStackEntry ->
                     val tableId =
-                        backStackEntry.arguments?.getInt("tableId")
+                        backStackEntry.arguments?.getString("tableId")?.toUuid()
                             ?: AppConstants.Ids.INVALID_TABLE_ID
                     // AddCourseScreen 需要适配或有自己的 Scaffold
                     AddCourseScreen(

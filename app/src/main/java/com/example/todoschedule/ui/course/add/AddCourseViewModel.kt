@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -177,7 +178,7 @@ class AddCourseViewModel @Inject constructor(
                         _saveState.value = SaveState.Error("用户未登录，无法创建课表")
                         return@launch
                     }
-                    val userId = currentUserId.toInt()
+                    val userId = currentUserId
                     // 创建默认课表并获取新ID                    // 创建默认课表并获取新ID
                     val newTable = Table(
                         userId = userId,
@@ -185,7 +186,7 @@ class AddCourseViewModel @Inject constructor(
                         startDate = AppConstants.Database.DEFAULT_TABLE_START_DATE,
                     )
                     Log.d("AddCourseViewModel", "Creating new table: $newTable")
-                    actualTableId = tableRepository.addTable(newTable).toInt()
+                    actualTableId = tableRepository.addTable(newTable)
                 }
 
                 val course = Course(
@@ -200,7 +201,7 @@ class AddCourseViewModel @Inject constructor(
 
                 val courseId = courseRepository.addCourse(course, actualTableId)
                 Log.d("TableId", actualTableId.toString())
-                _saveState.value = SaveState.Success(courseId.toInt())
+                _saveState.value = SaveState.Success(courseId)
             } catch (e: Exception) {
                 _saveState.value =
                     SaveState.Error(e.message ?: "保存失败：${e.javaClass.simpleName}")

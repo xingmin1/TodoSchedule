@@ -2,6 +2,7 @@ package com.example.todoschedule.ui.schedule
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import com.example.todoschedule.data.database.converter.ScheduleStatus
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.domain.model.Course
@@ -28,6 +29,7 @@ import kotlinx.datetime.atTime
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -260,7 +262,7 @@ class QuickAddScheduleViewModel @Inject constructor(
                 }
 
                 // 获取当前用户ID
-                val userId = sessionRepository.currentUserIdFlow.first()?.toInt()
+                val userId = sessionRepository.currentUserIdFlow.first()
                     ?: throw IllegalStateException("用户未登录")
 
                 // 获取当前课表ID
@@ -294,6 +296,7 @@ class QuickAddScheduleViewModel @Inject constructor(
                         val startNode = _uiState.value.startNode ?: 1
                         val step = _uiState.value.step ?: 2
                         val course = Course(
+                            id = UUID.randomUUID(),
                             courseName = _uiState.value.title,
                             color = _uiState.value.selectedColor,
                             room = _uiState.value.location.takeIf { it.isNotEmpty() },
@@ -319,6 +322,7 @@ class QuickAddScheduleViewModel @Inject constructor(
                     else -> {
                         // 创建普通日程
                         val schedule = OrdinarySchedule(
+                            id = UUID.randomUUID(),
                             userId = userId,
                             title = _uiState.value.title,
                             description = _uiState.value.detail,
@@ -328,6 +332,7 @@ class QuickAddScheduleViewModel @Inject constructor(
                             status = ScheduleStatus.TODO,
                             timeSlots = listOf(
                                 TimeSlot(
+                                    id = UUID.randomUUID(),
                                     startTime = _uiState.value.selectedDate
                                         .atTime(_uiState.value.startTime!!)
                                         .toInstant(TimeZone.currentSystemDefault())
@@ -348,7 +353,7 @@ class QuickAddScheduleViewModel @Inject constructor(
                                         ScheduleCategory.REVIEW -> ScheduleType.REVIEW
                                         else -> ScheduleType.ORDINARY
                                     },
-                                    scheduleId = 0,
+                                    scheduleId = EMPTY_UUID, // 普通日程没有关联课程
                                     userId = userId
                                 )
                             )

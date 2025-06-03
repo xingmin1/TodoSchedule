@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todoschedule.core.constants.AppConstants
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import com.example.todoschedule.data.database.converter.ScheduleStatus
 import com.example.todoschedule.domain.model.OrdinarySchedule
 import com.example.todoschedule.domain.model.Table
@@ -40,6 +41,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -55,12 +57,12 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     // 当前登录用户 ID 状态
-    private val currentUserIdState: StateFlow<Long?> = sessionRepository.currentUserIdFlow
+    private val currentUserIdState: StateFlow<UUID?> = sessionRepository.currentUserIdFlow
 
     // 当前默认课表ID状态
-    private val _defaultTableIdState: StateFlow<Int> = currentUserIdState.flatMapLatest { userId ->
-        if (userId != null && userId != -1L) {
-            globalSettingRepository.getDefaultTableIds(userId.toInt())
+    private val _defaultTableIdState: StateFlow<UUID> = currentUserIdState.flatMapLatest { userId ->
+        if (userId != null && userId != EMPTY_UUID) {
+            globalSettingRepository.getDefaultTableIds(userId)
                 .map { it.firstOrNull() ?: AppConstants.Ids.INVALID_TABLE_ID }
         } else {
             flowOf(AppConstants.Ids.INVALID_TABLE_ID)
@@ -70,7 +72,7 @@ class HomeViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = AppConstants.Ids.INVALID_TABLE_ID
     )
-    val defaultTableIdState: StateFlow<Int> = _defaultTableIdState
+    val defaultTableIdState: StateFlow<UUID> = _defaultTableIdState
 
     // 当前课表状态
     private val currentTableState: StateFlow<Table?> =
@@ -89,8 +91,8 @@ class HomeViewModel @Inject constructor(
     // 获取当前登录用户的普通日程
     private val ordinarySchedules: StateFlow<List<OrdinarySchedule>> =
         currentUserIdState.flatMapLatest { userId ->
-            if (userId != null && userId != -1L) {
-                getOrdinarySchedulesUseCase(userId.toInt())
+            if (userId != null && userId != EMPTY_UUID) {
+                getOrdinarySchedulesUseCase(userId)
             } else {
                 flowOf(emptyList())
             }
@@ -159,7 +161,7 @@ class HomeViewModel @Inject constructor(
     ) { tableId, week, date, timeConfig ->
         Quadruple(tableId, week, date, timeConfig)
     }.flatMapLatest { (tableId, week, date, timeConfig) ->
-        if (tableId <= 0) {
+        if (tableId != EMPTY_UUID) {
             flowOf(emptyList())
         } else {
             courseRepository.getCoursesByTableId(tableId).map { courses ->
@@ -283,7 +285,7 @@ class HomeViewModel @Inject constructor(
                 HomeUiState.Loading
             }
             // 2. 用户未登录 (userId 最终确定为 null 或 -1L)
-            userId == null || userId == -1L -> {
+            userId == null || userId == EMPTY_UUID -> {
                 HomeUiState.NoTableSelected
             }
             // 3. 已登录，但没有有效的默认课表 ID (tableId 加载完成但值为 -1)
@@ -313,8 +315,8 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
 
             try {
-                val userId = currentUserIdState.value?.toInt() ?: -1
-                if (userId == -1) return@launch
+                val userId = currentUserIdState.value!!
+                if (userId == EMPTY_UUID) return@launch
 
                 val schedules = getOrdinarySchedulesUseCase(userId).firstOrNull() ?: return@launch
 

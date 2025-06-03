@@ -5,7 +5,7 @@ import java.util.UUID
 
 /** 全局课表设置领域模型 */
 data class GlobalTableSetting(
-    val id: UUID = EMPTY_UUID,
+    val id: UUID,
     val userId: UUID,
     val defaultTableIds: List<Int> = emptyList(),
     val showWeekend: Boolean = true,

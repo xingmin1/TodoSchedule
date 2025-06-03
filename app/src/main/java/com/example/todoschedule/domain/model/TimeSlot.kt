@@ -11,7 +11,7 @@ import java.util.UUID
  * Domain 层的 TimeSlot 模型。
  */
 data class TimeSlot(
-    val id: UUID = EMPTY_UUID,
+    val id: UUID,
     val startTime: Long, // 开始时间 (时间戳)
     val endTime: Long, // 结束时间 (时间戳)
     val scheduleType: ScheduleType, // 使用枚举类型

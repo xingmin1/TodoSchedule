@@ -22,12 +22,12 @@ interface CourseRepository {
     /**
      * 添加课程，返回课程ID
      */
-    suspend fun addCourse(course: Course, tableId: UUID): Long
+    suspend fun addCourse(course: Course, tableId: UUID): UUID
 
     /**
      * 批量添加课程，返回课程ID列表
      */
-    suspend fun addCourses(course: List<Course>, tableId: UUID): List<Long>
+    suspend fun addCourses(course: List<Course>, tableId: UUID): List<UUID>
 
     /**
      * 更新课程

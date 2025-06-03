@@ -6,6 +6,7 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todoschedule.core.constants.AppConstants
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
@@ -54,6 +55,7 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import java.util.UUID
 import javax.inject.Inject
 
 /** 课程表视图模型 */
@@ -79,13 +81,13 @@ constructor(
     //val currentWeek: StateFlow<Int> = _currentWeek
 
     // 当前登录用户 ID 状态
-    private val currentUserIdState: StateFlow<Long?> = sessionRepository.currentUserIdFlow
+    private val currentUserIdState: StateFlow<UUID?> = sessionRepository.currentUserIdFlow
 
     // 当前默认课表ID状态
-    private val _defaultTableIdState: StateFlow<List<Int>> =
+    private val _defaultTableIdState: StateFlow<List<UUID>> =
         currentUserIdState.flatMapLatest { userId ->
-            if (userId != null && userId != -1L) {
-                globalSettingRepository.getDefaultTableIds(userId.toInt())
+            if (userId != null && userId != EMPTY_UUID) {
+                globalSettingRepository.getDefaultTableIds(userId)
             } else {
                 flowOf(emptyList())
             }
@@ -95,7 +97,7 @@ constructor(
             initialValue = emptyList()
         )
 
-    val defaultTableIdState: StateFlow<List<Int>> = _defaultTableIdState
+    val defaultTableIdState: StateFlow<List<UUID>> = _defaultTableIdState
 
     // 当前课表状态列表 (基于默认ID列表)
     private val _currentTableState: StateFlow<List<Table?>> =
@@ -147,8 +149,8 @@ constructor(
     // 获取当前登录用户的普通日程
     private val ordinarySchedules: StateFlow<List<OrdinarySchedule>> =
         currentUserIdState.flatMapLatest { userId ->
-            if (userId != null && userId != -1L) {
-                getOrdinarySchedulesUseCase(userId.toInt())
+            if (userId != null && userId != EMPTY_UUID) {
+                getOrdinarySchedulesUseCase(userId)
             } else {
                 flowOf(emptyList())
             }
@@ -165,7 +167,7 @@ constructor(
         currentTablesTimeConfig.filterNotNull().map { it.filterNotNull() } //确保列表内也是非空
     ) { userId, tables, configs ->
         tables.mapNotNull { table ->
-            if (table.userId == userId.toInt()) {
+            if (table.userId == userId) {
                 val config = configs.find { it.tableId == table.id } // 找到对应的config
                 if (config != null) {
                     Triple(userId, table, config)
@@ -199,7 +201,7 @@ constructor(
         )
         when {
             userId == null && currentUserIdState.value == null -> ScheduleUiState.Loading
-            userId == null || userId == -1L -> ScheduleUiState.NoTableSelected
+            userId == null || userId == EMPTY_UUID -> ScheduleUiState.NoTableSelected
             tableIds.isEmpty() -> ScheduleUiState.NoTableSelected // 没有默认课表ID
             // 检查是否所有请求的课表和配置都已加载（或至少尝试过）
             // 这里简化逻辑：如果ID存在，但对应的table或config是null（且列表大小匹配），则认为是加载中
@@ -439,6 +441,7 @@ constructor(
                                 .toEpochMilliseconds()
 
                         TimeSlot(
+                            id = EMPTY_UUID, // 用于显示而不是数据库
                             userId = userId,
                             startTime = startMillis,
                             endTime = endMillis,
@@ -486,7 +489,7 @@ constructor(
                                 emptyList<TimeSlot>()
                             } else {
                                 generateAllTimeSlotsForCourseNodes(
-                                    userId = userId.toInt(),
+                                    userId = userId,
                                     courses = coursesForTable,
                                     tableTimeConfig = configForTable,
                                     table = table
@@ -659,7 +662,7 @@ constructor(
                                 currentUserIdState.value?.let { userId ->
                                     tableTimeConfigRepository.ensureDefaultTimeConfig(
                                         table.id,
-                                        userId.toInt()
+                                        userId
                                     )
                                     Log.i(
                                         "ScheduleViewModel",

@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import com.example.todoschedule.data.database.converter.ScheduleStatus
 import com.example.todoschedule.domain.model.OrdinarySchedule
 import com.example.todoschedule.domain.repository.CourseRepository
@@ -40,6 +41,7 @@ import kotlinx.datetime.toJavaLocalDate
 import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toLocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -60,7 +62,7 @@ open class TaskViewModel @Inject constructor(
     // 用于组合 Flow
     private val currentUserIdFlow = sessionRepository.currentUserIdFlow
     private val defaultTableIdsFlow = currentUserIdFlow.flatMapLatest {
-        it?.let { userId -> globalSettingRepository.getDefaultTableIds(userId.toInt()) } ?: flowOf(
+        it?.let { userId -> globalSettingRepository.getDefaultTableIds(userId) } ?: flowOf(
             emptyList()
         )
     }
@@ -97,7 +99,7 @@ open class TaskViewModel @Inject constructor(
                         )
                     )
                 } else {
-                    loadTasks(userId.toInt(), defaultTableIds.first(), filter, searchTerm)
+                    loadTasks(userId, defaultTableIds.first(), filter, searchTerm)
                 }
             }.catch { e ->
                 Log.e("TaskViewModel", "Error observing data", e)
@@ -370,7 +372,7 @@ open class TaskViewModel @Inject constructor(
             try {
                 // Fetch the full schedule to update
                 val scheduleFlow =
-                    getOrdinarySchedulesUseCase(currentUserIdFlow.value?.toInt() ?: -1)
+                    getOrdinarySchedulesUseCase(currentUserIdFlow.value ?: EMPTY_UUID)
                         .map { list -> list.find { it.id == taskItem.originalId } }
                         .firstOrNull()
 

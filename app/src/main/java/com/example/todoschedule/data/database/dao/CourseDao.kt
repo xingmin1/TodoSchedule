@@ -64,19 +64,19 @@ interface CourseDao {
      * 插入课程
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCourse(course: CourseEntity): Long
+    suspend fun insertCourse(course: CourseEntity): UUID
 
     /**
      * 批量插入课程
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCourses(courses: List<CourseEntity>): List<Long>
+    suspend fun insertCourses(courses: List<CourseEntity>): List<UUID>
 
     /**
      * 插入课程节点
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCourseNode(courseNode: CourseNodeEntity): Long
+    suspend fun insertCourseNode(courseNode: CourseNodeEntity): UUID
 
     /**
      * 批量插入课程节点

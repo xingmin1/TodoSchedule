@@ -181,7 +181,7 @@ class SyncManager @Inject constructor(
             // 将消息保存到本地数据库
             syncRepository.saveSyncMessage(messageEntity)
 
-            Log.d(TAG, "同步消息已保存: $userId, 类型: ${entityType.value}, 操作: $operationType")
+            Log.d(TAG, "同步消息已保存: ${message.crdt}, 类型: ${entityType.value}, 操作: $operationType")
         } catch (e: Exception) {
             Log.e(TAG, "创建和保存同步消息时出错: ${e.message}", e)
             throw e

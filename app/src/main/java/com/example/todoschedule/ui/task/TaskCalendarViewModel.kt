@@ -22,14 +22,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -157,7 +153,7 @@ class TaskCalendarViewModel @Inject constructor(
      * 获取任务数据
      */
     private suspend fun getAllTasks(): List<TaskItemUiModel> {
-        val userId = sessionRepository.currentUserIdFlow.value?.toInt() ?: return emptyList()
+        val userId = sessionRepository.currentUserIdFlow.value ?: return emptyList()
 
         // 获取默认课表ID
         val defaultTableIds = globalSettingRepository.getDefaultTableIds(userId).first()

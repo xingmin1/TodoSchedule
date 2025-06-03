@@ -10,6 +10,7 @@ import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toJavaLocalTime
 import kotlinx.datetime.toLocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 /**
  * 学习数据
@@ -72,7 +73,7 @@ fun LocalDateTime.format(formatter: DateTimeFormatter): String {
  * 学习计划
  */
 data class StudyPlan(
-    val Id: UUID,  // ID
+    val id: UUID,  // ID
     val title: String,  // 标题
     val startTime: LocalDateTime, // 开始时间
     val endTime: LocalDateTime,  // 结束时间

@@ -1,7 +1,9 @@
 package bean
 
+import java.util.UUID
+
 data class CourseDetailBean(
-    var Id: UUID,
+    var id: UUID,
     var day: Int,
     var room: String?,
     var teacher: String?,

@@ -22,8 +22,8 @@ interface GlobalSettingRepository {
     suspend fun initDefaultSettingIfNeeded(userId: UUID): UUID
 
     /** 更新默认课表ID */
-    suspend fun updateDefaultTableIds(userId: UUID, tableIds: List<Int>)
+    suspend fun updateDefaultTableIds(userId: UUID, tableIds: List<UUID>)
 
     /** 获取默认课表ID */
-    fun getDefaultTableIds(userId: UUID): Flow<List<Int>>
+    fun getDefaultTableIds(userId: UUID): Flow<List<UUID>>
 }

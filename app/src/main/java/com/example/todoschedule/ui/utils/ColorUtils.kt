@@ -3,6 +3,7 @@ package com.example.todoschedule.ui.utils
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 import com.example.todoschedule.ui.theme.ColorSchemeEnum
+import java.util.UUID
 import kotlin.math.pow
 
 object ColorUtils {
@@ -13,7 +14,7 @@ object ColorUtils {
         colorScheme: ColorScheme
     ): Pair<Color, Color> {
         val backgroundColor = displayColor?.toColor(colorScheme) ?: run {
-            generateAdaptiveCourseColor(scheduleId, isDarkTheme)
+            generateAdaptiveCourseColor(scheduleId.hashCode(), isDarkTheme)
         }
 
         val contentColor = if (backgroundColor.calculateLuminance() < 0.5f) {

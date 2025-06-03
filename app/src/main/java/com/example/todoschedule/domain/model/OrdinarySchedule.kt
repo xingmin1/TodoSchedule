@@ -9,7 +9,7 @@ import java.util.UUID
  * Domain 层的 OrdinarySchedule 模型，包含其关联的 TimeSlot 列表。
  */
 data class OrdinarySchedule(
-    val id: UUID = EMPTY_UUID,
+    val id: UUID,
     val userId: UUID,
     val title: String,
     val description: String? = null,

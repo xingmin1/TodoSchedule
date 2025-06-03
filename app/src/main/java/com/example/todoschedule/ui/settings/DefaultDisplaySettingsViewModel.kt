@@ -9,8 +9,17 @@ import com.example.todoschedule.domain.repository.TableRepository
 import com.example.todoschedule.domain.use_case.settings.ValidateDefaultTableOverlapUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -25,7 +34,7 @@ class DefaultDisplaySettingsViewModel @Inject constructor(
     data class UiState(
         val isLoading: Boolean = true,
         val allTables: List<Table> = emptyList(),
-        val selectedTableIds: Set<Int> = emptySet(),
+        val selectedTableIds: Set<UUID> = emptySet(),
         val error: String? = null,
         val validationError: String? = null,
         val isSaving: Boolean = false,
@@ -47,8 +56,8 @@ class DefaultDisplaySettingsViewModel @Inject constructor(
             userIdFlow.firstOrNull()?.let { userId ->
                 try {
                     // Combine flows for all tables and default selected IDs
-                    val allTablesFlow = tableRepository.getTableByUserId(userId.toInt())
-                    val defaultIdsFlow = globalSettingRepository.getDefaultTableIds(userId.toInt())
+                    val allTablesFlow = tableRepository.getTableByUserId(userId)
+                    val defaultIdsFlow = globalSettingRepository.getDefaultTableIds(userId)
 
                     combine(allTablesFlow, defaultIdsFlow) { tables, defaultIds ->
                         _uiState.update {
@@ -116,7 +125,7 @@ class DefaultDisplaySettingsViewModel @Inject constructor(
             userIdFlow.firstOrNull()?.let { userId ->
                 try {
                     globalSettingRepository.updateDefaultTableIds(
-                        userId.toInt(),
+                        userId,
                         selectedIds.toList()
                     )
                     _uiState.update { it.copy(isSaving = false, saveSuccess = true) }

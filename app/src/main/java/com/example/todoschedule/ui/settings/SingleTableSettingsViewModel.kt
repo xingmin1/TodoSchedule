@@ -3,6 +3,7 @@ package com.example.todoschedule.ui.settings
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todoschedule.core.extensions.toUuidOrNull
 import com.example.todoschedule.domain.model.Table
 import com.example.todoschedule.domain.model.TableTimeConfig
 import com.example.todoschedule.domain.repository.TableRepository
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import java.util.UUID
 // import java.time.YearMonth // Not used
 import javax.inject.Inject
 
@@ -36,7 +38,7 @@ class SingleTableSettingsViewModel @Inject constructor(
 
     // 从路由参数获取表ID
     private val tableId: UUID = checkNotNull(
-        savedStateHandle.get<String>(AppRoutes.SingleTableSettings.ARG_TABLE_ID)?.toIntOrNull()
+        savedStateHandle.get<String>(AppRoutes.SingleTableSettings.ARG_TABLE_ID)?.toUuidOrNull()
     )
 
     // UI 状态
@@ -235,7 +237,7 @@ class SingleTableSettingsViewModel @Inject constructor(
             }
             try {
                 val newConfig = TableTimeConfig(
-                    id = 0, // ID 由数据库生成
+                    id = UUID.randomUUID(),
                     tableId = tableId,
                     name = name,
                     isDefault = false, // 新添加的默认不是默认配置

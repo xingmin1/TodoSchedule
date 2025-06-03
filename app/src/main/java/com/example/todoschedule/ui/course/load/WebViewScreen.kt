@@ -75,6 +75,7 @@ import com.example.todoschedule.domain.model.CourseNode
 import com.example.todoschedule.ui.navigation.NavigationState
 import com.example.todoschedule.utils.courseadapter.bean.ParserResult
 import main.java.parser.ZZUParser
+import java.util.UUID
 
 @Composable
 fun WebViewScreen(

@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.navigation.NavController
 import com.example.todoschedule.core.constants.AppConstants
 import java.net.URLEncoder
+import java.util.UUID
 
 /**
  * 应用导航状态

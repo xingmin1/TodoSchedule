@@ -17,7 +17,7 @@ class AddCourseUseCase @Inject constructor(
      * @param tableId 课表ID
      * @return 课程ID
      */
-    suspend operator fun invoke(course: Course, tableId: UUID): Long {
+    suspend operator fun invoke(course: Course, tableId: UUID): UUID {
         return courseRepository.addCourse(course, tableId)
     }
 } 

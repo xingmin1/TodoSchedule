@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -47,7 +48,7 @@ class TableManagementViewModel @Inject constructor(
                 // 用户未登录时，返回空列表
                 MutableStateFlow(emptyList())
             } else {
-                tableRepository.getTableByUserId(userId.toInt())
+                tableRepository.getTableByUserId(userId)
             }
         }
         .stateIn(

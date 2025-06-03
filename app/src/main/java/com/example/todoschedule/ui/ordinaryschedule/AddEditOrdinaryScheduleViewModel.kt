@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
+import com.example.todoschedule.core.extensions.toUuid
 import com.example.todoschedule.data.database.converter.ScheduleStatus
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.domain.model.OrdinarySchedule
@@ -31,6 +33,7 @@ import kotlinx.datetime.toInstant
 import kotlinx.datetime.toKotlinTimeZone
 import kotlinx.datetime.toLocalDateTime
 import java.time.ZoneId
+import java.util.UUID
 import javax.inject.Inject
 
 // 状态数据类
@@ -72,9 +75,9 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
     val uiState: StateFlow<AddEditOrdinaryScheduleUiState> = _uiState.asStateFlow()
 
     // Get potential scheduleId from navigation arguments
-    private val scheduleIdFromNav: Int? =
-        savedStateHandle.get<Int>(AppRoutes.AddEditOrdinarySchedule.ARG_SCHEDULE_ID)
-            ?.let { if (it == -1) null else it } // Convert default value -1 to null
+    private val scheduleIdFromNav: UUID? =
+        savedStateHandle.get<String>(AppRoutes.AddEditOrdinarySchedule.ARG_SCHEDULE_ID)
+            ?.toUuid()?.let { if (it == EMPTY_UUID) null else it } // Convert default value -1 to null
 
     init {
         if (scheduleIdFromNav != null) {
@@ -246,7 +249,7 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
 
             try {
                 val currentUserId = sessionRepository.currentUserIdFlow.first()
-                if (currentUserId == null || currentUserId == -1L) {
+                if (currentUserId == null || currentUserId == EMPTY_UUID) {
                     Log.e("AddEditVM", "Save failed: Current user not logged in or invalid ID.")
                     _uiState.update {
                         it.copy(
@@ -256,7 +259,7 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
                     }
                     return@launch
                 }
-                val userIdInt = currentUserId.toInt()
+                val userIdInt = currentUserId
                 Log.d("AddEditVM", "Current User ID for TimeSlot: $userIdInt")
 
                 // Convert to Milliseconds
@@ -268,15 +271,16 @@ class AddEditOrdinaryScheduleViewModel @Inject constructor(
 
                 // Create TimeSlot using the fetched currentUserId
                 val timeSlot = TimeSlot(
+                    id = UUID.randomUUID(), // Generate a new ID for the TimeSlot
                     startTime = startMillis,
                     endTime = endMillis,
                     scheduleType = ScheduleType.ORDINARY,
-                    scheduleId = currentState.scheduleId ?: 0,
+                    scheduleId = currentState.scheduleId!!,
                     userId = userIdInt
                 )
 
                 val scheduleToSave = OrdinarySchedule(
-                    id = currentState.scheduleId ?: 0,
+                    id = currentState.scheduleId,
                     userId = userIdInt,
                     title = currentState.title,
                     description = currentState.description,

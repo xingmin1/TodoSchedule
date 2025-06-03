@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.todoschedule.data.database.converter.ScheduleStatus
 import com.example.todoschedule.ui.theme.ColorSchemeEnum
 import kotlinx.datetime.LocalDateTime
+import java.util.UUID
 
 /**
  * TaskScreen 的 UI 状态

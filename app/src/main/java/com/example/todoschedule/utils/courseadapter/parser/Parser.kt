@@ -7,8 +7,10 @@ import bean.CourseBaseBean
 import bean.CourseDetailBean
 import bean.TimeTable
 import com.example.todoschedule.core.constants.AppConstants
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import com.example.todoschedule.ui.theme.ColorSchemeEnum
 import com.example.todoschedule.utils.courseadapter.bean.ParserResult
+import java.util.UUID
 
 abstract class Parser(val source: String) {
 
@@ -31,13 +33,13 @@ abstract class Parser(val source: String) {
     private fun convertCourse() {
         generateCourseList().forEach { course ->
             var id = Common.findExistedCourseId(_baseList, course.name)
-            if (id == -1) {
-                id = _baseList.size
+            if (id == EMPTY_UUID) {
+                id = UUID.randomUUID()
                 _baseList.add(
                     CourseBaseBean(
                         id = id, courseName = course.name,
                         color = AppConstants.DEFAULT_COURSE_COLOR,
-                        tableId = 0,
+                        tableId = EMPTY_UUID,
                         note = course.note,
                         credit = course.credit,
                         courseID = course.courseID
@@ -52,7 +54,7 @@ abstract class Parser(val source: String) {
                     startWeek = course.startWeek, endWeek = course.endWeek,
                     type = course.type, startNode = course.startNode,
                     credit = course.credit,
-                    tableId = 0
+                    tableId = EMPTY_UUID
                 )
             )
         }

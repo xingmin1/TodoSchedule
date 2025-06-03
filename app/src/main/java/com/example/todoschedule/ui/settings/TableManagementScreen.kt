@@ -63,12 +63,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.todoschedule.domain.model.Table
 import com.example.todoschedule.ui.navigation.AppRoutes
 import com.example.todoschedule.ui.navigation.NavigationState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toJavaLocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.UUID
 
 /**
  * 课表管理屏幕
@@ -225,9 +225,9 @@ fun TableManagementScreen(
 @Composable
 private fun TableList(
     tables: List<Table>,
-    onTableSettingsClick: (Int) -> Unit,
-    onTableEditClick: (Int) -> Unit,
-    onTableDeleteClick: (Int, String) -> Unit
+    onTableSettingsClick: (UUID) -> Unit,
+    onTableEditClick: (UUID) -> Unit,
+    onTableDeleteClick: (UUID, String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier

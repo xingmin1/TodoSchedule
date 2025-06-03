@@ -6,6 +6,8 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
+import com.example.todoschedule.core.extensions.toUuid
 import com.example.todoschedule.domain.model.Table
 import com.example.todoschedule.domain.repository.GlobalSettingRepository
 import com.example.todoschedule.domain.repository.SessionRepository
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -34,9 +37,9 @@ class CreateEditTableViewModel @Inject constructor(
     val uiState: StateFlow<CreateEditTableUiState> = _uiState.asStateFlow()
 
     // 从导航参数获取 tableId 用于编辑模式
-    private val tableIdFromNav: Int? =
-        savedStateHandle.get<Int>(AppRoutes.CreateEditTable.ARG_TABLE_ID)
-            ?.takeIf { it != -1 } // 如果 ID 不是默认值 -1，则保留，否则为 null
+    private val tableIdFromNav: UUID? =
+        savedStateHandle.get<String>(AppRoutes.CreateEditTable.ARG_TABLE_ID)
+            ?.toUuid()?.takeIf { it != EMPTY_UUID } // 如果 ID 不是默认值 -1，则保留，否则为 null
 
     init {
         if (tableIdFromNav != null) {
@@ -108,7 +111,7 @@ class CreateEditTableViewModel @Inject constructor(
             val currentState = _uiState.value
             val userId = sessionRepository.currentUserIdFlow.first()
 
-            if (userId == null || userId == -1L) {
+            if (userId == null || userId == EMPTY_UUID) {
                 _uiState.update { it.copy(errorMessage = "无法获取用户信息，请重新登录") }
                 return@launch
             }
@@ -129,8 +132,8 @@ class CreateEditTableViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             val table = Table(
-                id = currentState.tableId ?: 0,
-                userId = userId.toInt(),
+                id = currentState.tableId ?: UUID.randomUUID(), // 如果是新建则生成新的 UUID
+                userId = userId,
                 tableName = currentState.tableName,
                 startDate = currentState.startDate,
                 totalWeeks = totalWeeksInt,
@@ -144,7 +147,7 @@ class CreateEditTableViewModel @Inject constructor(
                     val tableToUpdate = table.copy(id = currentState.tableId!!)
                     // 校验 userId
                     val currentUserId = sessionRepository.currentUserIdFlow.first()
-                    if (currentUserId == null || currentUserId.toInt() != tableToUpdate.userId) {
+                    if (currentUserId == null || currentUserId != tableToUpdate.userId) {
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
@@ -164,11 +167,11 @@ class CreateEditTableViewModel @Inject constructor(
 
                     // 将新创建的课表设为默认课表
                     val currentUserId = sessionRepository.currentUserIdFlow.first()
-                    if (currentUserId != null && currentUserId != -1L) {
+                    if (currentUserId != null && currentUserId != EMPTY_UUID) {
                         try {
                             globalSettingRepository.updateDefaultTableIds(
-                                currentUserId.toInt(),
-                                listOf(newTableId.toInt())
+                                currentUserId,
+                                listOf(newTableId)
                             )
                             Log.i(
                                 "CreateTableVM",

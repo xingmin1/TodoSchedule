@@ -3,6 +3,7 @@ package com.example.todoschedule
 import android.app.Application
 import android.content.Intent
 import android.util.Log
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import com.example.todoschedule.core.utils.DevUtils
 import com.example.todoschedule.data.sync.SyncManager
 import com.example.todoschedule.data.sync.SyncService
@@ -86,12 +87,12 @@ class TodoScheduleApplication : Application() {
                     if (::sessionRepository.isInitialized) {
                         val userId = sessionRepository.currentUserIdFlow.first()
 
-                        if (userId != null && userId > 0) {
+                        if (userId != null && userId != EMPTY_UUID) {
                             Log.d(TAG, "应用启动时检测到已登录用户: $userId，主动触发同步")
 
                             // 先尝试注册设备
                             val syncRepo = syncManager.getSyncRepository()
-                            val deviceRegistered = syncRepo.registerDevice(userId.toInt())
+                            val deviceRegistered = syncRepo.registerDevice(userId)
 
                             if (deviceRegistered) {
                                 Log.d(TAG, "设备注册成功，触发同步")
