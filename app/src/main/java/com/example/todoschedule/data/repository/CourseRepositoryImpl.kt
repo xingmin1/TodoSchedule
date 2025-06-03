@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -103,8 +104,11 @@ constructor(
 
         try {
             // 1. 获取表信息，为课程设置正确的CRDT键
-            val table = tableDao.getTableById(tableId.toString()).first()
-            val tableCrdtKey = table!!.id
+            //    使用 filterNotNull() 等待 Room 真正插入成功后再继续，避免拿到 null
+            val tableEntity = tableDao.getTableById(tableId.toString())
+                .filterNotNull()
+                .first()
+            val tableCrdtKey = tableEntity.id
 
             // 2. 正确设置表的CRDT键
             val courseEntities = course.map {
