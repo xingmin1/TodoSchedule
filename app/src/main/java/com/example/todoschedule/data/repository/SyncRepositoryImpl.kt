@@ -669,8 +669,9 @@ override suspend fun downloadMessagesByEntityTypeExcludeOrigin(entityType: Strin
 
     /**
      * 执行完整的数据同步流程
+     * 在 IO 线程执行，防止阻塞主线程
      */
-    override suspend fun syncData() {
+    override suspend fun syncData() = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "开始执行完整同步流程")
 
