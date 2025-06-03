@@ -3,6 +3,7 @@ package com.example.todoschedule.domain.use_case.ordinary_schedule
 import com.example.todoschedule.domain.model.OrdinarySchedule
 import com.example.todoschedule.domain.repository.OrdinaryScheduleRepository
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -11,7 +12,7 @@ import javax.inject.Inject
 class GetOrdinaryScheduleByIdUseCase @Inject constructor(
     private val repository: OrdinaryScheduleRepository
 ) {
-    operator fun invoke(Id: UUID): Flow<OrdinarySchedule?> {
+    operator fun invoke(id: UUID): Flow<OrdinarySchedule?> {
         return repository.getScheduleById(id)
     }
 } 

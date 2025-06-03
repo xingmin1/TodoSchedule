@@ -2,6 +2,7 @@ package com.example.todoschedule.domain.use_case.auth
 
 import com.example.todoschedule.domain.repository.SessionRepository
 import com.example.todoschedule.domain.repository.UserRepository
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -16,7 +17,7 @@ class SaveLoginSessionUseCase @Inject constructor(
      * @param userId 用户ID
      * @param token 用户token，如果为null则从数据库获取
      */
-    suspend operator fun invoke(userId: Long, token: String? = null) {
+    suspend operator fun invoke(userId: UUID, token: String? = null) {
         // 保存用户ID
         sessionRepository.saveUserId(userId)
 
@@ -28,7 +29,7 @@ class SaveLoginSessionUseCase @Inject constructor(
             sessionRepository.saveAuthToken(token)
         } else {
             // 如果没有提供token，从数据库获取
-            val user = userRepository.getUserById(userId.toInt())
+            val user = userRepository.getUserById(userId)
             if (user?.token != null) {
                 sessionRepository.saveUserToken(user.token)
                 // 同时保存为认证令牌

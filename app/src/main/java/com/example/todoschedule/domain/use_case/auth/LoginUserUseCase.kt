@@ -52,7 +52,7 @@ class LoginUserUseCase @Inject constructor(
                     } else {
                         // 本地没有该用户，创建新用户
                         val userId = userRepository.addUser(remoteUser)
-                        return Result.success(remoteUser.copy(id = userId.toInt()))
+                        return Result.success(remoteUser.copy(id = userId))
                     }
                 }
                 // 如果远程登录失败，但不是网络错误等严重问题，可以尝试本地登录

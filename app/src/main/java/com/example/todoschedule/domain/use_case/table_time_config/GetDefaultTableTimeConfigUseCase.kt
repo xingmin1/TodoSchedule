@@ -1,8 +1,10 @@
 package com.example.todoschedule.domain.use_case.table_time_config
 
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import com.example.todoschedule.domain.model.TableTimeConfig
 import com.example.todoschedule.domain.repository.TableTimeConfigRepository
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -13,7 +15,7 @@ class GetDefaultTableTimeConfigUseCase @Inject constructor(
 ) {
     operator fun invoke(tableId: UUID): Flow<TableTimeConfig?> {
         // 可以在这里添加验证或其他业务逻辑
-        if (tableId <= 0) {
+        if (tableId != EMPTY_UUID) {
             // 处理无效的 tableId，例如返回 emptyFlow() 或抛出异常
             // import kotlinx.coroutines.flow.emptyFlow
             // return emptyFlow()

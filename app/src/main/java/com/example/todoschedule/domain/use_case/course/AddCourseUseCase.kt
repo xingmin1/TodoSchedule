@@ -2,6 +2,7 @@ package com.example.todoschedule.domain.use_case.course
 
 import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.repository.CourseRepository
+import java.util.UUID
 import javax.inject.Inject
 
 /**

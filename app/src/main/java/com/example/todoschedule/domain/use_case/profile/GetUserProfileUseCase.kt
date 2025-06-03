@@ -18,7 +18,7 @@ class GetUserProfileUseCase @Inject constructor(
     operator fun invoke(): Flow<Resource<User>> = flow {
         emit(Resource.Loading())
         try {
-            val userId = sessionRepository.currentUserIdFlow.value?.toInt()
+            val userId = sessionRepository.currentUserIdFlow.value
                 ?: throw Exception("未登录用户") // Or handle as a specific error type
 
             val user = userRepository.getUserById(userId)

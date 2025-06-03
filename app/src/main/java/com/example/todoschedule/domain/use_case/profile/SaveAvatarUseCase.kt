@@ -25,7 +25,7 @@ class SaveAvatarUseCase @Inject constructor(
                 return@flow
             }
 
-            val currentUser = userRepository.getUserById(currentUserId.toInt())
+            val currentUser = userRepository.getUserById(currentUserId)
             if (currentUser == null) {
                 emit(Resource.Error("User not found."))
                 return@flow
