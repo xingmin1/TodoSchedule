@@ -222,8 +222,8 @@ fun AppNavigation(
                 composable(
                     route = AppRoutes.CourseDetail.route,
                     arguments = listOf(
-                        navArgument("tableId") { type = NavType.IntType },
-                        navArgument("courseId") { type = NavType.IntType },
+                        navArgument("tableId") { type = NavType.StringType },
+                        navArgument("courseId") { type = NavType.StringType },
                     )
                 ) { backStackEntry ->
                     val tableId =
@@ -247,8 +247,8 @@ fun AppNavigation(
                 composable(
                     route = AppRoutes.EditCourse.route,
                     arguments = listOf(
-                        navArgument("tableId") { type = NavType.IntType },
-                        navArgument("courseId") { type = NavType.IntType },
+                        navArgument("tableId") { type = NavType.StringType },
+                        navArgument("courseId") { type = NavType.StringType },
                     )
                 ) { backStackEntry ->
                     val tableId =
@@ -270,7 +270,7 @@ fun AppNavigation(
                 composable(
                     AppRoutes.SchoolSelector.route,
                     arguments = listOf(
-                        navArgument("tableId") { type = NavType.IntType }
+                        navArgument("tableId") { type = NavType.StringType }
                     )
                 ) { backStackEntry ->
                     val tableId =
@@ -294,7 +294,7 @@ fun AppNavigation(
                             nullable = false
                         },
                         navArgument("tableId") {
-                            type = NavType.IntType
+                            type = NavType.StringType
                             nullable = false
                         }
                     )
@@ -416,7 +416,7 @@ fun AppNavigation(
                 // 添加 TimeNodesSettingsScreen 路由
                 composable(
                     route = AppRoutes.TimeNodesSettings.route,
-                    arguments = listOf(navArgument("configId") { type = NavType.IntType })
+                    arguments = listOf(navArgument("configId") { type = NavType.StringType })
                 ) {
                     TimeNodesSettingsScreen(
                         navigationState = navigationState
