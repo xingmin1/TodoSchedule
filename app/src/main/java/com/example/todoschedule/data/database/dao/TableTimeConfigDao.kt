@@ -11,6 +11,7 @@ import com.example.todoschedule.data.database.entity.TableTimeConfigEntity
 import com.example.todoschedule.data.database.entity.TableTimeConfigNodeDetaileEntity
 import com.example.todoschedule.data.model.TableTimeConfigWithNodes // 确保这个关联模型已创建
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 @Dao
 interface TableTimeConfigDao {
@@ -124,7 +125,7 @@ interface TableTimeConfigDao {
      * @param configId 要删除的配置 ID。
      */
     @Transaction
-    suspend fun deleteConfigWithNodes(configId: Int) {
+    suspend fun deleteConfigWithNodes(configId: UUID) {
         deleteNodeDetailsForConfig(configId) // Delete nodes first
         // Create a dummy entity just for the delete operation by ID
         val configToDelete = TableTimeConfigEntity(

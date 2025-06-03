@@ -20,15 +20,15 @@ import java.util.UUID
             onUpdate = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["user_id"], name = "idx_timeslot_userid"), Index("crdtKey")]
+    indices = [Index(value = ["user_id"], name = "idx_timeslot_userid")]
 )
 data class TimeSlotEntity(
-    @PrimaryKey val id: Int = UUID.randomUUID().hashCode(),
-    @ColumnInfo(name = "user_id") val userId: Int,
+    @PrimaryKey val id: UUID = UUID.randomUUID(),
+    @ColumnInfo(name = "user_id") val userId: UUID,
     @ColumnInfo(name = "start_time") val startTime: Long, // 开始时间 (时间戳)
     @ColumnInfo(name = "end_time") val endTime: Long, // 结束时间 (时间戳)
     @ColumnInfo(name = "schedule_type") val scheduleType: ScheduleType,
-    @ColumnInfo(name = "schedule_id") val scheduleId: Int, // 关联日程的ID (课程、作业、普通日程等)
+    @ColumnInfo(name = "schedule_id") val scheduleId: UUID, // 关联日程的ID (课程、作业、普通日程等)
     val head: String? = null, // 可选的标题覆盖
     val priority: Int? = null, // 优先级 (考虑使用枚举)
     @ColumnInfo(name = "is_completed") val isCompleted: Boolean = false, // 是否已完成
@@ -36,13 +36,7 @@ data class TimeSlotEntity(
     @ColumnInfo(name = "repeat_pattern") val repeatPattern: String? = null, // 重复模式
     @ColumnInfo(name = "reminder_type") val reminderType: ReminderType? = ReminderType.NONE,
     @ColumnInfo(name = "reminder_offset") val reminderOffset: Long? = null, // 提醒偏移量 (相对开始时间的毫秒数)
-    // 同步字段
-    val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
-    @ColumnInfo(name = "schedule_crdt_key")
-    val scheduleCrdtKey: String? = null, // 关联日程的CRDT键
-    @ColumnInfo(name = "update_timestamp")
-    val updateTimestamp: Long? = null // 更新时间戳
 ) : Syncable {
     override val syncId: String
-        get() = crdtKey
+        get() = id.toString()
 }

@@ -54,11 +54,11 @@ interface TimeSlotDao {
     fun getTimeSlotsByUserId(userId: Int): Flow<List<TimeSlotEntity>>
 
     // 根据CRDT键获取时间槽（可观察）
-    @Query("SELECT * FROM time_slot WHERE crdtKey = :crdtKey")
+    @Query("SELECT * FROM time_slot WHERE id = :crdtKey")
     fun getTimeSlotByCrdtKeyFlow(crdtKey: String): Flow<TimeSlotEntity?>
 
     // 根据CRDT键获取时间槽
-    @Query("SELECT * FROM time_slot WHERE crdtKey = :crdtKey LIMIT 1")
+    @Query("SELECT * FROM time_slot WHERE id = :crdtKey LIMIT 1")
     suspend fun getTimeSlotByCrdtKey(crdtKey: String): TimeSlotEntity?
 
     // 获取所有时间槽（非Flow）
@@ -66,10 +66,10 @@ interface TimeSlotDao {
     suspend fun getAllTimeSlotsSync(): List<TimeSlotEntity>
 
     // 根据CRDT键获取ID
-    @Query("SELECT id FROM time_slot WHERE crdtKey = :crdtKey LIMIT 1")
+    @Query("SELECT id FROM time_slot WHERE id = :crdtKey LIMIT 1")
     suspend fun getIdByCrdtKey(crdtKey: String): Int?
 
     // 根据日程CRDT键获取时间槽列表
-    @Query("SELECT * FROM time_slot WHERE schedule_crdt_key = :scheduleCrdtKey")
+    @Query("SELECT * FROM time_slot WHERE schedule_id = :scheduleCrdtKey")
     suspend fun getTimeSlotsByScheduleCrdtKey(scheduleCrdtKey: String): List<TimeSlotEntity>
 }

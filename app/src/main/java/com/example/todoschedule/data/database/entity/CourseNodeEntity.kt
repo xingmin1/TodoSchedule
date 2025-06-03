@@ -1,6 +1,5 @@
 package com.example.todoschedule.data.database.entity
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -20,11 +19,11 @@ import java.util.UUID
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("courseId"), Index("crdtKey"), Index("courseCrdtKey")]
+    indices = [Index("courseId"), Index("id")]
 )
 data class CourseNodeEntity(
-    @PrimaryKey val id: Int = UUID.randomUUID().hashCode(), // 本地ID，使用UUID的哈希值作为默认值
-    val courseId: Int, // 所属课程ID (本地ID，用于Room外键关系)
+    @PrimaryKey val id: UUID = UUID.randomUUID(), // 本地ID，使用UUID的哈希值作为默认值
+    val courseId: UUID, // 所属课程ID (本地ID，用于Room外键关系)
     val courseNodeName: String? = null, // 课程节点名称
     val color: String? = null, // 显示颜色
     val room: String? = null, // 教室位置
@@ -35,13 +34,7 @@ data class CourseNodeEntity(
     val startWeek: Int, // 开始周次
     val endWeek: Int, // 结束周次
     val weekType: Int = 0, // 周类型(0-全部，1-单周，2-双周)
-
-    // 同步字段
-    val crdtKey: String = UUID.randomUUID().toString(), // CRDT唯一标识符
-    val courseCrdtKey: String? = null, // 课程的CRDT唯一标识符
-    @ColumnInfo(name = "update_timestamp")
-    val updateTimestamp: Long? = null // 更新时间戳
 ) : Syncable {
     override val syncId: String
-        get() = crdtKey
+        get() = id.toString()
 } 

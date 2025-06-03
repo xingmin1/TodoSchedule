@@ -6,6 +6,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.datetime.LocalTime
+import java.util.UUID
 
 /**
  * 课表时间配置节点详情实体类。
@@ -24,8 +25,8 @@ import kotlinx.datetime.LocalTime
     indices = [Index(value = ["table_time_config_id"], name = "idx_nodedetail_configid")]
 )
 data class TableTimeConfigNodeDetaileEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    @ColumnInfo(name = "table_time_config_id") val tableTimeConfigId: Int, // 所属时间配置 ID
+    @PrimaryKey val id: UUID = UUID.randomUUID(), // 本地ID，使用UUID的哈希值作为默认值
+    @ColumnInfo(name = "table_time_config_id") val tableTimeConfigId: UUID, // 所属时间配置 ID
     val name: String, // 节次名称，例如 "第一大节", "上午自习"
     @ColumnInfo(name = "start_time") val startTime: LocalTime, // 开始时间
     @ColumnInfo(name = "end_time") val endTime: LocalTime, // 结束时间

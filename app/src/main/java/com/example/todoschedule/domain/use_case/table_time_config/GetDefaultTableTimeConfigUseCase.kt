@@ -17,7 +17,7 @@ class GetDefaultTableTimeConfigUseCase @Inject constructor(
             // 处理无效的 tableId，例如返回 emptyFlow() 或抛出异常
             // import kotlinx.coroutines.flow.emptyFlow
             // return emptyFlow()
-            throw IllegalArgumentException("无效的课表 ID")
+            throw IllegalArgumentException("无效的课表 ID: $tableId")
         }
         return repository.getDefaultTimeConfig(tableId)
     }
