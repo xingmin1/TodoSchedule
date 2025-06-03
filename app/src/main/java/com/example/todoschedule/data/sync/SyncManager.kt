@@ -497,7 +497,7 @@ class SyncManager @Inject constructor(
 
             // 如果有tableId，尝试找到对应的本地表ID
             val tableDao = syncRepository.getTableDao()
-            val table = tableDao.getTableById(remoteEntity.tableId).first()
+            val table = tableDao.getTableById(remoteEntity.tableId.toString()).first()
             if (table != null) {
                 Log.d(
                     TAG,

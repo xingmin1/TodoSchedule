@@ -22,7 +22,7 @@ interface TableDao {
 
     /** [Flow] 根据ID观察课表 */
     @Query("SELECT * FROM `table` WHERE id = :tableId")
-    fun getTableById(tableId: UUID): Flow<TableEntity?>
+    fun getTableById(tableId: String): Flow<TableEntity?>
 
     /** [Flow] 根据用户ID观察课表 */
     @Query("SELECT * FROM `table` WHERE userId = :userId")
@@ -52,9 +52,9 @@ interface TableDao {
     @Query("SELECT id FROM `table` WHERE id = :id LIMIT 1")
     suspend fun getIdById(id: String): UUID?
 
-    /** 根据id查询课表实体 */
-    @Query("SELECT * FROM `table` WHERE id = :id LIMIT 1")
-    suspend fun getTableById(id: String): TableEntity?
+//    /** 根据id查询课表实体 */
+//    @Query("SELECT * FROM `table` WHERE id = :id LIMIT 1")
+//    suspend fun getTableById(id: String): TableEntity?
 
     /** 根据userId查询课表列表 */
     @Query("SELECT * FROM `table` WHERE userId = :userId")

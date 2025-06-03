@@ -671,7 +671,7 @@ override suspend fun downloadMessagesByEntityTypeExcludeOrigin(entityType: Strin
      * 执行完整的数据同步流程
      * 在 IO 线程执行，防止阻塞主线程
      */
-    override suspend fun syncData() = withContext(Dispatchers.IO) {
+    override suspend fun syncData(): Unit = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "开始执行完整同步流程")
 
@@ -690,7 +690,7 @@ override suspend fun downloadMessagesByEntityTypeExcludeOrigin(entityType: Strin
 
             val userId = userIdFromFlow ?: run {
                 Log.e(TAG, "获取用户ID失败，无法执行同步")
-                return
+                return@withContext
             }
 
             Log.d(TAG, "转换后的用户ID: $userId, 是否有效: ${userId.valid()}")
@@ -698,7 +698,7 @@ override suspend fun downloadMessagesByEntityTypeExcludeOrigin(entityType: Strin
             // 确保用户ID有效
             if (!userId.valid()) {
                 Log.e(TAG, "用户ID无效，跳过设备注册")
-                return
+                return@withContext
             }
 
             // 2. 注册设备与用户的关联
@@ -706,7 +706,7 @@ override suspend fun downloadMessagesByEntityTypeExcludeOrigin(entityType: Strin
             val deviceRegistered = registerDevice(userId)
             if (!deviceRegistered) {
                 Log.e(TAG, "设备注册失败，无法继续同步过程")
-                return
+                return@withContext
             }
             Log.d(TAG, "设备注册成功，用户ID: $userId")
 

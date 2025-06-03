@@ -9,9 +9,12 @@ import com.example.todoschedule.data.sync.SyncManager
 import com.example.todoschedule.domain.model.Table
 import com.example.todoschedule.domain.repository.SessionRepository
 import com.example.todoschedule.domain.repository.TableRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -38,7 +41,7 @@ class TableRepositoryImpl @Inject constructor(
 
     /** 根据ID获取课表 */
     override fun getTableById(tableId: UUID): Flow<Table?> {
-        return tableDao.getTableById(tableId).map { it?.toDomain() }
+        return tableDao.getTableById(tableId.toString()).map { it?.toDomain() }
     }
 
     /** 根据用户ID获取课表 */
@@ -79,7 +82,7 @@ class TableRepositoryImpl @Inject constructor(
             // 创建同步消息后立即触发同步过程
             try {
                 Log.d(TAG, "正在主动触发同步过程来上传课表同步消息...")
-                syncManager.syncNow(ignoreExceptions = true)
+                CoroutineScope(Dispatchers.IO).launch {syncManager.syncNow(ignoreExceptions = true)}
                 Log.d(TAG, "主动触发同步完成")
             } catch (e: Exception) {
                 Log.e(TAG, "主动触发同步失败: ${e.message}", e)

@@ -103,7 +103,7 @@ constructor(
 
         try {
             // 1. 获取表信息，为课程设置正确的CRDT键
-            val table = tableDao.getTableById(tableId).first()
+            val table = tableDao.getTableById(tableId.toString()).first()
             val tableCrdtKey = table!!.id
 
             // 2. 正确设置表的CRDT键
