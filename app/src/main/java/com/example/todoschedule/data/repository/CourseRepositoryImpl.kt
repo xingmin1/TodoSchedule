@@ -19,14 +19,16 @@ import com.example.todoschedule.domain.repository.SessionRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import javax.inject.Inject
 
@@ -97,7 +99,7 @@ class CourseRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun addCourses(course: List<Course>, tableId: UUID): List<UUID> {
+    override suspend fun addCourses(course: List<Course>, tableId: UUID): List<UUID> = withContext(NonCancellable) {
         Log.d(TAG, "开始导入 ${course.size} 个课程到表ID=${tableId}")
 
         try {
@@ -106,6 +108,7 @@ class CourseRepositoryImpl @Inject constructor(
             val tableEntity = tableDao.getTableById(tableId.toString())
                 .filterNotNull()
                 .first()
+            Log.d(TAG, "获取到表信息: ${tableEntity.id}, 名称: ${tableEntity.tableName}")
             val tableCrdtKey = tableEntity.id
 
             // 2. 正确设置表的CRDT键
@@ -174,7 +177,7 @@ class CourseRepositoryImpl @Inject constructor(
                     Log.e(TAG, "创建同步消息或触发同步失败: ${e.message}", e)
                 }
             }
-            return courseIds
+            return@withContext courseIds
         } catch (e: Exception) {
             Log.e(TAG, "批量添加课程失败: ${e.message}", e)
             throw e

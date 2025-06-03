@@ -22,6 +22,7 @@ import com.example.todoschedule.data.sync.SyncManager
 import com.example.todoschedule.data.sync.dto.DeviceRegistrationDto
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -671,7 +672,7 @@ override suspend fun downloadMessagesByEntityTypeExcludeOrigin(entityType: Strin
      * 执行完整的数据同步流程
      * 在 IO 线程执行，防止阻塞主线程
      */
-    override suspend fun syncData(): Unit = withContext(Dispatchers.IO) {
+    override suspend fun syncData(): Unit = withContext(NonCancellable) {
         try {
             Log.d(TAG, "开始执行完整同步流程")
 
