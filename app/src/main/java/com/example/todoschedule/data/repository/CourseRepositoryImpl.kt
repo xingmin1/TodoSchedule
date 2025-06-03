@@ -31,9 +31,7 @@ import java.util.UUID
 import javax.inject.Inject
 
 /** 课程仓库实现类 */
-class CourseRepositoryImpl
-@Inject
-constructor(
+class CourseRepositoryImpl @Inject constructor(
     private val courseDao: CourseDao,
     private val tableDao: TableDao,
     private val sessionRepository: SessionRepository,
