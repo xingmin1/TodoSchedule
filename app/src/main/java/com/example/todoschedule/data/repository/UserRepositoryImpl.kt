@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.File
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,12 +34,12 @@ class UserRepositoryImpl @Inject constructor(
         return userDao.getUserById(userId)?.toUser()
     }
 
-    override suspend fun addUser(user: User): Long {
+    override suspend fun addUser(user: User): UUID {
         Log.d("UserRepository", "添加用户: ${user.username}")
         return userDao.insertUser(user.toUserEntity())
     }
 
-    override suspend fun registerUser(user: User): Result<Long> {
+    override suspend fun registerUser(user: User): Result<UUID> {
         return try {
             val existingUser = userDao.getUserByUsername(user.username)
             if (existingUser != null) {
@@ -69,13 +70,13 @@ class UserRepositoryImpl @Inject constructor(
         return context.filesDir
     }
 
-    override suspend fun initDefaultUserIfNeeded(): Int {
+    override suspend fun initDefaultUserIfNeeded(): UUID {
         // 检查是否已有用户
         val userCount = userDao.getUserCount()
         if (userCount == 0) {
             // 创建默认用户
             val defaultUser = User(username = AppConstants.Database.DEFAULT_USER_NAME)
-            val userId = addUser(defaultUser).toInt()
+            val userId = addUser(defaultUser)
             Log.d("UserRepository", "创建了默认用户，ID: $userId")
             return userId
         }
@@ -85,7 +86,7 @@ class UserRepositoryImpl @Inject constructor(
             "UserRepositoryImpl",
             "已有用户，系统不再自动返回默认用户"
         )
-        return AppConstants.Ids.INVALID_USER_ID.toInt()
+        return AppConstants.Ids.INVALID_USER_ID
     }
 
     /**
@@ -94,9 +95,9 @@ class UserRepositoryImpl @Inject constructor(
      */
     override suspend fun getCurrentUser(): User? {
         val currentUserId = sessionRepository.currentUserIdFlow.first()
-        if (currentUserId == null || currentUserId <= 0) {
+        if (currentUserId == null || currentUserId != UUID(0, 0)) {
             return null
         }
-        return getUserById(currentUserId.toInt())
+        return getUserById(currentUserId)
     }
 }

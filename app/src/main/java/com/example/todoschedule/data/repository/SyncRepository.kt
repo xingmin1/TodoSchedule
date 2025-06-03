@@ -8,6 +8,7 @@ import com.example.todoschedule.data.database.entity.SyncMessageEntity
 import com.example.todoschedule.data.sync.SyncConstants
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 /**
  * 同步仓库接口

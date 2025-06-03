@@ -1,6 +1,7 @@
 package com.example.todoschedule.domain.repository
 
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 /**
  * 普通日程仓库接口，定义了普通日程相关的数据操作。
@@ -12,7 +13,7 @@ interface OrdinaryScheduleRepository {
      * @param schedule 普通日程的 Domain 模型。
      * @return 插入的普通日程的 ID。
      */
-    suspend fun insertSchedule(schedule: com.example.todoschedule.domain.model.OrdinarySchedule): Long
+    suspend fun insertSchedule(schedule: com.example.todoschedule.domain.model.OrdinarySchedule): UUID
 
     /**
      * 插入多个普通日程及其关联的时间槽。

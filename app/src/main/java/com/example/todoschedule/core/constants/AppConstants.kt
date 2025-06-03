@@ -3,17 +3,18 @@ package com.example.todoschedule.core.constants
 import com.example.todoschedule.ui.navigation.AppRoutes
 import com.example.todoschedule.ui.theme.ColorSchemeEnum
 import kotlinx.datetime.LocalDate
+import java.util.UUID
 
 /** 应用中使用的常量 */
 object AppConstants {
     /** ID相关常量 */
     object Ids {
         // 无效的ID值，用于表示未找到或未设置的ID
-        const val INVALID_ID = -1
-        const val INVALID_USER_ID = -1L
-        const val INVALID_TABLE_ID = -1
-        const val INVALID_SETTING_ID = -1
-        const val INVALID_COURSE_ID = -1
+        val INVALID_ID = UUID(0, 0) // 使用UUID的零值表示无效ID
+        val INVALID_USER_ID = UUID(0, 0) // 使用UUID的零值表示无效ID
+        val INVALID_TABLE_ID =UUID(0, 0) // 使用UUID的零值表示无效ID
+        val INVALID_SETTING_ID = UUID(0, 0) // 使用UUID的零值表示无效ID
+        val INVALID_COURSE_ID = UUID(0, 0) // 使用UUID的零值表示无效ID
     }
 
     /** 周类型常量 */

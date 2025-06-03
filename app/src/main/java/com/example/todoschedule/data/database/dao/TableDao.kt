@@ -38,7 +38,7 @@ interface TableDao {
 
     /** 插入课表 */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTable(table: TableEntity): Long
+    suspend fun insertTable(table: TableEntity): UUID
 
     /** 更新课表 */
     @Update

@@ -2,6 +2,7 @@ package com.example.todoschedule.domain.repository
 
 import com.example.todoschedule.domain.model.TableTimeConfig
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 /** 课表时间配置仓库接口。 */
 interface TableTimeConfigRepository {
@@ -29,7 +30,7 @@ interface TableTimeConfigRepository {
      * @return 新创建的时间配置的 ID。
      * @throws IllegalArgumentException 如果 `config.isDefault` 为 true (应使用 `setDefaultTimeConfig` 方法)。
      */
-    suspend fun addTimeConfig(config: TableTimeConfig): Long
+    suspend fun addTimeConfig(config: TableTimeConfig): UUID
 
     /**
      * 更新一个已存在的时间配置。

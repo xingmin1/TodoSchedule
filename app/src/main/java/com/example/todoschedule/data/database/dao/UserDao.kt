@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.todoschedule.data.database.entity.UserEntity
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 /** 用户DAO接口 */
 @Dao
@@ -25,7 +26,7 @@ interface UserDao {
 
     /** 插入用户 */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertUser(user: UserEntity): Long
+    suspend fun insertUser(user: UserEntity): UUID
 
     /** 更新用户 */
     @Update

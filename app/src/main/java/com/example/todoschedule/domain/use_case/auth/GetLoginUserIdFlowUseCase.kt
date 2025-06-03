@@ -2,6 +2,7 @@ package com.example.todoschedule.domain.use_case.auth
 
 import com.example.todoschedule.domain.repository.SessionRepository
 import kotlinx.coroutines.flow.StateFlow
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -10,7 +11,7 @@ import javax.inject.Inject
 class GetLoginUserIdFlowUseCase @Inject constructor(
     private val sessionRepository: SessionRepository
 ) {
-    operator fun invoke(): StateFlow<Long?> {
+    operator fun invoke(): StateFlow<UUID?> {
         return sessionRepository.currentUserIdFlow
     }
 } 

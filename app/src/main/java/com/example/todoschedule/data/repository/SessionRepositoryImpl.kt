@@ -5,7 +5,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
-import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.todoschedule.domain.model.ThemeSettings
 import com.example.todoschedule.domain.repository.SessionRepository
@@ -20,6 +19,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.io.IOException
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,7 +36,7 @@ class SessionRepositoryImpl @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private object PreferencesKeys {
-        val USER_ID = longPreferencesKey("user_id")
+        val USER_ID = stringPreferencesKey("user_id")
         val USER_TOKEN = stringPreferencesKey("user_token")
         val IS_DARK_THEME = booleanPreferencesKey("is_dark_theme")
         val USE_MATERIAL_YOU = booleanPreferencesKey("use_material_you")
@@ -47,7 +47,7 @@ class SessionRepositoryImpl @Inject constructor(
      * 当前登录用户的 ID Flow。
      * 如果没有用户登录，值为 null。
      */
-    override val currentUserIdFlow: StateFlow<Long?> = dataStore.data
+    override val currentUserIdFlow: StateFlow<UUID?> = dataStore.data
         .catch { exception ->
             // dataStore.data 在读取时可能会抛出 IOException
             if (exception is IOException) {
@@ -57,7 +57,10 @@ class SessionRepositoryImpl @Inject constructor(
             }
         }
         .map { preferences ->
-            preferences[PreferencesKeys.USER_ID]
+            preferences[PreferencesKeys.USER_ID]?.let {
+                // 将字符串转换为 UUID，如果没有用户 ID 则返回 null
+                UUID.fromString(it)
+            }
         }
         .stateIn(
             scope = scope,
@@ -69,7 +72,7 @@ class SessionRepositoryImpl @Inject constructor(
      * 获取当前登录用户的ID。
      * @return 当前用户ID的Flow，如果未登录则为null
      */
-    override fun getUserId(): Flow<Long?> = currentUserIdFlow
+    override fun getUserId(): Flow<UUID?> = currentUserIdFlow
 
     override val themeSettingsFlow: StateFlow<ThemeSettings> = dataStore.data
         .catch { exception ->
@@ -96,9 +99,9 @@ class SessionRepositoryImpl @Inject constructor(
      * 保存登录用户的 ID。
      * @param userId 要保存的用户 ID。
      */
-    override suspend fun saveUserId(userId: Long) {
+    override suspend fun saveUserId(userId: UUID) {
         dataStore.edit { preferences ->
-            preferences[PreferencesKeys.USER_ID] = userId
+            preferences[PreferencesKeys.USER_ID] = userId.toString()
         }
     }
 

@@ -10,6 +10,7 @@ import com.example.todoschedule.domain.repository.GlobalSettingRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 import javax.inject.Inject
 
 /** 全局设置仓库实现类 */
@@ -21,11 +22,11 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
         return globalSettingDao.getGlobalSettingByUserId(userId).map { it?.toGlobalTableSetting() }
     }
 
-    override suspend fun getGlobalSettingById(Id: UUID): GlobalTableSetting? {
+    override suspend fun getGlobalSettingById(id: UUID): GlobalTableSetting? {
         return globalSettingDao.getGlobalSettingById(id)?.toGlobalTableSetting()
     }
 
-    override suspend fun addGlobalSetting(globalSetting: GlobalTableSetting): Long {
+    override suspend fun addGlobalSetting(globalSetting: GlobalTableSetting): UUID {
         return globalSettingDao.insertGlobalSetting(globalSetting.toGlobalTableSettingEntity())
     }
 
@@ -33,7 +34,7 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
         globalSettingDao.updateGlobalSetting(globalSetting.toGlobalTableSettingEntity())
     }
 
-    override suspend fun initDefaultSettingIfNeeded(userId: UUID): Long {
+    override suspend fun initDefaultSettingIfNeeded(userId: UUID): UUID {
         // 检查用户是否已有全局设置
         val hasGlobalSetting = globalSettingDao.hasGlobalSetting(userId) > 0
         if (!hasGlobalSetting) {
@@ -54,10 +55,10 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
         // 返回现有设置的ID
         try {
             val setting = globalSettingDao.getGlobalSettingByUserId(userId).first()
-            return setting?.id?.toLong() ?: AppConstants.Ids.INVALID_SETTING_ID.toLong()
+            return setting?.id ?: AppConstants.Ids.INVALID_SETTING_ID
         } catch (e: Exception) {
             Log.e("GlobalSettingRepo", "获取用户设置ID失败: ${e.message}")
-            return AppConstants.Ids.INVALID_SETTING_ID.toLong()
+            return AppConstants.Ids.INVALID_SETTING_ID
         }
     }
 

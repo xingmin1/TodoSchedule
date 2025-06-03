@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -97,7 +98,6 @@ class SyncManager @Inject constructor(
      * @return 同步消息实体
      */
     suspend fun createSyncMessage(
-        crdtKey: String,
         entityType: SyncConstants.EntityType,
         operationType: String,
         userId: UUID,
@@ -108,7 +108,6 @@ class SyncManager @Inject constructor(
         // 创建带有时间戳的同步消息
         val messageEntity = SyncMessageEntity(
             syncId = 0,  // 自动生成的主键
-            crdtKey = crdtKey,
             entityType = entityType.value,
             operationType = operationType,
             timestampWallClock = updatedClock.timestamp.epochMillis,
@@ -141,7 +140,6 @@ class SyncManager @Inject constructor(
      * @param oldEntity 旧版本实体；若是新增则传 null
      */
     internal suspend inline fun <reified T : Syncable> createAndSaveSyncMessage(
-        crdtKey: String,
         entityType: SyncConstants.EntityType,
         operationType: String,
         userId: UUID,

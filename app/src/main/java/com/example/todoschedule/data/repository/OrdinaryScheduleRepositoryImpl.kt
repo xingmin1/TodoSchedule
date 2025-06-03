@@ -1,12 +1,11 @@
 package com.example.todoschedule.data.repository
 
+// 移除不必要的导入
 import android.util.Log
 import androidx.room.Transaction
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.data.database.dao.OrdinaryScheduleDao
 import com.example.todoschedule.data.database.dao.TimeSlotDao
-import com.example.todoschedule.data.database.entity.OrdinaryScheduleEntity
-import com.example.todoschedule.data.database.entity.TimeSlotEntity
 import com.example.todoschedule.data.mapper.filterAndToDomainModel
 import com.example.todoschedule.data.mapper.toEntity
 import com.example.todoschedule.data.sync.SyncConstants
@@ -14,11 +13,10 @@ import com.example.todoschedule.data.sync.SyncManager
 import com.example.todoschedule.domain.model.OrdinarySchedule
 import com.example.todoschedule.domain.repository.OrdinaryScheduleRepository
 import com.example.todoschedule.domain.repository.SessionRepository
-// 移除不必要的导入
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -41,16 +39,16 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
 
     // 使用 @Transaction 确保插入日程和时间槽的原子性
     @Transaction
-    override suspend fun insertSchedule(schedule: OrdinarySchedule): Long {
+    override suspend fun insertSchedule(schedule: OrdinarySchedule): UUID {
         try {
             // 1. 插入 OrdinaryScheduleEntity 并获取 ID
             val scheduleEntity = schedule.toEntity()
             val scheduleId = ordinaryScheduleDao.insertSchedule(scheduleEntity)
 
             // 设置scheduleId后的实体
-            val updatedEntity = scheduleEntity.copy(id = scheduleId.toInt())
+            val updatedEntity = scheduleEntity.copy(id = scheduleId)
 
-            Log.d(TAG, "成功插入日程: ${updatedEntity.crdtKey}")
+            Log.d(TAG, "成功插入日程: ${updatedEntity.id}")
 
             // 2. 准备 TimeSlotEntity 列表 (设置 scheduleId 和 scheduleType)
             val timeSlotEntities = schedule.timeSlots.map {

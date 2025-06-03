@@ -7,10 +7,10 @@ import androidx.room.PrimaryKey
 import com.example.todoschedule.data.sync.SyncConstants
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
 import com.example.todoschedule.data.sync.dto.TimestampDto
-import com.tap.hlc.Timestamp
-import com.tap.hlc.NodeID
 import com.tap.hlc.HybridLogicalClock
+import com.tap.hlc.NodeID
 import kotlinx.datetime.Clock
+import java.util.UUID
 
 /**
  * 同步消息实体
@@ -33,12 +33,8 @@ import kotlinx.datetime.Clock
     ]
 )
 data class SyncMessageEntity(
-    // 自增主键ID，由数据库自动生成
-    @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(name = "sync_id") val syncId: UUID = 0,
-
-    // 实体在分布式系统中的唯一标识符，这是CRDT中的核心标识
-    @ColumnInfo(name = "crdt_key") val crdtKey: String,
+    @PrimaryKey
+    @ColumnInfo(name = "sync_id") val syncId: UUID = UUID.randomUUID(),
 
     // 实体类型，用于区分不同种类的数据
     @ColumnInfo(name = "entity_type") val entityType: String,
@@ -83,7 +79,7 @@ data class SyncMessageEntity(
      */
     fun toDto(): SyncMessageDto {
         return SyncMessageDto(
-            crdtKey = crdtKey,
+            crdtKey = syncId.toString(),
             entityType = entityType,
             operationType = operationType,
             deviceId = deviceId,
@@ -93,7 +89,7 @@ data class SyncMessageEntity(
                 nodeId = timestampNodeId
             ),
             payload = payload,
-            userId = userId
+            userId = userId.toString()
         )
     }
 
@@ -162,8 +158,6 @@ fun SyncMessageDto.toEntity(
     status: SyncConstants.SyncStatus = SyncConstants.SyncStatus.PENDING
 ): SyncMessageEntity {
     return SyncMessageEntity(
-        syncId = 0, // 自增ID，会被数据库自动分配
-        crdtKey = crdtKey,
         entityType = entityType,
         operationType = operationType,
         deviceId = deviceId,
@@ -171,7 +165,7 @@ fun SyncMessageDto.toEntity(
         timestampLogical = timestamp.logicalTime,
         timestampNodeId = timestamp.nodeId,
         payload = payload,
-        userId = userId,
+        userId = userId.let { UUID.fromString(it) },
         syncStatus = status.name
     )
 } 

@@ -12,6 +12,7 @@ import com.example.todoschedule.domain.repository.TableTimeConfigRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.LocalTime
+import java.util.UUID
 import javax.inject.Inject
 
 /** TableTimeConfigRepository 的实现类。 */
@@ -31,7 +32,7 @@ constructor(private val tableTimeConfigDao: TableTimeConfigDao) : TableTimeConfi
         }
     }
 
-    override suspend fun ensureDefaultTimeConfig(tableId: UUID, userId: UUID): Int? {
+    override suspend fun ensureDefaultTimeConfig(tableId: UUID, userId: UUID): UUID? {
         val existingDefault = tableTimeConfigDao.getDefaultTimeConfigForTable(tableId)
         if (existingDefault != null) {
             return existingDefault.id
@@ -49,7 +50,7 @@ constructor(private val tableTimeConfigDao: TableTimeConfigDao) : TableTimeConfi
         try {
             // Use the transaction to insert config and nodes together
             val newConfigId = tableTimeConfigDao.insertConfigWithNodes(newConfig, defaultNodes)
-            return newConfigId.toInt()
+            return newConfigId
         } catch (e: Exception) {
             // Log the error appropriately
             println("Error: Failed to insert default time config for table $tableId: ${e.message}")
@@ -57,7 +58,7 @@ constructor(private val tableTimeConfigDao: TableTimeConfigDao) : TableTimeConfi
         }
     }
 
-    override suspend fun addTimeConfig(config: TableTimeConfig): Long {
+    override suspend fun addTimeConfig(config: TableTimeConfig): UUID {
         // 不允许通过此方法添加默认配置
         if (config.isDefault) {
             throw IllegalArgumentException("Cannot add a default config using addTimeConfig. Use ensureDefaultTimeConfig or setDefaultTimeConfig.")

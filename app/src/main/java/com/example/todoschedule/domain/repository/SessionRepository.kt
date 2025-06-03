@@ -3,6 +3,7 @@ package com.example.todoschedule.domain.repository
 import com.example.todoschedule.domain.model.ThemeSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import java.util.UUID
 
 /**
  * 用户会话管理仓库接口
@@ -12,13 +13,13 @@ interface SessionRepository {
      * 当前登录用户的 ID Flow。
      * 如果没有用户登录，值为 null。
      */
-    val currentUserIdFlow: StateFlow<Long?>
+    val currentUserIdFlow: StateFlow<UUID?>
 
     /**
      * 保存登录用户的 ID。
      * @param userId 要保存的用户 ID。
      */
-    suspend fun saveUserId(userId: Long)
+    suspend fun saveUserId(userId: UUID)
 
     /**
      * 清除已保存的用户 ID (用于登出)。
@@ -29,7 +30,7 @@ interface SessionRepository {
      * 获取当前登录用户的ID。
      * @return 当前用户ID的Flow，如果未登录则为null
      */
-    fun getUserId(): Flow<Long?>
+    fun getUserId(): Flow<UUID?>
 
     /**
      * 当前 UI 主题设置 Flow。

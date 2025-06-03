@@ -1,7 +1,6 @@
 package com.example.todoschedule.data.sync.dto
 
 import android.os.Parcelable
-import com.tap.hlc.Timestamp
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -11,6 +10,7 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import java.util.UUID
 
 
 /**
@@ -46,7 +46,7 @@ data class SyncMessageDto(
     val payload: String,
 
     // 用户ID
-    val userId: UUID
+    val userId: String
 ) : Parcelable
 
 /**

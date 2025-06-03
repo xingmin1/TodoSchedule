@@ -2,6 +2,7 @@ package com.example.todoschedule.domain.repository
 
 import com.example.todoschedule.domain.model.Table
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 /** 课表仓库接口 */
 interface TableRepository {
@@ -24,7 +25,7 @@ interface TableRepository {
     suspend fun fetchTablesByUserId(userId: UUID): List<Table>
 
     /** 添加课表 */
-    suspend fun addTable(table: Table): Long
+    suspend fun addTable(table: Table): UUID
 
     /** 更新课表 */
     suspend fun updateTable(table: Table)

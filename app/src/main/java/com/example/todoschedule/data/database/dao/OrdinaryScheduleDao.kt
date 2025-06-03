@@ -16,7 +16,7 @@ import java.util.UUID
 interface OrdinaryScheduleDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSchedule(schedule: OrdinaryScheduleEntity): Long // 返回插入行的 ID
+    suspend fun insertSchedule(schedule: OrdinaryScheduleEntity): UUID // 返回插入行的 ID
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSchedules(schedules: List<OrdinaryScheduleEntity>): List<Long> // 插入多个日程

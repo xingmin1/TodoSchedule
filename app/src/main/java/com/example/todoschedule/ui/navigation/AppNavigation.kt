@@ -52,6 +52,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import java.net.URLDecoder
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -80,7 +81,7 @@ fun AppNavigation(
         // 登录状态和起始路由计算 (保持不变)
         val currentUserId by sessionViewModel.currentUserIdFlow.collectAsState()
         val startDestination = remember(currentUserId) {
-            if (currentUserId != null && currentUserId != AppConstants.Ids.INVALID_USER_ID.toLong()) {
+            if (currentUserId != null && currentUserId != AppConstants.Ids.INVALID_USER_ID) {
                 Log.d("AppNavigation", "User logged in (ID: $currentUserId), starting at Home")
                 AppRoutes.Home.route
             } else {
@@ -431,8 +432,8 @@ class SessionViewModel @Inject constructor(
     getLoginUserIdFlowUseCase: GetLoginUserIdFlowUseCase,
     sessionRepository: SessionRepository // 注入 SessionRepository
 ) : ViewModel() {
-    val currentUserIdFlow: StateFlow<Long?> = getLoginUserIdFlowUseCase()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, AppConstants.Ids.INVALID_USER_ID.toLong())
+    val currentUserIdFlow: StateFlow<UUID?> = getLoginUserIdFlowUseCase()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, AppConstants.Ids.INVALID_USER_ID)
 
     // 暴露 themeSettingsFlow
     val themeSettingsFlow: StateFlow<ThemeSettings> = sessionRepository.themeSettingsFlow

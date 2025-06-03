@@ -11,6 +11,7 @@ import com.example.todoschedule.domain.repository.TableRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -55,16 +56,15 @@ class TableRepositoryImpl @Inject constructor(
     }
 
     /** 添加课表 */
-    override suspend fun addTable(table: Table): Long {
+    override suspend fun addTable(table: Table): UUID {
         try {
             val tableEntity = table.toEntity()
             val tableId = tableDao.insertTable(tableEntity)
-            val tableEntityWithId = tableEntity.copy(id = tableId.toInt())
+            val tableEntityWithId = tableEntity.copy(id = tableId)
 
             // 创建同步消息
-            val userId = sessionRepository.currentUserIdFlow.first()?.toInt() ?: table.userId
+            val userId = sessionRepository.currentUserIdFlow.first() ?: table.userId
             syncManager.createAndSaveSyncMessage(
-                crdtKey = tableEntity.crdtKey,
                 entityType = SyncConstants.EntityType.TABLE,
                 operationType = SyncConstants.OperationType.ADD,
                 userId = userId,
