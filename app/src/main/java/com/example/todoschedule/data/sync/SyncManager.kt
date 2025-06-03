@@ -524,8 +524,8 @@ class SyncManager @Inject constructor(
 
 
             // 本地可能已经存在的实体
-            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.id} 查找本地实体")
-            val localEntity = syncRepository.getEntityById<CourseEntity>(messageDto.id)
+            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${remoteEntity.id} 查找本地实体")
+            val localEntity = syncRepository.getEntityById<CourseEntity>(remoteEntity.id.toString())
 
             // 应用CRDT合并逻辑（交由 Synk 处理）
             val mergedEntity = synk.inbound(message, localEntity)
@@ -612,9 +612,9 @@ class SyncManager @Inject constructor(
 
 
             // 本地可能已经存在的实体
-            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.id} 查找本地实体")
+            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${remoteEntity.id} 查找本地实体")
             val localEntity =
-                syncRepository.getEntityById<CourseNodeEntity>(messageDto.id)
+                syncRepository.getEntityById<CourseNodeEntity>(remoteEntity.id.toString())
 
             // 应用CRDT合并逻辑（交由 Synk 处理）
             val mergedEntity = synk.inbound(message, localEntity)
@@ -672,8 +672,8 @@ class SyncManager @Inject constructor(
             fixedEntity = fixedEntity.copy(userId = userId)
 
             // 本地可能已经存在的实体
-            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.id} 查找本地实体")
-            val localEntity = syncRepository.getEntityById<TableEntity>(messageDto.id)
+            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${remoteEntity.id} 查找本地实体")
+            val localEntity = syncRepository.getEntityById<TableEntity>(remoteEntity.id.toString())
 
             // 应用CRDT合并逻辑（交由 Synk 处理）
             val mergedEntity = synk.inbound(message, localEntity)
@@ -731,9 +731,9 @@ class SyncManager @Inject constructor(
             fixedEntity = fixedEntity.copy(userId = userId)
 
             // 本地可能已经存在的实体
-            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.id} 查找本地实体")
+            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${remoteEntity.id} 查找本地实体")
             val localEntity =
-                syncRepository.getEntityById<OrdinaryScheduleEntity>(messageDto.id)
+                syncRepository.getEntityById<OrdinaryScheduleEntity>(remoteEntity.id.toString())
 
             // 应用CRDT合并逻辑（交由 Synk 处理）
             val mergedEntity = synk.inbound(message, localEntity)
@@ -823,8 +823,8 @@ class SyncManager @Inject constructor(
             )
 
             // 本地可能已经存在的实体
-            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.id} 查找本地实体")
-            val localEntity = syncRepository.getEntityById<TimeSlotEntity>(messageDto.id)
+            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${remoteEntity.id} 查找本地实体")
+            val localEntity = syncRepository.getEntityById<TimeSlotEntity>(remoteEntity.id.toString())
 
             // 应用CRDT合并逻辑（交由 Synk 处理）
             val mergedEntity = synk.inbound(message, localEntity)

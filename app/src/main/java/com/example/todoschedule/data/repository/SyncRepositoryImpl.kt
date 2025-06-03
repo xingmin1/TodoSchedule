@@ -843,29 +843,27 @@ override suspend fun downloadMessagesByEntityTypeExcludeOrigin(entityType: Strin
 
     @Suppress("UNCHECKED_CAST")
     override suspend fun <T> getEntityById(crdtKey: String): T? {
-        return withContext(Dispatchers.IO) {
             try {
                 // 尝试在所有DAO中查找实体
                 val course = database.courseDao().getCourseById(crdtKey)
-                if (course != null) return@withContext course as T
+                if (course != null) return course as T
 
                 val courseNode = database.courseNodeDao().getCourseNodeById(crdtKey)
-                if (courseNode != null) return@withContext courseNode as T
+                if (courseNode != null) return courseNode as T
 
                 val ordinarySchedule =
                     database.ordinaryScheduleDao().getOrdinaryScheduleById(crdtKey)
-                if (ordinarySchedule != null) return@withContext ordinarySchedule as T
+                if (ordinarySchedule != null) return ordinarySchedule as T
 
                 val table = database.tableDao().getTableById(crdtKey)
-                if (table != null) return@withContext table as T
+                if (table != null) return table as T
 
                 // 没有找到匹配的实体
-                null
+                return null
             } catch (e: Exception) {
                 Log.e(TAG, "根据CRDT键获取实体失败: ${e.message}", e)
-                null
+                return null
             }
-        }
     }
 
     override suspend fun <T> saveEntity(entity: T): Boolean {
