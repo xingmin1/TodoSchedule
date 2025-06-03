@@ -28,7 +28,4 @@ data class GlobalTableSettingEntity(
     val notifyBeforeMinutes: Int = 15, // 提前提醒分钟数
     val autoSwitchWeek: Boolean = true, // 自动切换周次
     val showCourseTime: Boolean = true, // 显示课程时间
-) {
-    val crdtKey
-        get() = id.toString()
-}
+)

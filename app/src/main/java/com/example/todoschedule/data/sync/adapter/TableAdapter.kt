@@ -9,5 +9,5 @@ import javax.inject.Inject
  */
 class TableEntityIDResolver @Inject constructor() : IDResolver<TableEntity> {
     /* Synk-Adapter 接口映射 */
-    override fun resolveId(crdt: TableEntity): String = crdt.crdtKey
+    override fun resolveId(crdt: TableEntity): String = crdt.id.toString()
 } 

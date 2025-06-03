@@ -1,9 +1,9 @@
 package com.example.todoschedule.data.sync.dto
 
 import android.util.Log
-import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import org.json.JSONObject
+import java.util.UUID
 
 /**
  * API同步消息传输对象
@@ -54,7 +54,7 @@ data class ApiSyncMessageDto(
                 deviceId = originDeviceId,
                 timestamp = TimestampDto(hlcTimestamp, 0, ""),  // 使用简化的时间戳
                 payload = innerPayload,
-                userId = userId
+                userId = userId.toString()
             )
         } catch (e: Exception) {
             Log.e("ApiSyncMessageDto", "解析消息时出错: ${e.message}", e)

@@ -1,12 +1,13 @@
 package com.example.todoschedule.domain.model
 
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import java.util.UUID
 
 /** 用户领域模型 */
 data class User(
-    val id: UUID = UUID(0, 0),
+    val id: UUID = EMPTY_UUID,
     val username: String,
     val phoneNumber: String? = null,
     val email: String? = null,

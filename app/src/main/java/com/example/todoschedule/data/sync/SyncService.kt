@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Timer
 import java.util.TimerTask
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -87,7 +88,7 @@ class SyncService : Service() {
         }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: UUID): Int {
+    fun onStartCommand(intent: Intent?, flags: Int, startId: UUID): Int {
         Log.d(TAG, "SyncService started with startId: $startId")
 
         // 第一次启动时检查用户登录状态，只有在用户已登录且有token时才执行同步
@@ -108,7 +109,7 @@ class SyncService : Service() {
                         Log.d(TAG, "用户已登录且有token，执行首次同步...")
 
                         // 获取用户ID
-                        val userId = sessionRepository.currentUserIdFlow.first()?.toInt() ?: run {
+                        val userId = sessionRepository.currentUserIdFlow.first() ?: run {
                             Log.e(TAG, "无法获取用户ID，跳过设备注册和同步")
                             return@launch
                         }
@@ -180,7 +181,7 @@ class SyncService : Service() {
                         if (isLoggedIn && !token.isNullOrEmpty()) {
                             // 获取用户ID
                             val userId =
-                                sessionRepository.currentUserIdFlow.first()?.toInt() ?: run {
+                                sessionRepository.currentUserIdFlow.first() ?: run {
                                     Log.w(TAG, "无法获取用户ID，跳过同步")
                                     return@launch
                                 }
@@ -239,7 +240,7 @@ class SyncService : Service() {
         Log.d(TAG, "开始同步操作，用户已登录，有效token: ${token.take(10)}...")
 
         // 获取当前用户ID
-        val userId = sessionRepository.currentUserIdFlow.first()?.toInt() ?: run {
+        val userId = sessionRepository.currentUserIdFlow.first() ?: run {
             Log.w(TAG, "无法获取当前用户ID，跳过同步")
             return@withContext false
         }

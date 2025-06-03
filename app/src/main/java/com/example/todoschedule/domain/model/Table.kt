@@ -1,12 +1,14 @@
 package com.example.todoschedule.domain.model
 
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
+import java.util.UUID
 
 /** 课表领域模型 */
 data class Table(
-    val Id: UUID = 0,
+    val Id: UUID = EMPTY_UUID,
     val userId: UUID,
     val tableName: String,
     val background: String = "",

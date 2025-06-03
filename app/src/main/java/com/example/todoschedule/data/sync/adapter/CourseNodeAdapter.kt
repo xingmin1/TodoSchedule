@@ -5,5 +5,5 @@ import com.tap.synk.resolver.IDResolver
 import javax.inject.Inject
 
 class CourseNodeEntityIDResolver @Inject constructor() : IDResolver<CourseNodeEntity> {
-    override fun resolveId(crdt: CourseNodeEntity): String = crdt.crdtKey
+    override fun resolveId(crdt: CourseNodeEntity): String = crdt.id.toString()
 }

@@ -34,7 +34,7 @@ import java.util.UUID
 )
 data class SyncMessageEntity(
     @PrimaryKey
-    @ColumnInfo(name = "sync_id") val syncId: UUID = UUID.randomUUID(),
+    @ColumnInfo(name = "id") val id: UUID = UUID.randomUUID(),
 
     // 实体类型，用于区分不同种类的数据
     @ColumnInfo(name = "entity_type") val entityType: String,
@@ -79,7 +79,7 @@ data class SyncMessageEntity(
      */
     fun toDto(): SyncMessageDto {
         return SyncMessageDto(
-            crdtKey = syncId.toString(),
+            id = id.toString(),
             entityType = entityType,
             operationType = operationType,
             deviceId = deviceId,
@@ -126,7 +126,7 @@ data class SyncMessageEntity(
      */
     fun withStatus(status: SyncConstants.SyncStatus, error: String? = null): SyncMessageEntity {
         return this.copy(
-            syncId = syncId,
+            id = id,
             syncStatus = status.name,
             lastSyncAttempt = Clock.System.now().toEpochMilliseconds(),
             syncError = error

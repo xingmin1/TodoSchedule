@@ -7,6 +7,7 @@ import java.util.UUID
 
 /** 应用中使用的常量 */
 object AppConstants {
+    val EMPTY_UUID = UUID(0, 0) // 使用UUID的零值表示空UUID
     /** ID相关常量 */
     object Ids {
         // 无效的ID值，用于表示未找到或未设置的ID

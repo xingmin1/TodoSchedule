@@ -4,14 +4,14 @@ package com.example.todoschedule.data.sync.entity
 // import com.charlietap.synk.Node // 移除未使用的导入
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.tap.hlc.Timestamp
-import com.tap.hlc.NodeID
-import com.tap.hlc.HybridLogicalClock
 import com.example.todoschedule.data.sync.SyncConstants
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
 import com.example.todoschedule.data.sync.dto.TimestampDto
+import com.tap.hlc.HybridLogicalClock
+import com.tap.hlc.NodeID
+import com.tap.hlc.Timestamp
 import kotlinx.datetime.Instant
-import kotlinx.serialization.Serializable
+import java.util.UUID
 
 /**
  * 同步实体接口
@@ -25,7 +25,7 @@ interface SyncEntity {
      *
      * 注意：这个ID只在本地设备上有意义，不应用于跨设备同步
      */
-    val Id: UUID
+    val id: UUID
 
     /**
      * 实体的CRDT全局唯一标识符
@@ -137,7 +137,7 @@ data class SyncMessageEntity(
                 nodeId = timestampNodeId
             ),
             payload = payload,
-            userId = userId
+            userId = userId.toString()
         )
     }
 } 

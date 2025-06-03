@@ -117,7 +117,7 @@ interface SyncMessageDao {
      * @param entityType 实体类型
      * @return 最新的同步消息
      */
-    @Query("SELECT * FROM sync_message WHERE crdt_key = :crdtKey AND entity_type = :entityType ORDER BY timestamp_wall_clock DESC, timestamp_logical DESC LIMIT 1")
+    @Query("SELECT * FROM sync_message WHERE id = :crdtKey AND entity_type = :entityType ORDER BY timestamp_wall_clock DESC, timestamp_logical DESC LIMIT 1")
     suspend fun getLatestMessageForEntity(crdtKey: String, entityType: String): SyncMessageEntity?
 
     /**

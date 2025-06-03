@@ -1,14 +1,13 @@
 package com.example.todoschedule.data.sync
 
 import android.util.Log
-import com.example.todoschedule.data.remote.api.SyncApi as RemoteSyncApi
-import com.example.todoschedule.data.sync.dto.ApiSyncMessageDto
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
-import com.example.todoschedule.data.sync.dto.SyncMessagesDto
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.example.todoschedule.data.remote.api.SyncApi as RemoteSyncApi
 
 /**
  * 同步API实现类

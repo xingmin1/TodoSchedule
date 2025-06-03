@@ -3,6 +3,7 @@ package com.example.todoschedule.domain.repository
 import com.example.todoschedule.domain.model.Course
 import com.example.todoschedule.domain.model.CourseNode
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 /**
  * 课程仓库接口

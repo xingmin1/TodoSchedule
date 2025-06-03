@@ -17,9 +17,6 @@ public class CourseEntityMapEncoder : MapEncoder<CourseEntity> {
         put("credit", crdt.credit?.toString() ?: "")
         put("courseCode", crdt.courseCode.orEmpty())
         put("syllabusLink", crdt.syllabusLink.orEmpty())
-        put("crdtKey", crdt.crdtKey)
-        put("tableCrdtKey", crdt.tableCrdtKey.orEmpty())
-        put("updateTimestamp", crdt.updateTimestamp?.toString() ?: "")
     }
 
     override fun decode(map: Map<String, String>): CourseEntity = CourseEntity(
@@ -34,8 +31,5 @@ public class CourseEntityMapEncoder : MapEncoder<CourseEntity> {
         credit = map["credit"].takeUnless { it.isNullOrBlank() }?.toFloatOrNull(),
         courseCode = map["courseCode"].takeUnless { it.isNullOrBlank() },
         syllabusLink = map["syllabusLink"].takeUnless { it.isNullOrBlank() },
-        crdtKey = map.getValue("crdtKey"),
-        tableCrdtKey = map["tableCrdtKey"].takeUnless { it.isNullOrBlank() },
-        updateTimestamp = map["updateTimestamp"].takeUnless { it.isNullOrBlank() }?.toLongOrNull()
     )
 }

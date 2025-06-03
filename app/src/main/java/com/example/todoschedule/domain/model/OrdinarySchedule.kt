@@ -1,13 +1,15 @@
 package com.example.todoschedule.domain.model
 
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import com.example.todoschedule.data.database.converter.ScheduleStatus // 引入枚举
 import com.example.todoschedule.ui.theme.ColorSchemeEnum
+import java.util.UUID
 
 /**
  * Domain 层的 OrdinarySchedule 模型，包含其关联的 TimeSlot 列表。
  */
 data class OrdinarySchedule(
-    val Id: UUID = 0,
+    val id: UUID = EMPTY_UUID,
     val userId: UUID,
     val title: String,
     val description: String? = null,

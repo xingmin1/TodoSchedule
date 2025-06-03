@@ -1,6 +1,7 @@
 package com.example.todoschedule.domain.model
 
 import com.example.todoschedule.ui.theme.ColorSchemeEnum
+import java.util.UUID
 
 /**
  * 课程领域模型
@@ -14,7 +15,7 @@ import com.example.todoschedule.ui.theme.ColorSchemeEnum
  * @property nodes 课程节点
  */
 data class Course(
-    val id: UUID = 0,
+    val id: UUID,
     val courseName: String,
     val color: ColorSchemeEnum,
     val room: String? = null,

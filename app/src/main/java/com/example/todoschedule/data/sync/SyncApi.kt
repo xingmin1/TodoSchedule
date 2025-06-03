@@ -1,7 +1,7 @@
 package com.example.todoschedule.data.sync
 
 import com.example.todoschedule.data.sync.dto.SyncMessageDto
-import com.example.todoschedule.data.sync.dto.SyncMessagesDto
+import java.util.UUID
 
 /**
  * 同步API接口

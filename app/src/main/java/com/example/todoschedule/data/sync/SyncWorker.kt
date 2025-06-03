@@ -96,7 +96,7 @@ class SyncWorker @AssistedInject constructor(
             }
 
             // 获取当前用户ID
-            val userId = syncRepository.getUserIdFromSession()?.toInt() ?: run {
+            val userId = syncRepository.getUserIdFromSession() ?: run {
                 Log.d(TAG, "无法获取用户ID，跳过同步")
                 return Result.failure()
             }

@@ -1,6 +1,7 @@
 package com.example.todoschedule.data.sync
 
 import android.util.Log
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import com.example.todoschedule.data.database.AppDatabase
 import com.example.todoschedule.data.database.entity.CourseEntity
 import com.example.todoschedule.data.database.entity.CourseNodeEntity
@@ -19,12 +20,12 @@ import javax.inject.Singleton
  * 负责解析CRDT实体间的引用关系，将分布式键映射到本地数据库ID
  */
 @Singleton
-class CrdtKeyResolver @Inject constructor(
+class IdResolver @Inject constructor(
     private val database: AppDatabase,
     private val syncRepositoryProvider: Provider<SyncRepository>
 ) {
     companion object {
-        private const val TAG = "CrdtKeyResolver"
+        private const val TAG = "IdResolver"
     }
 
     // 获取SyncRepository实例时使用provider.get()，延迟加载
@@ -32,25 +33,25 @@ class CrdtKeyResolver @Inject constructor(
         get() = syncRepositoryProvider.get()
 
     /**
-     * 根据Table的crdtKey查找对应的本地ID
+     * 根据Table的id查找对应的本地ID
      *
-     * @param crdtKey 课表的CRDT键
+     * @param id 课表的CRDT键
      * @return 本地数据库中的ID，如果未找到则返回null
      */
-    suspend fun resolveTableId(crdtKey: String?): Int? = withContext(Dispatchers.IO) {
-        if (crdtKey == null) return@withContext null
-        return@withContext database.tableDao().getIdByCrdtKey(crdtKey)
+    suspend fun resolveTableId(id: String?): Int? = withContext(Dispatchers.IO) {
+        if (id == null) return@withContext null
+        return@withContext database.tableDao().getIdById(id)
     }
 
     /**
-     * 根据Course的crdtKey查找对应的本地ID
+     * 根据Course的id查找对应的本地ID
      *
-     * @param crdtKey 课程的CRDT键
+     * @param id 课程的CRDT键
      * @return 本地数据库中的ID，如果未找到则返回null
      */
-    suspend fun resolveCourseId(crdtKey: String?): Int? = withContext(Dispatchers.IO) {
-        if (crdtKey == null) return@withContext null
-        return@withContext database.courseDao().getIdByCrdtKey(crdtKey)
+    suspend fun resolveCourseId(id: String?): Int? = withContext(Dispatchers.IO) {
+        if (id == null) return@withContext null
+        return@withContext database.courseDao().getIdById(id)
     }
 
     /**
@@ -60,31 +61,32 @@ class CrdtKeyResolver @Inject constructor(
      * @return 解析后的课程实体，若无法解析返回null
      */
     suspend fun resolveCourseReferences(course: CourseEntity): CourseEntity? {
-        try {
-            // 确保tableCrdtKey不为空
-            val tableCrdtKey = course.tableCrdtKey ?: run {
-                Log.w(TAG, "Course tableCrdtKey is null for course ${course.crdtKey}")
-                return null
-            }
-
-            // 解析课表引用
-            val table = syncRepository.getTableDao().getTableByCrdtKey(tableCrdtKey)
-            if (table == null) {
-                Log.w(
-                    TAG,
-                    "Cannot resolve table with crdtKey $tableCrdtKey for course ${course.crdtKey}"
-                )
-                return null
-            }
-
-            // 返回解析后的课程，将CRDT键映射到本地数据库ID
-            return course.copy(
-                tableId = table.id
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Error resolving course references for ${course.crdtKey}", e)
-            return null
-        }
+        throw NotImplementedError("resolveCourseReferences is not implemented yet")
+//        try {
+//            // 确保tableId不为空
+//            val tableId = course.tableId ?: run {
+//                Log.w(TAG, "Course tableId is null for course ${course.id}")
+//                return null
+//            }
+//
+//            // 解析课表引用
+//            val table = syncRepository.getTableDao().getTableById(tableId)
+//            if (table == null) {
+//                Log.w(
+//                    TAG,
+//                    "Cannot resolve table with id $tableId for course ${course.id}"
+//                )
+//                return null
+//            }
+//
+//            // 返回解析后的课程，将CRDT键映射到本地数据库ID
+//            return course.copy(
+//                tableId = table.id
+//            )
+//        } catch (e: Exception) {
+//            Log.e(TAG, "Error resolving course references for ${course.id}", e)
+//            return null
+//        }
     }
 
     /**
@@ -95,18 +97,18 @@ class CrdtKeyResolver @Inject constructor(
      */
     suspend fun resolveCourseNodeReferences(courseNode: CourseNodeEntity): CourseNodeEntity? {
         try {
-            // 确保courseCrdtKey不为空
-            val courseCrdtKey = courseNode.courseCrdtKey ?: run {
-                Log.w(TAG, "CourseNode courseCrdtKey is null for node ${courseNode.crdtKey}")
+            // 确保courseId不为空
+            val courseId = courseNode.courseId ?: run {
+                Log.w(TAG, "CourseNode courseId is null for node ${courseNode.id}")
                 return null
             }
 
             // 解析课程引用
-            val course = syncRepository.getCourseDao().getCourseByCrdtKey(courseCrdtKey)
+            val course = syncRepository.getCourseDao().getCourseById(courseId)
             if (course == null) {
                 Log.w(
                     TAG,
-                    "Cannot resolve course with crdtKey $courseCrdtKey for course node ${courseNode.crdtKey}"
+                    "Cannot resolve course with id $courseId for course node ${courseNode.id}"
                 )
                 return null
             }
@@ -116,7 +118,7 @@ class CrdtKeyResolver @Inject constructor(
                 courseId = course.id
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error resolving course node references for ${courseNode.crdtKey}", e)
+            Log.e(TAG, "Error resolving course node references for ${courseNode.id}", e)
             return null
         }
     }
@@ -133,17 +135,17 @@ class CrdtKeyResolver @Inject constructor(
             // 在真实场景中，如果有用户CRDT键，这里需要解析用户引用
 
             // 简单验证用户ID
-            if (schedule.userId <= 0) {
+            if (schedule.userId != EMPTY_UUID) {
                 Log.w(
                     TAG,
-                    "Invalid userId ${schedule.userId} for ordinary schedule ${schedule.crdtKey}"
+                    "Invalid userId ${schedule.userId} for ordinary schedule ${schedule.id}"
                 )
                 return null
             }
 
             return schedule
         } catch (e: Exception) {
-            Log.e(TAG, "Error resolving ordinary schedule references for ${schedule.crdtKey}", e)
+            Log.e(TAG, "Error resolving ordinary schedule references for ${schedule.id}", e)
             return null
         }
     }
@@ -160,14 +162,14 @@ class CrdtKeyResolver @Inject constructor(
             // 在真实场景中，如果有用户CRDT键，这里需要解析用户引用
 
             // 简单验证用户ID
-            if (table.userId <= 0) {
-                Log.w(TAG, "Invalid userId ${table.userId} for table ${table.crdtKey}")
+            if (table.userId == EMPTY_UUID) {
+                Log.w(TAG, "Invalid userId ${table.userId} for table ${table.id}")
                 return null
             }
 
             return table
         } catch (e: Exception) {
-            Log.e(TAG, "Error resolving table references for ${table.crdtKey}", e)
+            Log.e(TAG, "Error resolving table references for ${table.id}", e)
             return null
         }
     }

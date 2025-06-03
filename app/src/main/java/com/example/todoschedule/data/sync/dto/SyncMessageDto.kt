@@ -10,7 +10,6 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import java.util.UUID
 
 
 /**
@@ -23,8 +22,8 @@ import java.util.UUID
 @Serializable
 data class SyncMessageDto(
     // 实体在分布式系统中的唯一标识符 (CRDT中的全局唯一ID)
-    @SerialName("crdt_key")
-    val crdtKey: String,
+    @SerialName("id")
+    val id: String,
 
     // 实体类型
     val entityType: String,
@@ -79,7 +78,7 @@ object TimestampDtoSerializer : KSerializer<TimestampDto> {
 @Serializable
 data class DeviceRegistrationDto(
     val deviceId: String,      // 设备ID
-    val userId: UUID            // 用户ID
+    val userId: String            // 用户ID
 )
 
 /**
@@ -89,7 +88,7 @@ data class DeviceRegistrationDto(
 @Serializable
 data class DeviceRegistrationResponseDto(
     val id: String,                    // 设备ID
-    val userId: UUID,                   // 用户ID
+    val userId: String,                   // 用户ID
     val name: String?,                 // 设备名称
     val lastSyncHlcTimestamp: Long?,   // 最后同步的HLC时间戳，首次注册为null
     val createdAt: String?,             // 创建时间

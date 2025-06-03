@@ -1,13 +1,14 @@
 package com.example.todoschedule.data.sync.adapter
 
+import com.example.todoschedule.core.extensions.toUuid
 import com.example.todoschedule.data.database.entity.GlobalTableSettingEntity
 import com.tap.synk.encode.MapEncoder
 
 class GlobalTableSettingEntityMapEncoder: MapEncoder<GlobalTableSettingEntity> {
     override fun decode(map: Map<String, String>): GlobalTableSettingEntity =
         GlobalTableSettingEntity(
-            id = map["id"]!!.toIntOrNull() ?: 0,
-            userId = map["userId"]!!.toIntOrNull() ?: 0,
+            id = map["id"]!!.toUuid(),
+            userId = map["userId"]!!.toUuid(),
             defaultTableIds = map["defaultTableIds"] ?: "",
             showWeekend = map["showWeekend"]?.toBoolean() ?: true,
             courseNotificationStyle = map["courseNotificationStyle"]?.toIntOrNull() ?: 0,

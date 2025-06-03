@@ -22,6 +22,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
+import java.util.UUID
 import javax.inject.Provider
 import javax.inject.Singleton
 import com.example.todoschedule.data.remote.api.SyncApi as RemoteSyncApi

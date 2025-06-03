@@ -153,7 +153,7 @@ interface SyncRepository {
     /**
      * 从会话仓库获取当前用户ID
      */
-    suspend fun getUserIdFromSession(): Long?
+    suspend fun getUserIdFromSession(): UUID?
 
     /**
      * 执行完整的数据同步流程
@@ -166,7 +166,7 @@ interface SyncRepository {
      * @param crdtKey 实体的CRDT键
      * @return 匹配的实体或null
      */
-    suspend fun <T> getEntityByCrdtKey(crdtKey: String): T?
+    suspend fun <T> getEntityById(crdtKey: String): T?
 
     /**
      * 保存实体

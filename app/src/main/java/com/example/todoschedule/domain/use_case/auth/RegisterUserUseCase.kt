@@ -3,6 +3,7 @@ package com.example.todoschedule.domain.use_case.auth
 import com.example.todoschedule.domain.model.User
 import com.example.todoschedule.domain.repository.RemoteUserRepository
 import com.example.todoschedule.domain.repository.UserRepository
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -28,7 +29,7 @@ class RegisterUserUseCase @Inject constructor(
         phoneNumber: String? = null,
         email: String? = null,
         useRemote: Boolean = true
-    ): Result<Long> {
+    ): Result<UUID> {
         // 验证输入
         if (username.isBlank() || password.isBlank()) {
             return Result.failure(IllegalArgumentException("用户名和密码不能为空"))
@@ -60,7 +61,7 @@ class RegisterUserUseCase @Inject constructor(
                             passwordHash = remoteUser.passwordHash ?: hashPasswordUseCase(password)
                         )
                         userRepository.updateUser(updatedUser)
-                        return Result.success(localUser.id.toLong())
+                        return Result.success(localUser.id)
                     } else {
                         // 本地没有该用户，创建新用户
                         // 如果远程用户没有密码哈希(正常情况)，本地创建密码哈希

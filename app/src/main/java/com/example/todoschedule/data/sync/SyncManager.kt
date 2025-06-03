@@ -1,6 +1,7 @@
 package com.example.todoschedule.data.sync
 
 import android.util.Log
+import com.example.todoschedule.core.constants.AppConstants.EMPTY_UUID
 import com.example.todoschedule.data.database.entity.CourseEntity
 import com.example.todoschedule.data.database.entity.CourseNodeEntity
 import com.example.todoschedule.data.database.entity.OrdinaryScheduleEntity
@@ -24,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
@@ -90,7 +92,7 @@ class SyncManager @Inject constructor(
      *
      * 为要同步的数据生成带有HLC时间戳的消息实体
      *
-     * @param crdtKey 实体在分布式系统中的唯一标识符
+     * @param id 实体在分布式系统中的唯一标识符
      * @param entityType 实体类型
      * @param operationType 操作类型
      * @param userId 用户ID
@@ -107,7 +109,6 @@ class SyncManager @Inject constructor(
 
         // 创建带有时间戳的同步消息
         val messageEntity = SyncMessageEntity(
-            syncId = 0,  // 自动生成的主键
             entityType = entityType.value,
             operationType = operationType,
             timestampWallClock = updatedClock.timestamp.epochMillis,
@@ -120,7 +121,7 @@ class SyncManager @Inject constructor(
             createdAt = System.currentTimeMillis()
         )
 
-        Log.d(TAG, "创建同步消息: $crdtKey, 类型: ${entityType.value}, 操作: $operationType")
+        Log.d(TAG, "创建同步消息: $userId, 类型: ${entityType.value}, 操作: $operationType")
 
         return messageEntity
     }
@@ -130,7 +131,7 @@ class SyncManager @Inject constructor(
      *
      * 使用实体类型的适配器将实体对象序列化为JSON，并创建带有时间戳的同步消息保存到本地数据库
      *
-     * @param crdtKey 实体在分布式系统中的唯一标识符
+     * @param id 实体在分布式系统中的唯一标识符
      * @param entityType 实体类型
      * @param operationType 操作类型
      * @param userId 用户ID
@@ -170,7 +171,6 @@ class SyncManager @Inject constructor(
             } ?: throw IllegalStateException("无法获取有效的逻辑时钟")
             // 创建同步消息
             val messageEntity = createSyncMessage(
-                crdtKey = crdtKey,
                 entityType = entityType,
                 operationType = operationType,
                 userId = userId,
@@ -181,7 +181,7 @@ class SyncManager @Inject constructor(
             // 将消息保存到本地数据库
             syncRepository.saveSyncMessage(messageEntity)
 
-            Log.d(TAG, "同步消息已保存: $crdtKey, 类型: ${entityType.value}, 操作: $operationType")
+            Log.d(TAG, "同步消息已保存: $userId, 类型: ${entityType.value}, 操作: $operationType")
         } catch (e: Exception) {
             Log.e(TAG, "创建和保存同步消息时出错: ${e.message}", e)
             throw e
@@ -422,7 +422,7 @@ class SyncManager @Inject constructor(
         try {
             Log.d(
                 TAG,
-                "【开始处理消息】实体类型=${messageDto.entityType}, 操作类型=${messageDto.operationType}, CRDT键=${messageDto.crdtKey}"
+                "【开始处理消息】实体类型=${messageDto.entityType}, 操作类型=${messageDto.operationType}, CRDT键=${messageDto.id}"
             )
             Log.d(
                 TAG,
@@ -452,10 +452,10 @@ class SyncManager @Inject constructor(
 
             Log.d(
                 TAG,
-                "【处理完成】成功处理消息 CRDT键=${messageDto.crdtKey}, 实体类型=${messageDto.entityType}"
+                "【处理完成】成功处理消息 CRDT键=${messageDto.id}, 实体类型=${messageDto.entityType}"
             )
         } catch (e: Exception) {
-            Log.e(TAG, "【处理异常】处理消息 CRDT键=${messageDto.crdtKey} 时出错: ${e.message}", e)
+            Log.e(TAG, "【处理异常】处理消息 CRDT键=${messageDto.id} 时出错: ${e.message}", e)
         }
     }
 
@@ -466,7 +466,7 @@ class SyncManager @Inject constructor(
      * @return 实体类型枚举或null
      */
     private fun getEntityTypeFromString(typeString: String): SyncConstants.EntityType? {
-        return SyncConstants.EntityType.values().find { it.value == typeString }
+        return SyncConstants.EntityType.entries.find { it.value == typeString }
     }
 
     /**
@@ -479,7 +479,7 @@ class SyncManager @Inject constructor(
         messageDto: SyncMessageDto,
     ) {
         try {
-            Log.d(TAG, "【课程实体处理开始】CRDT键=${messageDto.crdtKey}")
+            Log.d(TAG, "【课程实体处理开始】CRDT键=${messageDto.id}")
 
             /* ① 将 payload 字符串 -> Message<CourseEntity> */
             val message = synk.decodeOne<CourseEntity>(messageDto.payload)
@@ -489,48 +489,29 @@ class SyncManager @Inject constructor(
 
             Log.d(
                 TAG,
-                "【解析课程】课程名称=${remoteEntity.courseName}, 表ID=${remoteEntity.tableId}, 表CRDT键=${remoteEntity.tableCrdtKey}"
+                "【解析课程】课程名称=${remoteEntity.courseName}, 表ID=${remoteEntity.tableId}, 表CRDT键=${remoteEntity.tableId}"
             )
 
             // 修复外键关系
             var fixedEntity = remoteEntity
 
-            // 如果有tableCrdtKey，尝试找到对应的本地表ID
-            if (!remoteEntity.tableCrdtKey.isNullOrBlank()) {
-                val tableDao = syncRepository.getTableDao()
-                val table = tableDao.getTableByCrdtKey(remoteEntity.tableCrdtKey!!)
-                if (table != null) {
-                    Log.d(
-                        TAG,
-                        "【课程实体修复】课程'${remoteEntity.courseName}'使用表CRDT键=${remoteEntity.tableCrdtKey}找到表ID=${table.id}"
-                    )
-                    fixedEntity = fixedEntity.copy(tableId = table.id)
-                } else {
-                    // 如果没有找到对应的表，尝试使用第一个可用的表
-                    val allTables = tableDao.getAllTablesSync()
-                    if (allTables.isNotEmpty()) {
-                        val firstTable = allTables[0]
-                        Log.d(
-                            TAG,
-                            "【课程实体修复】没有找到表CRDT键=${remoteEntity.tableCrdtKey}对应的表，使用第一个表ID=${firstTable.id}"
-                        )
-                        fixedEntity = fixedEntity.copy(tableId = firstTable.id)
-                    } else {
-                        Log.e(
-                            TAG,
-                            "【课程实体错误】没有可用的表ID，无法保存课程'${remoteEntity.courseName}'"
-                        )
-                    }
-                }
-            } else if (fixedEntity.tableId <= 0) {
-                // 如果没有tableCrdtKey且tableId无效，尝试使用第一个可用的表
-                val tableDao = syncRepository.getTableDao()
+            // 如果有tableId，尝试找到对应的本地表ID
+            val tableDao = syncRepository.getTableDao()
+            val table = tableDao.getTableById(remoteEntity.tableId).first()
+            if (table != null) {
+                Log.d(
+                    TAG,
+                    "【课程实体修复】课程'${remoteEntity.courseName}'使用表CRDT键=${remoteEntity.tableId}找到表ID=${table.id}"
+                )
+                fixedEntity = fixedEntity.copy(tableId = table.id)
+            } else {
+                // 如果没有找到对应的表，尝试使用第一个可用的表
                 val allTables = tableDao.getAllTablesSync()
                 if (allTables.isNotEmpty()) {
                     val firstTable = allTables[0]
                     Log.d(
                         TAG,
-                        "【课程实体修复】课程'${remoteEntity.courseName}'没有表CRDT键且表ID无效，使用第一个表ID=${firstTable.id}"
+                        "【课程实体修复】没有找到表CRDT键=${remoteEntity.tableId}对应的表，使用第一个表ID=${firstTable.id}"
                     )
                     fixedEntity = fixedEntity.copy(tableId = firstTable.id)
                 } else {
@@ -541,9 +522,10 @@ class SyncManager @Inject constructor(
                 }
             }
 
+
             // 本地可能已经存在的实体
-            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.crdtKey} 查找本地实体")
-            val localEntity = syncRepository.getEntityByCrdtKey<CourseEntity>(messageDto.crdtKey)
+            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.id} 查找本地实体")
+            val localEntity = syncRepository.getEntityById<CourseEntity>(messageDto.id)
 
             // 应用CRDT合并逻辑（交由 Synk 处理）
             val mergedEntity = synk.inbound(message, localEntity)
@@ -569,7 +551,7 @@ class SyncManager @Inject constructor(
                 )
                 Log.e(
                     TAG,
-                    "【课程信息】课程名称=${mergedEntity.courseName}, 表ID=${mergedEntity.tableId}, 表CRDT键=${mergedEntity.tableCrdtKey}"
+                    "【课程信息】课程名称=${mergedEntity.courseName}, 表ID=${mergedEntity.tableId}, 表CRDT键=${mergedEntity.tableId}"
                 )
             }
         } catch (e: Exception) {
@@ -588,7 +570,7 @@ class SyncManager @Inject constructor(
         messageDto: SyncMessageDto,
     ) {
         try {
-            Log.d(TAG, "【课程节点实体处理开始】CRDT键=${messageDto.crdtKey}")
+            Log.d(TAG, "【课程节点实体处理开始】CRDT键=${messageDto.id}")
 
             /* ① 将 payload 字符串 -> Message<CourseNodeEntity> */
             val message = synk.decodeOne<CourseNodeEntity>(messageDto.payload)
@@ -598,20 +580,19 @@ class SyncManager @Inject constructor(
 
             Log.d(
                 TAG,
-                "【解析课程节点】课程ID=${remoteEntity.courseId}, 课程CRDT键=${remoteEntity.courseCrdtKey}, 星期=${remoteEntity.day}"
+                "【解析课程节点】课程ID=${remoteEntity.courseId}, 课程CRDT键=${remoteEntity.courseId}, 星期=${remoteEntity.day}"
             )
 
             // 修复外键关系
             var fixedEntity = remoteEntity
 
-            // 如果有courseCrdtKey，尝试找到对应的本地课程ID
-            if (!remoteEntity.courseCrdtKey.isNullOrBlank()) {
+            // 如果有courseId，尝试找到对应的本地课程ID
                 val courseDao = syncRepository.getCourseDao()
-                val course = courseDao.getCourseByCrdtKey(remoteEntity.courseCrdtKey!!)
+                val course = courseDao.getCourseById(remoteEntity.courseId!!)
                 if (course != null) {
                     Log.d(
                         TAG,
-                        "【课程节点实体修复】使用课程CRDT键=${remoteEntity.courseCrdtKey}找到课程ID=${course.id}"
+                        "【课程节点实体修复】使用课程CRDT键=${remoteEntity.courseId}找到课程ID=${course.id}"
                     )
                     fixedEntity = fixedEntity.copy(courseId = course.id)
                 } else {
@@ -621,33 +602,19 @@ class SyncManager @Inject constructor(
                         val firstCourse = allCourses[0]
                         Log.d(
                             TAG,
-                            "【课程节点实体修复】没有找到课程CRDT键=${remoteEntity.courseCrdtKey}对应的课程，使用第一个课程ID=${firstCourse.id}"
+                            "【课程节点实体修复】没有找到课程CRDT键=${remoteEntity.courseId}对应的课程，使用第一个课程ID=${firstCourse.id}"
                         )
                         fixedEntity = fixedEntity.copy(courseId = firstCourse.id)
                     } else {
                         Log.e(TAG, "【课程节点实体错误】没有可用的课程ID，无法保存课程节点")
                     }
                 }
-            } else if (fixedEntity.courseId <= 0) {
-                // 如果没有courseCrdtKey且courseId无效，尝试使用第一个可用的课程
-                val courseDao = syncRepository.getCourseDao()
-                val allCourses = courseDao.getAllCourses()
-                if (allCourses.isNotEmpty()) {
-                    val firstCourse = allCourses[0]
-                    Log.d(
-                        TAG,
-                        "【课程节点实体修复】没有课程CRDT键且课程ID无效，使用第一个课程ID=${firstCourse.id}"
-                    )
-                    fixedEntity = fixedEntity.copy(courseId = firstCourse.id)
-                } else {
-                    Log.e(TAG, "【课程节点实体错误】没有可用的课程ID，无法保存课程节点")
-                }
-            }
+
 
             // 本地可能已经存在的实体
-            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.crdtKey} 查找本地实体")
+            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.id} 查找本地实体")
             val localEntity =
-                syncRepository.getEntityByCrdtKey<CourseNodeEntity>(messageDto.crdtKey)
+                syncRepository.getEntityById<CourseNodeEntity>(messageDto.id)
 
             // 应用CRDT合并逻辑（交由 Synk 处理）
             val mergedEntity = synk.inbound(message, localEntity)
@@ -673,7 +640,7 @@ class SyncManager @Inject constructor(
                 )
                 Log.e(
                     TAG,
-                    "【课程节点信息】课程ID=${mergedEntity.courseId}, 课程CRDT键=${mergedEntity.courseCrdtKey}, 星期=${mergedEntity.day}"
+                    "【课程节点信息】课程ID=${mergedEntity.courseId}, 课程CRDT键=${mergedEntity.courseId}, 星期=${mergedEntity.day}"
                 )
             }
         } catch (e: Exception) {
@@ -686,7 +653,7 @@ class SyncManager @Inject constructor(
         messageDto: SyncMessageDto,
     ) {
         try {
-            Log.d(TAG, "【表实体处理开始】CRDT键=${messageDto.crdtKey}")
+            Log.d(TAG, "【表实体处理开始】CRDT键=${messageDto.id}")
 
             /* ① 将 payload 字符串 -> Message<TableEntity> */
             val message = synk.decodeOne<TableEntity>(messageDto.payload)
@@ -700,13 +667,13 @@ class SyncManager @Inject constructor(
             var fixedEntity = remoteEntity
 
             // 使用本地userId
-            val userId = syncRepository.getUserIdFromSession()?.toInt() ?: 1
+            val userId = syncRepository.getUserIdFromSession() ?: EMPTY_UUID
             Log.d(TAG, "【表实体修复】表'${remoteEntity.tableName}'使用本地用户ID: $userId")
             fixedEntity = fixedEntity.copy(userId = userId)
 
             // 本地可能已经存在的实体
-            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.crdtKey} 查找本地实体")
-            val localEntity = syncRepository.getEntityByCrdtKey<TableEntity>(messageDto.crdtKey)
+            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.id} 查找本地实体")
+            val localEntity = syncRepository.getEntityById<TableEntity>(messageDto.id)
 
             // 应用CRDT合并逻辑（交由 Synk 处理）
             val mergedEntity = synk.inbound(message, localEntity)
@@ -745,7 +712,7 @@ class SyncManager @Inject constructor(
         messageDto: SyncMessageDto,
     ) {
         try {
-            Log.d(TAG, "【日程实体处理开始】CRDT键=${messageDto.crdtKey}")
+            Log.d(TAG, "【日程实体处理开始】CRDT键=${messageDto.id}")
 
             /* ① 将 payload 字符串 -> Message<OrdinaryScheduleEntity> */
             val message = synk.decodeOne<OrdinaryScheduleEntity>(messageDto.payload)
@@ -759,14 +726,14 @@ class SyncManager @Inject constructor(
             var fixedEntity = remoteEntity
 
             // 使用本地userId
-            val userId = syncRepository.getUserIdFromSession()?.toInt() ?: 1
+            val userId = syncRepository.getUserIdFromSession() ?: EMPTY_UUID
             Log.d(TAG, "【日程实体修复】日程'${remoteEntity.title}'使用本地用户ID: $userId")
             fixedEntity = fixedEntity.copy(userId = userId)
 
             // 本地可能已经存在的实体
-            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.crdtKey} 查找本地实体")
+            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.id} 查找本地实体")
             val localEntity =
-                syncRepository.getEntityByCrdtKey<OrdinaryScheduleEntity>(messageDto.crdtKey)
+                syncRepository.getEntityById<OrdinaryScheduleEntity>(messageDto.id)
 
             // 应用CRDT合并逻辑（交由 Synk 处理）
             val mergedEntity = synk.inbound(message, localEntity)
@@ -805,7 +772,7 @@ class SyncManager @Inject constructor(
         messageDto: SyncMessageDto,
     ) {
         try {
-            Log.d(TAG, "【时间段实体处理开始】CRDT键=${messageDto.crdtKey}")
+            Log.d(TAG, "【时间段实体处理开始】CRDT键=${messageDto.id}")
 
             /* ① 将 payload 字符串 -> Message<TimeSlotEntity> */
             val message = synk.decodeOne<TimeSlotEntity>(messageDto.payload)
@@ -822,18 +789,17 @@ class SyncManager @Inject constructor(
             var fixedEntity = remoteEntity
 
             // 使用本地userId
-            val userId = syncRepository.getUserIdFromSession()?.toInt() ?: 1
+            val userId = syncRepository.getUserIdFromSession() ?: EMPTY_UUID
             fixedEntity = fixedEntity.copy(userId = userId)
 
-            // 如果有scheduleCrdtKey，尝试找到对应的本地日程ID
-            if (!remoteEntity.scheduleCrdtKey.isNullOrBlank()) {
+            // 如果有scheduleId，尝试找到对应的本地日程ID
                 val scheduleDao = syncRepository.getOrdinaryScheduleDao()
                 val schedule =
-                    scheduleDao.getOrdinaryScheduleByCrdtKey(remoteEntity.scheduleCrdtKey!!)
+                    scheduleDao.getOrdinaryScheduleById(remoteEntity.scheduleId!!)
                 if (schedule != null) {
                     Log.d(
                         TAG,
-                        "【时间段实体修复】使用日程CRDT键=${remoteEntity.scheduleCrdtKey}找到日程ID=${schedule.id}"
+                        "【时间段实体修复】使用日程CRDT键=${remoteEntity.scheduleId}找到日程ID=${schedule.id}"
                     )
                     fixedEntity = fixedEntity.copy(scheduleId = schedule.id)
                 } else {
@@ -843,28 +809,13 @@ class SyncManager @Inject constructor(
                         val firstSchedule = allSchedules[0]
                         Log.d(
                             TAG,
-                            "【时间段实体修复】没有找到日程CRDT键=${remoteEntity.scheduleCrdtKey}对应的日程，使用第一个日程ID=${firstSchedule.id}"
+                            "【时间段实体修复】没有找到日程CRDT键=${remoteEntity.scheduleId}对应的日程，使用第一个日程ID=${firstSchedule.id}"
                         )
                         fixedEntity = fixedEntity.copy(scheduleId = firstSchedule.id)
                     } else {
                         Log.e(TAG, "【时间段实体错误】没有可用的日程ID，无法保存时间段")
                     }
                 }
-            } else if (fixedEntity.scheduleId <= 0) {
-                // 如果没有scheduleCrdtKey且scheduleId无效，尝试使用第一个可用的日程
-                val scheduleDao = syncRepository.getOrdinaryScheduleDao()
-                val allSchedules = scheduleDao.fetchSchedulesByUserId(userId)
-                if (allSchedules.isNotEmpty()) {
-                    val firstSchedule = allSchedules[0]
-                    Log.d(
-                        TAG,
-                        "【时间段实体修复】没有日程CRDT键且日程ID无效，使用第一个日程ID=${firstSchedule.id}"
-                    )
-                    fixedEntity = fixedEntity.copy(scheduleId = firstSchedule.id)
-                } else {
-                    Log.e(TAG, "【时间段实体错误】没有可用的日程ID，无法保存时间段")
-                }
-            }
 
             Log.d(
                 TAG,
@@ -872,8 +823,8 @@ class SyncManager @Inject constructor(
             )
 
             // 本地可能已经存在的实体
-            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.crdtKey} 查找本地实体")
-            val localEntity = syncRepository.getEntityByCrdtKey<TimeSlotEntity>(messageDto.crdtKey)
+            Log.d(TAG, "【查找本地实体】尝试使用CRDT键 ${messageDto.id} 查找本地实体")
+            val localEntity = syncRepository.getEntityById<TimeSlotEntity>(messageDto.id)
 
             // 应用CRDT合并逻辑（交由 Synk 处理）
             val mergedEntity = synk.inbound(message, localEntity)
