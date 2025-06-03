@@ -2,6 +2,7 @@ package com.example.todoschedule.data.repository
 
 import android.util.Log
 import com.example.todoschedule.core.constants.AppConstants
+import com.example.todoschedule.core.extensions.valid
 import com.example.todoschedule.data.database.dao.CourseDao
 import com.example.todoschedule.data.database.dao.TableDao
 import com.example.todoschedule.data.mapper.toCourse
@@ -72,7 +73,7 @@ constructor(
         try {
             val courseEntity = course.toCourseEntity(tableId)
             val courseId = courseEntity.id
-            assert(courseId != AppConstants.EMPTY_UUID) {
+            assert(courseId.valid()) {
                 "课程ID不能为空"
             }
             courseDao.insertCourse(courseEntity)
@@ -112,7 +113,7 @@ constructor(
 
             // 3. 插入课程并获取ID
             val courseIds = courseEntities.map {
-                assert(it.id != AppConstants.EMPTY_UUID) {
+                assert(it.id.valid()) {
                     "课程ID不能为空"
                 }
                 it.id

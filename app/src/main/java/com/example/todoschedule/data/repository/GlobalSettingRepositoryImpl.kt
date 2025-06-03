@@ -2,6 +2,7 @@ package com.example.todoschedule.data.repository
 
 import android.util.Log
 import com.example.todoschedule.core.constants.AppConstants
+import com.example.todoschedule.core.extensions.valid
 import com.example.todoschedule.data.database.dao.GlobalSettingDao
 import com.example.todoschedule.data.mapper.toGlobalTableSetting
 import com.example.todoschedule.data.mapper.toGlobalTableSettingEntity
@@ -27,7 +28,7 @@ constructor(private val globalSettingDao: GlobalSettingDao) : GlobalSettingRepos
     }
 
     override suspend fun addGlobalSetting(globalSetting: GlobalTableSetting): UUID {
-        assert(globalSetting.id != AppConstants.EMPTY_UUID)
+        assert(globalSetting.id.valid())
         globalSettingDao.insertGlobalSetting(globalSetting.toGlobalTableSettingEntity())
         return globalSetting.id
     }

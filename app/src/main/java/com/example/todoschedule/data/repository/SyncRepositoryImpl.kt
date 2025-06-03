@@ -1,7 +1,7 @@
 package com.example.todoschedule.data.repository
 
 import android.util.Log
-import com.example.todoschedule.core.constants.AppConstants
+import com.example.todoschedule.core.extensions.valid
 import com.example.todoschedule.data.database.AppDatabase
 import com.example.todoschedule.data.database.dao.CourseDao
 import com.example.todoschedule.data.database.dao.CourseNodeDao
@@ -510,7 +510,7 @@ class SyncRepositoryImpl @Inject constructor(
             Log.d(TAG, "正在注册设备: deviceId=$deviceId, userId=$userId")
 
             // 确保用户ID有效
-            if (userId != AppConstants.EMPTY_UUID) {
+            if (!userId.valid()) {
                 Log.e(TAG, "无效的用户ID: $userId")
                 return false
             }
@@ -684,10 +684,10 @@ class SyncRepositoryImpl @Inject constructor(
                 return
             }
 
-            Log.d(TAG, "转换后的用户ID: $userId, 是否有效: ${userId != AppConstants.EMPTY_UUID}")
+            Log.d(TAG, "转换后的用户ID: $userId, 是否有效: ${userId.valid()}")
 
             // 确保用户ID有效
-            if (userId != AppConstants.EMPTY_UUID) {
+            if (!userId.valid()) {
                 Log.e(TAG, "用户ID无效，跳过设备注册")
                 return
             }

@@ -3,6 +3,7 @@ package com.example.todoschedule.ui.ordinaryschedule
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todoschedule.core.extensions.toUuid
 import com.example.todoschedule.domain.model.OrdinarySchedule
 import com.example.todoschedule.domain.use_case.ordinary_schedule.DeleteOrdinaryScheduleUseCase
 import com.example.todoschedule.domain.use_case.ordinary_schedule.GetOrdinaryScheduleByIdUseCase
@@ -41,7 +42,7 @@ class OrdinaryScheduleDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val scheduleId: UUID =
-        checkNotNull(savedStateHandle[AppRoutes.OrdinaryScheduleDetail.ARG_SCHEDULE_ID])
+        checkNotNull(savedStateHandle[AppRoutes.OrdinaryScheduleDetail.ARG_SCHEDULE_ID]).toString().toUuid()
 
     val uiState: StateFlow<OrdinaryScheduleDetailUiState> =
         getOrdinaryScheduleByIdUseCase(scheduleId)

@@ -180,7 +180,7 @@ fun ScheduleScreen(
                 onDownload = {
                     navigationState.navigateSchoolSelectorScreen(
                         defaultTableIds.firstOrNull()
-                            ?: AppConstants.Ids.INVALID_TABLE_ID
+                            ?: UUID.randomUUID()
                     )
                 },
                 onShare = { /* TODO: 分享逻辑 */ },
@@ -220,7 +220,7 @@ fun ScheduleScreen(
             if (currentActiveTable == null && defaultTableIds.isEmpty()) {
                 NoTableBanner(
                     onCreateTable = { navigationState.navigateToCreateEditTable() },
-                    onImportTable = { navigationState.navigateSchoolSelectorScreen(AppConstants.Ids.INVALID_TABLE_ID) }
+                    onImportTable = { navigationState.navigateSchoolSelectorScreen(UUID.randomUUID()) }
                 )
             }
             Box(

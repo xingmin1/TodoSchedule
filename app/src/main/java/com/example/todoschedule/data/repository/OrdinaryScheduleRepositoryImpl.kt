@@ -4,6 +4,7 @@ package com.example.todoschedule.data.repository
 import android.util.Log
 import androidx.room.Transaction
 import com.example.todoschedule.core.constants.AppConstants
+import com.example.todoschedule.core.extensions.valid
 import com.example.todoschedule.data.database.converter.ScheduleType
 import com.example.todoschedule.data.database.dao.OrdinaryScheduleDao
 import com.example.todoschedule.data.database.dao.TimeSlotDao
@@ -45,7 +46,7 @@ class OrdinaryScheduleRepositoryImpl @Inject constructor(
             // 1. 插入 OrdinaryScheduleEntity 并获取 ID
             val scheduleEntity = schedule.toEntity()
             val scheduleId = scheduleEntity.id
-            assert(scheduleId != AppConstants.EMPTY_UUID) { "Schedule ID must not be zero" }
+            assert(scheduleId.valid()) { "Schedule ID must not be zero" }
             ordinaryScheduleDao.insertSchedule(scheduleEntity)
 
             // 设置scheduleId后的实体

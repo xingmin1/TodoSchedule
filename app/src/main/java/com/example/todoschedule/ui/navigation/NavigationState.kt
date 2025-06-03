@@ -3,7 +3,7 @@ package com.example.todoschedule.ui.navigation
 import android.util.Log
 import androidx.navigation.NavController
 import com.example.todoschedule.core.constants.AppConstants
-import java.net.URLEncoder
+import com.example.todoschedule.core.extensions.valid
 import java.util.UUID
 
 /**
@@ -140,9 +140,11 @@ class NavigationState(
     }
 
     /**
-     * 导航到学校选择页面
+     * 导航到学校选择页面(传入的tableId就是最终的课表ID，要求是有效的UUID)
      */
     fun navigateSchoolSelectorScreen(tableId: UUID) {
+        assert(tableId.valid())
+        Log.d("NavigationState", "Navigating to SchoolSelector with tableId: $tableId")
         navController.navigate(AppRoutes.SchoolSelector.createRoute(tableId))
     }
 

@@ -47,7 +47,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.todoschedule.core.constants.AppConstants
 import com.example.todoschedule.ui.home.model.HomeUiState
 import com.example.todoschedule.ui.navigation.NavigationState
 import com.example.todoschedule.ui.study.StudyStat
@@ -57,6 +56,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import java.util.UUID
 import com.example.todoschedule.ui.study.StatType as StudyModelStatType
 
 /**
@@ -125,7 +125,7 @@ fun HomeScreen(
                     navigationState = navigationState,
                     onNavigateToImport = {
                         navigationState.navigateSchoolSelectorScreen(
-                            AppConstants.Ids.INVALID_TABLE_ID
+                            UUID.randomUUID() // 使用随机ID创建临时课表
                         )
                     }
                 )

@@ -312,8 +312,8 @@ fun AppNavigation(
                 composable(
                     route = AppRoutes.AddEditOrdinarySchedule.route,
                     arguments = listOf(navArgument(AppRoutes.AddEditOrdinarySchedule.ARG_SCHEDULE_ID) {
-                        type = NavType.IntType
-                        defaultValue = -1 // Use -1 or another invalid ID to indicate 'add' mode
+                        type = NavType.StringType
+                        defaultValue = AppConstants.EMPTY_UUID.toString() // Use -1 or another invalid ID to indicate 'add' mode
                     })
                 ) { backStackEntry ->
                     // val _scheduleId = backStackEntry.arguments?.getInt(AppRoutes.AddEditOrdinarySchedule.ARG_SCHEDULE_ID)
@@ -328,7 +328,7 @@ fun AppNavigation(
                 composable(
                     route = AppRoutes.OrdinaryScheduleDetail.route,
                     arguments = listOf(navArgument(AppRoutes.OrdinaryScheduleDetail.ARG_SCHEDULE_ID) {
-                        type = NavType.IntType
+                        type = NavType.StringType
                     })
                 ) { backStackEntry ->
                     val scheduleId =
@@ -368,8 +368,8 @@ fun AppNavigation(
                 composable(
                     route = AppRoutes.CreateEditTable.route,
                     arguments = listOf(navArgument(AppRoutes.CreateEditTable.ARG_TABLE_ID) {
-                        type = NavType.IntType
-                        defaultValue = -1 // -1 表示创建模式
+                        type = NavType.StringType
+                        defaultValue = AppConstants.EMPTY_UUID.toString() // -1 表示创建模式
                     })
                 ) { /* backStackEntry -> */ // Variable 'it'/'backStackEntry' is not used
                     // val tableId = it.arguments?.getInt(AppRoutes.CreateEditTable.ARG_TABLE_ID)
